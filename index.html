@@ -134,7 +134,7 @@
   #card-preview .pv-sigil-i{font-size:1.8rem;line-height:1;}
   #card-preview .pv-sigil-n{font-family:'Pirata One';font-size:1.5rem;color:var(--gilt);letter-spacing:.02em;}
   #card-preview .pv-sigil-d{font-size:1.05rem;line-height:1.35;color:#f2e6cf;}
-  #card-preview .pv-name{position:absolute;top:0;left:0;right:0;text-align:center;padding:8px;
+  #card-preview .pv-note{position:absolute;top:0;left:0;right:0;text-align:center;padding:8px;
     font-family:'Pirata One';font-size:1.3rem;color:var(--bone);
     background:linear-gradient(180deg,rgba(10,7,4,.9),transparent);}
   .slot.sac-target{border-color:var(--blood-br);box-shadow:0 0 22px rgba(177,53,43,.6) inset;cursor:pointer;}
@@ -194,9 +194,6 @@
   .art-card .b-hp{right:4px;bottom:4px;color:#ffffff;font-size:19px;background:rgba(90,10,10,.94);border-color:rgba(255,120,90,.8);}
   .art-card .b-cost{top:4px;right:4px;font-size:14px;}
   .art-card .b-sigil{top:4px;left:4px;font-size:15px;padding:3px 5px;}
-  .art-card .b-stance{left:50%;transform:translateX(-50%);bottom:4px;font-size:11px;padding:1px 5px;}
-  .art-card.held .b-stance{background:rgba(79,107,82,.95);}
-  .art-card.charging .b-stance{background:rgba(124,29,24,.95);}
   /* board cards: big, bold, unmistakable stat pills */
   .card.art-card .b-pow,.card.art-card .b-hp{font-size:26px;padding:5px 11px;font-weight:400;}
   .card.art-card .b-hp{background:#8a0f0f;color:#fff;border:2px solid #ffcaae;box-shadow:0 0 0 2px rgba(0,0,0,.7),0 3px 8px rgba(0,0,0,.9);}
@@ -373,10 +370,6 @@
   .card .cost{position:absolute;top:3px;right:4px;font-family:'Pirata One';font-size:12px;background:rgba(0,0,0,.14);border-radius:5px;padding:0 4px;}
   .card.locked .cost{background:var(--blood);color:var(--bone);}
   .card .sigil{position:absolute;bottom:22px;left:5px;font-size:13px;}
-  .card .stance{position:absolute;bottom:4px;right:5px;font-size:10px;font-family:'Pirata One';padding:0 3px;border-radius:3px;}
-  .card.held .stance{background:var(--verd);color:var(--bone);}
-  .card.charging .stance{background:var(--blood);color:var(--bone);}
-  .card.held{box-shadow:0 10px 18px rgba(0,0,0,.55), inset 0 0 0 2px #6b5838, inset 0 0 18px rgba(80,110,90,.5);}
   .queue-back{width:205px;height:288px;border-radius:12px;position:absolute;left:2px;top:2px;transform:translateZ(3px);overflow:hidden;
     background:radial-gradient(circle,#3a2c1e,#221610);border:2px solid #5a4632;
     display:flex;align-items:center;justify-content:center;font-size:26px;color:#6b5838;box-shadow:0 8px 14px rgba(0,0,0,.5);}
@@ -630,7 +623,6 @@
     <li><b>Draw.</b> Each turn brings a free Peasant and a card from your own deck.</li>
     <li><b>Play.</b> Click a card, then click an empty lane. (Dragging works too.)</li>
     <li><b>Pay.</b> <span class="gl">🩸</span> means sacrifice that many of your own creatures — click them on the table. Marrow will <i>not</i> buy blood.</li>
-    <li><b>Stance.</b> Click a placed creature to toggle <span class="gl">⚔ charge</span> / <span class="gl">🛡 hold</span>. Held creatures don't strike, but take 1 less damage.</li>
     <li><b>Relics.</b> Click one on the left. Once per fight, then it returns at the next seat.</li>
     <li><b>Sound the horn.</b> Each creature strikes the lane facing it. Hit an <i>empty</i> lane and the souls are yours.</li>
     <li><b>Win.</b> First to <b>35 souls</b> takes the round; <b>best of three</b> takes the seat. Beat all three seats to face the last one.</li>
@@ -1185,7 +1177,9 @@ function loadBoss(i){
   const ladder=state.ladder||BOSSES;
   const b=ladder[i];state.boss=b;state.bossIndex=i;
   const face=$('#boss-face');
-  face.textContent=b.face;
+  const bCard=CARDS[b.key];
+  const bArt=bCard?artFor({key:b.key,boss:bCard.boss,faction:bCard.faction}):null;
+  face.innerHTML=bArt?`<img src="${bArt}" alt="${b.name}">`:b.face;
   $('#boss-name').innerHTML=`${b.name}<small>${b.sub}</small>`;
   state.enemyBoard=Array(LANES).fill(null);state.enemyQueue=Array(LANES).fill(null);
   state.soulsYou=0;state.soulsFoe=0;state.conscript=CONSCRIPT_PER;
@@ -1280,7 +1274,7 @@ function firstSight(c,where){const k=where+':'+c.uid;if(dealt.has(k))return fals
 function forgetDealt(){dealt.clear();}
 function cardEl(c,isEnemy){
   const cardArt=artFor(c); const hasArt=!!cardArt;
-  const cls='card'+(hasArt?' art-card':'')+(isEnemy?' enemy':'')+(c.faction?' f-'+c.faction:'')+(!isEnemy&&c.hold?' held':'')+(!isEnemy&&!c.hold?' charging':'')+(state.sacrifices.includes(c.uid)?' selected':'');
+  const cls='card'+(hasArt?' art-card':'')+(isEnemy?' enemy':'')+(c.faction?' f-'+c.faction:'')+(state.sacrifices.includes(c.uid)?' selected':'');
   const d=el('div',cls);d.dataset.uid=c.uid;
   if(firstSight(c,'board'))d.classList.add('dealing');
   const pow=effPow(c,isEnemy);
@@ -1288,17 +1282,15 @@ function cardEl(c,isEnemy){
     d.innerHTML=`<img class="artimg" src="${cardArt}" alt="${c.name}">
       ${c.sig?`<div class="badge b-sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}">${SIG[c.sig].i}</div>`:''}
       <div class="badge b-pow">${pow}</div>
-      <div class="badge b-hp hp">♥${c.curHp}</div>
-      ${!isEnemy?`<div class="badge b-stance">${c.hold?'🛡':'⚔'}</div>`:''}`;
+      <div class="badge b-hp hp">♥${c.curHp}</div>`;
   } else {
     d.innerHTML=`<div class="name">${c.name}</div><div class="art">${c.art}</div>
       <div class="row2"><span class="pow">${pow}</span><span class="hp">♥${c.curHp}</span></div>
-      ${c.sig?`<div class="sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}">${SIG[c.sig].i}</div>`:''}
-      ${!isEnemy?`<div class="stance">${c.hold?'🛡':'⚔'}</div>`:''}`;
+      ${c.sig?`<div class="sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}">${SIG[c.sig].i}</div>`:''}`;
   }
-  d.onmouseenter=e=>{showTip(e,creatTip(c)+(isEnemy?'':' — tap to hold/charge.'));previewAnchor=d;showPreview(c,true,isEnemy);positionPreview(e);};
-  d.onmousemove=e=>{moveTip(e);positionPreview(e);};
-  d.onmouseleave=()=>{hideTip();hidePreview();};
+  d.onmouseenter=e=>{previewAnchor=d;showPreview(c,true,isEnemy);positionPreview(e);};
+  d.onmousemove=e=>{positionPreview(e);};
+  d.onmouseleave=()=>{hidePreview();};
   return d;
 }
 function renderHand(){
@@ -1329,9 +1321,9 @@ function renderHand(){
     d.ondragstart=e=>{ if(!canDragNow){e.preventDefault();return;} state.dragCard=c; e.dataTransfer.setData('text/plain',c.uid); e.dataTransfer.effectAllowed='move'; d.classList.add('dragging'); hidePreview(); hideTip(); };
     d.ondragend=()=>{ d.classList.remove('dragging'); state.dragCard=null; };
     d.onclick=()=>handClick(c);
-    d.onmouseenter=e=>{showTip(e,cardTip(c));previewAnchor=d;showPreview(c,false);positionPreview(e);};
-    d.onmousemove=e=>{moveTip(e);positionPreview(e);};
-    d.onmouseleave=()=>{hideTip();hidePreview();};
+    d.onmouseenter=e=>{previewAnchor=d;showPreview(c,false,false,c.relic?c.rd:costNote(c.cost));positionPreview(e);};
+    d.onmousemove=e=>{positionPreview(e);};
+    d.onmouseleave=()=>{hidePreview();};
     h.appendChild(d);
   });
 }
@@ -1358,8 +1350,8 @@ function renderRelics(){
   });
 }
 function costLabel(cost){if(!cost||cost.type==null)return '⊘';if(cost.type==='free')return '⊘';if(cost.type==='blood')return '🩸'.repeat(cost.n);if(cost.type==='coin')return '🪙'+cost.n;if(cost.type==='marrow')return '🦴'.repeat(cost.n);return '⊘';}
+function costNote(cost){if(!cost||cost.type==null||cost.type==='free')return 'Free.';if(cost.type==='blood')return `Sacrifice ${cost.n} to summon.`;if(cost.type==='coin')return `Costs ${cost.n} coin.`;if(cost.type==='marrow')return `Costs ${cost.n} Marrow.`;return '';}
 function cardTip(c){if(c.relic)return `${c.name} — relic. ${c.rd} Once per fight; click it to spend it.`;let t=`${c.name} — ${c.pow}⚔ / ${c.hp}♥.`;if(c.cost.type==='blood')t+=` Sacrifice ${c.cost.n} to summon.`;else if(c.cost.type==='coin')t+=` Costs ${c.cost.n} coin.`;else if(c.cost.type==='marrow')t+=` Costs ${c.cost.n} Marrow — no sacrifice will hasten it.`;else t+=` Free.`;if(c.sig)t+=` ⟡ ${SIG[c.sig].n}: ${SIG[c.sig].d}`;return t;}
-function creatTip(c){let t=`${c.name} — ${c.pow}⚔ / ${c.curHp}♥.`;if(c.sig)t+=` ⟡ ${SIG[c.sig].n}: ${SIG[c.sig].d}`;return t;}
 function renderResources(){$('#blood-pips').textContent=Array.from({length:4},(_,i)=>i<state.blood?'●':'○').join(' ');$('#marrow-count').textContent=state.marrowP||0;$('#coin-count').textContent=state.coin;$('#deck-count').textContent=state.deck.length;}
 function renderReckoning(){$('#fill-top').style.height=Math.min(100,state.soulsYou/SCALE_WIN*100)+'%';$('#fill-bot').style.height=Math.min(100,state.soulsFoe/SCALE_WIN*100)+'%';$('#souls-you').textContent=state.soulsYou;$('#souls-foe').textContent=state.soulsFoe;$('#reck-label').textContent=`round ${state.roundNum||1} · first to ${SCALE_WIN} souls · rounds ${state.roundsWon||0}–${state.roundsLost||0} · best of 3`;}
 
@@ -1466,11 +1458,6 @@ function onSlotClick(lane,isEnemy){
     return;
   }
   if(isEnemy)return;
-  // click your own placed creature to toggle hold/charge
-  if(!state.readyCard&&state.playerBoard[lane]){
-    const c=state.playerBoard[lane];c.hold=!c.hold;
-    say(c.hold?`<b>${c.name} holds the line</b> — it won't attack, but takes less damage while it holds.`:`<b>${c.name} will charge</b> when you sound the horn.`,2600);renderAll();return;
-  }
   // clicking an empty lane while a card is ready also places it (fallback to click if drag is fiddly)
   if(state.readyCard&&!state.playerBoard[lane]){ dropCard(state.readyCard,lane); }
 }
@@ -1569,7 +1556,6 @@ async function combat(side){
     // Rapture (Lust): a creature seduced by something it slew skips this one attack, then recovers.
     if(side==='player'&&a._besotted){a._besotted=false;continue;}
     if(side==='player'&&state.charmed[a.uid])continue;
-    if(side==='player'&&a.hold)continue;
     const p=effPow(a,side==='enemy');if(p<=0)continue;
     // Zeal (Wrath): each player attack inflames every Holy Zealot, up to +2 per turn.
     if(side==='player'){for(const z of state.enemyBoard){if(z&&z.sig==='zeal'){z._zt=z._zt||0;if(z._zt<2){z.pow++;z._zt++;}}}}
@@ -1597,7 +1583,7 @@ function dmg(c,amount,board,rowId){
   const before=c.curHp;
   // Bulwark: soak 1 off every ordinary strike (min 1 gets through). Reaper (9999) ignores it.
   // Ward: an ally adjacent to a living Ward on the same board gets the same soak.
-  if(amount<9999){const idx0=board.indexOf(c);if(c.sig==='bulwark'||(idx0>=0&&wardedAt(board,idx0))||c.hold)amount=Math.max(1,amount-1);}
+  if(amount<9999){const idx0=board.indexOf(c);if(c.sig==='bulwark'||(idx0>=0&&wardedAt(board,idx0)))amount=Math.max(1,amount-1);}
   c.curHp-=amount;
   // GREED FLEES. In the first round only, once it is badly hurt it takes its coin and runs
   // rather than dying — even from a killing blow. It comes back for the second round, and
@@ -2238,17 +2224,23 @@ function hideTip(){tip.classList.remove('show');}
 
 const preview=$('#card-preview');
 let previewAnchor=null;
-function showPreview(c, useCurrentHp, isEnemy){
+function showPreview(c, useCurrentHp, isEnemy, note){
   const hp = useCurrentHp && c.curHp!=null ? c.curHp : c.hp;
   const art = artFor(c);
   const sigHtml = c.sig&&SIG[c.sig] ? `<div class="pv-sigil"><span class="pv-sigil-i">${SIG[c.sig].i}</span><span class="pv-sigil-n">${SIG[c.sig].n}</span><span class="pv-sigil-d">${SIG[c.sig].d}</span></div>` : '';
+  // The preview already repeats everything the old floating tooltip said (name, pow/hp, sigil),
+  // so showing both meant a cursor-anchored box landing on top of a card-anchored one — see the
+  // "solve tooltips covering card text" fix. `note` carries the one piece the preview didn't
+  // already have (cost, or a relic's description) so nothing is lost by dropping the tooltip.
+  const noteHtml = note ? `<div class="pv-note">${note}</div>` : '';
   if(art){
     preview.innerHTML = `<img src="${art}" alt="${c.name}">
+      ${noteHtml}
       ${sigHtml}
       <div class="pv-stats"><span class="p">${c.pow}⚔</span><span class="h">♥${hp}</span></div>`;
   } else {
     preview.innerHTML = `<div class="pv-emoji"><div class="big">${c.art||'🂠'}</div><div class="nm">${c.name}</div>
-      <div style="font-family:'Pirata One';font-size:1.6rem">${c.pow}⚔ / ${hp}♥</div></div>${sigHtml}`;
+      <div style="font-family:'Pirata One';font-size:1.6rem">${c.pow}⚔ / ${hp}♥</div></div>${sigHtml}${noteHtml}`;
   }
   preview.classList.add('show');
   positionPreview();
