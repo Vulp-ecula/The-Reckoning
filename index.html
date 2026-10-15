@@ -3246,44 +3246,56 @@ const facePlayer=g=>{ g.rotation.y=Math.atan2(0-CANDLE_X,1.20-CANDLE_Z); };
   const wax=add(new THREE.CircleGeometry(.026,24),new THREE.MeshStandardMaterial({color:0xe8c890,emissive:0xff9a40,emissiveIntensity:.35}),0,.286,0,-Math.PI/2);
   holders.gluttony={group:g, top:TABLE_Y+.288, flameScale:.7};
 }
-{ /* Lust: two ivory figures straining to hold up three carved cups, a taper in each */
+{ /* Lust: mirrored scrolls of glossy black lacquer veined with red, rising
+     into horned tips with gold bands, around a gold cup holding a twisted red taper */
   const g=new THREE.Group(); g.position.set(CANDLE_X,TABLE_Y,CANDLE_Z); facePlayer(g); g.visible=false; scene.add(g);
-  const M_ivory=new THREE.MeshStandardMaterial({color:0xb8ad96,roughness:.62});
-  const M_cup=new THREE.MeshStandardMaterial({color:0xb88a66,roughness:.8});
-  const M_wax=new THREE.MeshStandardMaterial({color:0xece4d2,roughness:.45});
-  const M_cord=new THREE.MeshStandardMaterial({color:0x5a1a14,roughness:.8});
-  const V=(x,y,z)=>new THREE.Vector3(x,y,z), Y=new THREE.Vector3(0,1,0);
-  const add=(geo,m,x,y,z)=>{ const o=new THREE.Mesh(geo,m); o.position.set(x,y,z); o.castShadow=true; g.add(o); return o; };
-  const limb=(a,b,r,m=M_ivory)=>{ const d=new THREE.Vector3().subVectors(b,a), L=d.length();
-    const o=new THREE.Mesh(new THREE.CapsuleGeometry(r,Math.max(L-2*r,.001),4,10),m);
-    o.position.copy(a).addScaledVector(d,.5); o.quaternion.setFromUnitVectors(Y,d.normalize()); o.castShadow=true; g.add(o); return o; };
-  add(new THREE.CylinderGeometry(.095,.10,.022,32),M_ivory, 0,.011,0);                                  /* base  */
-  add(new THREE.CylinderGeometry(.016,.02,.26,16),M_ivory, 0,.152,-.022);                               /* post  */
+  const M_lac=new THREE.MeshStandardMaterial({color:0x0b0708,metalness:.25,roughness:.16});
+  const M_red=new THREE.MeshStandardMaterial({color:0x6a0a12,metalness:.25,roughness:.2,emissive:0x2a0206,emissiveIntensity:.6});
+  const M_gold=new THREE.MeshStandardMaterial({color:0xc8973e,metalness:.75,roughness:.28,emissive:0x2a1a04,emissiveIntensity:.5});
+  const tube=(pts,r0,r1,m,seg=48)=>{
+    const c=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p)));
+    const geo=new THREE.TubeGeometry(c,seg,1,10,false), p=geo.attributes.position, n=geo.attributes.normal;
+    /* taper the radius along the length: rebuild each ring around the curve */
+    const rings=seg+1, per=11;
+    for(let k=0;k<rings;k++){ const t=k/seg, r=r0+(r1-r0)*t, ctr=c.getPointAt(t);
+      for(let q=0;q<per;q++){ const v=k*per+q; if(v>=p.count) break;
+        p.setXYZ(v, ctr.x+n.getX(v)*r, ctr.y+n.getY(v)*r, ctr.z+n.getZ(v)*r); } }
+    geo.computeVertexNormals();
+    const o=new THREE.Mesh(geo,m); o.castShadow=true; g.add(o); return o; };
+  const spiral=(cx,cy,r0,turns,start,dir,z=0)=>{ const pts=[];
+    for(let k=0;k<=30;k++){ const t=k/30, a=start+dir*t*turns*Math.PI*2, r=r0*(1-.72*t);
+      pts.push([cx+Math.cos(a)*r, cy+Math.sin(a)*r, z]); } return pts; };
   for(const s of [-1,1]){
-    const H=V(s*.042,.150,0), S=V(s*.056,.226,0);
-    limb(V(s*.026,.024,.012),V(s*.032,.090,.012),.0095); limb(V(s*.032,.090,.012),V(s*.036,.152,.008),.012);   /* leg  */
-    limb(V(s*.052,.024,-.012),V(s*.050,.090,-.012),.0095); limb(V(s*.050,.090,-.012),V(s*.048,.150,-.008),.012);
-    const hips=add(new THREE.SphereGeometry(1,16,12),M_ivory, s*.042,.150,0); hips.scale.set(.026,.020,.017);
-    limb(H,V(s*.050,.198,0),.017);                                                                        /* waist */
-    const chest=add(new THREE.SphereGeometry(1,16,12),M_ivory, s*.056,.212,.001); chest.scale.set(.029,.030,.019);
-    limb(V(s*.060,.236,0),V(s*.066,.250,0),.0065);                                                        /* neck  */
-    add(new THREE.SphereGeometry(.0145,16,12),M_ivory, s*.069,.264,.004);
-    limb(V(s*.036,.232,0),V(s*.028,.262,.014),.0072); limb(V(s*.028,.262,.014),V(s*.012,.284,.004),.0062); /* inner arm */
-    limb(V(s*.076,.232,0),V(s*.094,.256,.012),.0072); limb(V(s*.094,.256,.012),V(s*.084,.284,.004),.0062); /* outer arm */
-    const cord=new THREE.Mesh(new THREE.TorusGeometry(.021,.0028,6,20),M_cord);
-    cord.position.copy(H).add(V(0,-.006,0)); cord.rotation.x=Math.PI/2; g.add(cord);
+    /* low outer volute (the base the piece stands on) */
+    tube(spiral(s*.085,.052,.050,1.15,-Math.PI/2,-s,0),.019,.006,M_lac);
+    tube(spiral(s*.085,.052,.032,1.0,-Math.PI/2,-s,.017),.006,.0022,M_red,36);
+    /* inner heart-curve rising from the volute to the centre */
+    tube([[s*.085,.002,0],[s*.03,.01,0],[s*.012,.05,0],[s*.03,.088,0],[s*.07,.098,0],[s*.10,.082,0]],.016,.009,M_lac);
+    tube([[s*.03,.012,.014],[s*.016,.05,.014],[s*.032,.084,.014],[s*.066,.092,.014]],.005,.0025,M_red,32);
+    /* tall horned arm sweeping up and out */
+    const arm=[[s*.06,.095,-.006],[s*.11,.14,-.006],[s*.125,.21,-.006],[s*.112,.27,-.006],[s*.088,.30,-.006],[s*.078,.312,-.006]];
+    tube(arm,.017,.004,M_lac);
+    tube(arm.map(([x,y,z])=>[x*0.93,y,z+.013]),.004,.0015,M_red,32);
+    const band=new THREE.Mesh(new THREE.TorusGeometry(.0085,.0022,6,16),M_gold);
+    band.position.set(s*.088,.297,-.006); band.rotation.set(Math.PI/2,0,s*.6); g.add(band);
+    /* small inner flame-scroll with a red tip */
+    tube(spiral(s*.055,.13,.020,.9,Math.PI,s,.004),.009,.003,M_lac,30);
+    tube([[s*.05,.15,.004],[s*.058,.18,.004],[s*.05,.205,.004]],.006,.0015,M_red,20);
   }
-  const extra=[];
-  for(const [x,h] of [[0,.14],[-.083,.12],[.083,.12]]){
-    add(new THREE.CylinderGeometry(.022,.018,.035,20),M_cup, x,.300,0);
-    add(new THREE.TorusGeometry(.022,.003,6,20),M_cup, x,.317,0).rotation.x=Math.PI/2;
-    add(new THREE.CylinderGeometry(.013,.014,h,16),M_wax, x,.3175+h/2,0);
-    if(x!==0){ const top=.3175+h;
-      const w=add(new THREE.CylinderGeometry(.0028,.003,.026,6),new THREE.MeshStandardMaterial({color:0x140c08}),x,top+.01,0);
-      const f=new THREE.Mesh(flame.geometry,flame.material); f.position.set(x,top+.068*.6,0); f.scale.setScalar(.6); g.add(f);
-      holderFlames.push(f); }
-  }
-  holders.lust={group:g, top:TABLE_Y+.3175+.14, flameScale:.6};
+  /* centre stem, gold dish and cup */
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.012,.02,.11,16),M_lac); stem.position.y=.06; g.add(stem);
+  const dish=new THREE.Mesh(new THREE.CylinderGeometry(.046,.014,.012,32),M_gold); dish.position.y=.118; dish.castShadow=true; g.add(dish);
+  const cup=new THREE.Mesh(new THREE.CylinderGeometry(.016,.014,.028,24,1,true),M_gold); cup.position.y=.138; g.add(cup);
+  /* twisted red taper: a fluted cylinder spun along its length */
+  const tg=new THREE.CylinderGeometry(.0125,.0145,.20,48,40), tp=tg.attributes.position;
+  for(let k=0;k<tp.count;k++){ const x=tp.getX(k), y=tp.getY(k), z=tp.getZ(k), a=Math.atan2(z,x), r=Math.hypot(x,z);
+    if(r<1e-4) continue;
+    const rr=r*(1+.10*Math.cos(6*a)), a2=a+y*22;
+    tp.setXYZ(k,Math.cos(a2)*rr,y,Math.sin(a2)*rr); }
+  tg.computeVertexNormals();
+  const taper=new THREE.Mesh(tg,new THREE.MeshStandardMaterial({color:0xa8101c,roughness:.35,emissive:0x2a0004,emissiveIntensity:.4}));
+  taper.position.y=.124+.10; taper.castShadow=true; g.add(taper);
+  holders.lust={group:g, top:TABLE_Y+.324, flameScale:.75};
 }
 holders.plain={group:candle, top:TABLE_Y+.30, flameScale:1};
 let currentHolder='plain';
