@@ -3314,7 +3314,7 @@ const BOSS_HOLDER={holy_greed:'greed', holy_zealot:'wrath', holy_inquisitor:'wra
   holy_maw:'gluttony', holy_glutton:'gluttony', holy_devourer:'gluttony',
   holy_penitent:'lust', holy_martyr:'lust', holy_lustboss:'lust'};
 window.addEventListener('reckoning:boss',e=>setCandleholder(BOSS_HOLDER[e.detail&&e.detail.key]||'plain'));
-if(window.__bossKey) setCandleholder(BOSS_HOLDER[window.__bossKey]||'plain');
+if(window.__bossKey) setTimeout(()=>setCandleholder(BOSS_HOLDER[window.__bossKey]||'plain'),0);
 const bell=new THREE.Mesh(new THREE.ConeGeometry(.075,.13,10),M_iron);
 bell.position.set(-.80,1.02,-.40);bell.castShadow=true;scene.add(bell);
 const knife=new THREE.Mesh(new THREE.BoxGeometry(.028,.012,.30),M_iron);
