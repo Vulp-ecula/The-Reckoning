@@ -3497,7 +3497,7 @@ function ham(x,y,z,sc){
 /* hung high enough that they never block the seated view of the board */
 herbBundle(-3.85,2.55,-2.40,1.00);
 herbBundle( 2.95,2.50,-2.40,0.95);
-herbBundle( 3.85,2.62,-1.55,0.80);
+/* (the bundle over the right-wall shelves was removed) */
 herbBundle(-3.95,2.46, 0.95,0.90);
 /* all the cured meat hangs from the rafter at x=-3.6, beside the fire */
 sausageRope(-3.60,-0.95, 2.95, 2.00, 5);
@@ -5147,20 +5147,23 @@ addEventListener('resize',()=>{
   /* ---- The Rider: your faction's big card is held apart, beneath the relics, to be played when YOU choose
          (once per round). It no longer shuffles into the deck. Plus table-text tidy-up. ---- */
   { const css=document.createElement('style');
-    css.textContent=`#tag-enemy,#tag-mid,#tag-you{display:none!important;} #relics{top:36%!important;}
+    css.textContent=`#tag-enemy,#tag-mid,#tag-you{display:none!important;} #relics{top:30%!important;}
+      #hand{padding-left:210px!important;justify-content:safe center!important;}   /* hand sits right of centre, clear of the Rider */
+      #reckoning{position:absolute!important;left:50%;top:10px;transform:translateX(-50%);}
+      #glass{transform:scale(2);transform-origin:top center;margin-bottom:132px;} #boss{max-width:440px;} #souls-line{position:absolute;left:calc(100% + 42px);top:206px;white-space:nowrap;font-size:1.5rem;text-shadow:0 1px 3px #000,0 0 8px #000;} #glass{margin-bottom:0!important;}
       #boss{flex-wrap:wrap;} #boss #reck-label{flex-basis:100%;text-align:center;font-size:.95rem;margin-top:2px;}
       #rk-rider{position:fixed;left:12px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
-      #rk-rider .tag{font-family:'Pirata One';font-size:15px;letter-spacing:.1em;color:var(--parch-dim,#c9b48a);text-shadow:0 1px 3px #000;}
-      #rk-rider .rc{position:relative;width:92px;height:133px;border-radius:9px;overflow:hidden;cursor:pointer;background:#1a120c;
+      #rk-rider .tag{font-family:'Pirata One';font-size:21px;letter-spacing:.1em;color:var(--parch-dim,#c9b48a);text-shadow:0 1px 3px #000;}
+      #rk-rider .rc{position:relative;width:184px;height:266px;border-radius:9px;overflow:hidden;cursor:pointer;background:#1a120c;
         border:2px solid #8a6a2a;box-shadow:0 4px 18px #000;transition:transform .15s,box-shadow .15s,border-color .15s;}
       #rk-rider .rc:hover{transform:translateY(-3px) scale(1.04);border-color:#e0b860;}
       #rk-rider .rc.ready{border-color:#ffd77a;box-shadow:0 0 0 2px #ffd77a,0 0 22px rgba(255,200,90,.6);}
       #rk-rider .rc.locked{filter:grayscale(.5) brightness(.7);} #rk-rider .rc.gone{filter:grayscale(1) brightness(.35);cursor:default;}
       #rk-rider .rc img{width:100%;height:100%;object-fit:cover;display:block;}
-      #rk-rider .rc .em{font-size:48px;text-align:center;line-height:133px;}
-      #rk-rider .b{position:absolute;font:bold 13px Georgia,serif;color:#f3e6c4;background:rgba(10,6,3,.78);border-radius:6px;padding:1px 6px;}
+      #rk-rider .rc .em{font-size:96px;text-align:center;line-height:266px;}
+      #rk-rider .b{position:absolute;font:bold 19px Georgia,serif;color:#f3e6c4;background:rgba(10,6,3,.78);border-radius:6px;padding:1px 6px;}
       #rk-rider .bc{left:4px;top:4px;} #rk-rider .bp{left:4px;bottom:4px;} #rk-rider .bh{right:4px;bottom:4px;}
-      #rk-rider .note{font-size:11px;color:var(--parch-dim,#c9b48a);opacity:.8;max-width:120px;text-align:center;}`;
+      #rk-rider .note{font-size:13px;color:var(--parch-dim,#c9b48a);opacity:.8;max-width:120px;text-align:center;}`;
     document.head.appendChild(css);
     const rl=document.getElementById('reck-label'), bs=document.getElementById('boss'); if(rl&&bs) bs.appendChild(rl);
     const box=document.createElement('div'); box.id='rk-rider'; document.body.appendChild(box);
@@ -5190,7 +5193,7 @@ addEventListener('resize',()=>{
       /* sit just beneath the relic tray (or mid-left when there are no relics) */
       const tr=document.getElementById('relics'); let top=innerHeight*.5-80;
       if(tr&&!tr.classList.contains('hidden')&&getComputedStyle(tr).display!=='none'){ const r=tr.getBoundingClientRect(); if(r.height) top=r.bottom+14; }
-      box.style.top=Math.max(70,Math.min(top,innerHeight-245))+'px';
+      box.style.top=Math.max(70,Math.min(top,innerHeight-box.offsetHeight-90))+'px';
     }
     if(typeof renderAll==='function'){ const ra=renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a); try{ renderRider(); }catch(e){} return r; }; }
     addEventListener('resize',()=>{ try{ renderRider(); }catch(e){} });
