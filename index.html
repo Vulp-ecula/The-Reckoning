@@ -2850,7 +2850,7 @@ function apothBottle(x,y,z,h,r){
   const lh=h*.34, lw=Math.min(r*2.5,1.5);
   const lab=new THREE.Mesh(new THREE.CylinderGeometry(r*1.012,r*1.012,lh,12,1,true,-.62,1.24),
     new THREE.MeshStandardMaterial({map:Math.random()<.18?LABEL_BLANK:LABEL_TEX[Math.floor(Math.random()*LABEL_TEX.length)],roughness:.9,side:THREE.DoubleSide}));
-  lab.position.y=h*.34; G.add(lab);
+  lab.position.y=h*.34;   /* labels removed (still built so the random sequence, and so every bottle's place, stays the same) */
   G.position.set(x,y,z); G.rotation.y=SHELF_FACE+rnd(-.3,.3); scene.add(G); return G;
 }
 function jar(x,y,z,h,r){ return apothBottle(x,y,z,h*1.25,Math.max(r*.85,.045)); }
@@ -4255,11 +4255,11 @@ window.__setPainting=setPainting;
 /* ---------- the Greed puzzle: three coins, three roundels in the painting's frame, one order ----------
    The bosses' last words (classic script) are the clue: they name, take, keep. Coins: scroll (the Assessor, who names the price),
    purse (the Tithe-Master, who takes), bare coin (Greed, who keeps). Seat them left to right. Right order unlocks the Paymaster. */
-const PZ_KEY='reckoning_pz_greed', PZ_ORDER=['scroll','bag','coin'];
-const PZ_NAME={scroll:'a scroll',bag:'a heavy purse',coin:'a bare coin'};
+const PZ_KEY='reckoning_pz_greed', PZ_ORDER=['coin','bag','arm'];   /* the wall scroll: take a man's coin, then his purse, then his arm */
+const PZ_NAME={coin:'a roundel stamped with a coin',bag:'a roundel stamped with a purse',arm:'a roundel stamped with an arm'};
 const PZ_CLUES={holy_assessor:'“I name the price before any hand is raised.”', holy_tithemaster:'“I take only what has been named.”', holy_greed:'“I keep what is taken. There is no after me.”'};
 let PZ={found:[],placed:[null,null,null],solved:false}, PZsel=null, PZrevealed=false;
-try{ const r=JSON.parse(localStorage.getItem(PZ_KEY)); if(r&&r.placed) PZ=r; }catch(e){}
+try{ const r=JSON.parse(localStorage.getItem(PZ_KEY)); if(r&&r.placed){ const ok=k=>k==null||PZ_ORDER.includes(k); PZ=(r.found.every(ok)&&r.placed.every(ok))?r:{found:[],placed:[null,null,null],solved:!!r.solved}; } }catch(e){}
 const pzSave=()=>{ try{ localStorage.setItem(PZ_KEY,JSON.stringify(PZ)); }catch(e){} };
 const pzNote=(title,body)=>{ elRT.textContent=title; elRB.textContent=body; elRead.classList.add('on'); };
 
@@ -4270,9 +4270,14 @@ function pzGlyph(kind,size){
   g.fillStyle=bg; g.beginPath(); g.arc(64,64,62,0,6.283); g.fill();
   g.strokeStyle='#6e5018'; g.lineWidth=5; g.beginPath(); g.arc(64,64,54,0,6.283); g.stroke();
   g.fillStyle='#4a3410'; g.strokeStyle='#4a3410'; g.lineWidth=4;
-  if(kind==='scroll'){
-    g.fillRect(40,40,48,50); g.fillStyle='#d7b865'; for(let i=0;i<4;i++) g.fillRect(46,50+i*9,36,3);
-    g.fillStyle='#4a3410'; g.beginPath(); g.arc(64,38,9,0,6.283); g.fill(); g.beginPath(); g.arc(64,92,9,0,6.283); g.fill();
+  if(kind==='arm'){
+    /* a severed arm: ragged shoulder end, bent elbow, clenched fist */
+    g.lineCap='round'; g.lineJoin='round'; g.lineWidth=15;
+    g.beginPath(); g.moveTo(42,94); g.lineTo(56,62); g.lineTo(86,46); g.stroke();
+    g.beginPath(); g.arc(91,42,11,0,6.283); g.fill();
+    g.lineWidth=3; g.strokeStyle='#d7b865'; g.beginPath(); g.moveTo(84,38); g.lineTo(96,46); g.stroke();
+    g.fillStyle='#4a3410'; g.beginPath(); g.moveTo(31,92); g.lineTo(36,104); g.lineTo(41,98); g.lineTo(46,106); g.lineTo(53,96); g.closePath(); g.fill();
+    g.beginPath(); g.ellipse(41,110,3,5,0,0,6.283); g.fill();
   } else if(kind==='bag'){
     g.beginPath(); g.ellipse(64,80,28,24,0,0,6.283); g.fill();
     g.beginPath(); g.moveTo(52,60); g.lineTo(76,60); g.lineTo(72,44); g.lineTo(56,44); g.closePath(); g.fill();
@@ -4291,7 +4296,7 @@ const pzHitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrit
 
 /* the three hidden coins */
 const PZ_SPOTS={
-  scroll:{parent:hearth, pos:[.50,.085,.14],  rot:[.12,0,.10]},               /* dropped in the ash at the hearth's lip */
+  arm:   {parent:hearth, pos:[.50,.085,.14],  rot:[.12,0,.10]},               /* dropped in the ash at the hearth's lip */
   bag:   {parent:scene,  pos:[2.37,1.96,BACK+.17], rot:[Math.PI/2,0,0]},      /* caught in the boar skull's tusk */
   coin:  {parent:scene,  pos:[-2.08,.018,-2.20],   rot:[0,0,.12]}               /* on the floor behind the kneeler */
 };
@@ -4300,7 +4305,7 @@ for(const k of PZ_ORDER){
   const sp=PZ_SPOTS[k], grp=new THREE.Group(); grp.position.set(...sp.pos); grp.rotation.set(...sp.rot); sp.parent.add(grp);
   const m=new THREE.Mesh(pzCoinGeo,[pzGold,pzFace(k),pzFace(k)]); m.castShadow=true; grp.add(m);
   const hit=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),pzHitMat); grp.add(hit);
-  hotspot(hit,{title:'A coin', act:()=>pzPick(k)}); pzWorld[k]=grp;
+  hotspot(hit,{title:'A roundel', act:()=>pzPick(k)}); pzWorld[k]=grp;
 }
 
 /* purse: the coins you hold, bottom-right; click one to take it in hand */
@@ -4321,7 +4326,7 @@ function pzRefresh(){
 function pzPick(k){
   if(PZ.solved||PZ.found.includes(k)) return;
   PZ.found.push(k); pzSave(); pzRefresh();
-  pzNote('A coin','You pocket '+PZ_NAME[k]+', stamped on a worn gold face. It is warm, as if someone had only just let go of it.');
+  pzNote('A roundel','You pocket '+PZ_NAME[k]+', a worn gold disc the size of a palm. It is warm, as if someone had only just let go of it.');
 }
 
 /* three roundels set into the bottom rail of the Greed painting's frame */
@@ -4340,13 +4345,13 @@ const pzSeated=[];
   gp.children[0].userData.body=()=>{
     if(PZ.solved) return 'The bear is quiet now. It was owed, and it has been paid.';
     const h=(window.__heard?window.__heard():[]).filter(k=>PZ_CLUES[k]);
-    return 'Three empty roundels are set into the frame, to be filled from left to right. '+(h.length?'You remember the voices: '+h.map(k=>PZ_CLUES[k]).join(' '):'Somewhere in the Greed ladder, someone surely spoke of this.');
+    return 'Three empty roundels are set into the frame, to be filled from left to right. Somewhere in this room, someone wrote down the order.';
   };
 }
 function pzPlace(i){
   if(PZ.solved){ pzNote('A roundel','The coin sits cold in its seat. The bear has what it was owed.'); return; }
   if(PZ.placed[i]){ PZ.placed[i]=null; pzSave(); pzRefresh(); return; }
-  if(!PZsel){ pzNote('An empty roundel','A coin-sized hollow, worn smooth by many thumbs. Take a coin from your purse, then set it here.'); return; }
+  if(!PZsel){ pzNote('An empty roundel','A coin-sized hollow, worn smooth by many thumbs. Take a roundel from your rucksack, then set it here.'); return; }
   PZ.placed[i]=PZsel; PZsel=null; pzSave(); pzRefresh();
   if(PZ.placed.every(Boolean)) pzJudge();
 }
@@ -4357,7 +4362,7 @@ function pzJudge(){
     PZrevealed=true; pzRev.t=0; pzRev.on=true; pzCard.visible=true;
     pzNote('The bear is paid','The roundels sink home with a sound like a ledger closing, and the frame’s lower rail slides open. '+(fresh?'The Paymaster joins your Conquest deck.':'The Paymaster is already yours.'));
   } else {
-    pzNote('Out of order','The coins shudder in their seats and spill back into your hands. The bear’s eyes do not move.');
+    pzNote('Out of order','The roundels shudder in their seats and spill back into your hands. The bear’s eyes do not move.');
     setTimeout(()=>{ PZ.placed=[null,null,null]; pzSave(); pzRefresh(); },900);
   }
 }
@@ -4448,7 +4453,8 @@ window.__pz={state:()=>PZ, pick:pzPick, place:pzPlace, select:k=>{PZsel=k;pzRefr
   const sc=new THREE.Mesh(new THREE.PlaneGeometry(SW,SH),new THREE.MeshStandardMaterial({map:tx,transparent:true,alphaTest:.4,roughness:.9,side:THREE.DoubleSide,emissive:0xffffff,emissiveMap:tx,emissiveIntensity:.12}));
   sc.position.set(R/2-.014,1.96-SH/2,FRONT-.95); sc.rotation.y=-Math.PI/2; sc.receiveShadow=true; scene.add(sc);
   const nail=new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,.02,6),M_iron); nail.rotation.z=Math.PI/2; nail.position.set(R/2-.016,1.94,FRONT-.95); scene.add(nail);
-  hotspot(sc,{title:'A scroll',body:'In a careful hand, framed in gold leaf:\n\u201cTake a man\u2019s coin, then his purse, then his arm ripped clean from the shoulder.\u201d'});
+  NODES.scroll={pos:new THREE.Vector3(R/2-1.15,1.62,FRONT-.95), yaw:-Math.PI/2, pitch:0, label:'The scroll'};
+  hotspot(sc,{go:'scroll',title:'A scroll',body:'In a careful hand, framed in gold leaf:\n\u201cTake a man\u2019s coin, then his purse, then his arm ripped clean from the shoulder.\u201d'});
 }
 {
   /* second lantern: front wall between the knight and the antlers. Same build as the right-wall one,
