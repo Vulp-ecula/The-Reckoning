@@ -4983,8 +4983,10 @@ addEventListener('resize',()=>{
       if(typeof state==='undefined'||!state||!state.ladder){ say('No stomach for it','You are not seated at the table; there is nothing to pay the cost against.'); return; }
       state.soulsFoe+=2; if(typeof renderReckoning==='function') renderReckoning();
       const fresh=window.__unlockCard?window.__unlockCard('pawnbroker'):false;
+      let inHand=false;   /* usable straight away: into your hand (or on top of the deck if the hand is full) */
+      try{ const c=makeCard('pawnbroker'); if(c){ if(state.hand.length<10){ state.hand.push(c); inHand=true; } else state.deck.push(c); } if(typeof renderAll==='function') renderAll(); }catch(e){}
       FING.done=true; fing.visible=true; stain.visible=true; sw.t=0; sw.on=true;
-      say('The finger goes onto the scale','You bring the cleaver down once. It is quicker than you expected, and worse. The finger drops into the pan, and the beam shudders. The Tithe-Master takes two of your souls and gives you a name. '+(fresh?'The Pawnbroker joins your Conquest deck.':'The Pawnbroker is already yours.')); };
+      say('The finger goes onto the scale','You bring the cleaver down once. It is quicker than you expected, and worse. The finger drops into the pan, and the beam shudders. The Tithe-Master takes two of your souls and gives you a name. '+(inHand?'The Pawnbroker is in your hand.':'The Pawnbroker is on top of your deck.')+(fresh?' It joins your Conquest deck for good.':'')); };
     const sw={on:false,t:0};
     fireTicks.push((dt)=>{ if(!sw.on) return; sw.t+=dt; sg.rotation.z=.03*Math.exp(-sw.t*1.8)*Math.sin(sw.t*9); if(sw.t>3){ sw.on=false; sg.rotation.z=0; } });
     addEventListener('reckoning:boss',()=>{ FING.done=false; fing.visible=false; stain.visible=false; dlg.classList.remove('on'); });
