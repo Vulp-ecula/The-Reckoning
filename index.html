@@ -3097,18 +3097,19 @@ for(const sx of [-1,1]){
   cbox(.03,.56,.03, sx*1.182,1.15,-0.15, M_oakDk);
 }
 
-/* a sleeved arm reaching out through the slit to play a card */
+/* a sleeved arm reaching out through the slit to play a card — off to the left of the slit so the hourglass doesn't hide it */
+const armG=new THREE.Group(); armG.position.x=-.27; armG.rotation.y=-.10; confessional.add(armG);
 const sleeve=new THREE.Mesh(capsule(.09,.42),M_sleeve);
-sleeve.rotation.x=Math.PI/2; sleeve.position.set(0,1.02,0.86); sleeve.castShadow=true; confessional.add(sleeve);
+sleeve.rotation.x=Math.PI/2; sleeve.position.set(0,1.02,0.86); sleeve.castShadow=true; armG.add(sleeve);
 const palm=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),M_handbone);
-palm.scale.set(1,.6,1.3); palm.position.set(0,1.00,1.15); palm.castShadow=true; confessional.add(palm);
+palm.scale.set(1,.6,1.3); palm.position.set(0,1.00,1.15); palm.castShadow=true; armG.add(palm);
 for(const fx of [-.045,0,.045]){
   const finger=new THREE.Mesh(capsule(.018,.09),M_handbone);
-  finger.rotation.x=Math.PI/2; finger.position.set(fx,1.00,1.27); finger.castShadow=true; confessional.add(finger);
+  finger.rotation.x=Math.PI/2; finger.position.set(fx,1.00,1.27); finger.castShadow=true; armG.add(finger);
 }
 const heldCard=new THREE.Mesh(new THREE.BoxGeometry(.13,.01,.18),
   new THREE.MeshStandardMaterial({color:0xd8d0c4,roughness:.7}));
-heldCard.rotation.z=.25; heldCard.position.set(.03,1.03,1.35); heldCard.castShadow=true; confessional.add(heldCard);
+heldCard.rotation.z=.25; heldCard.position.set(.03,1.03,1.35); heldCard.castShadow=true; armG.add(heldCard);
 
 /* table dressing: candle + a few objects */
 const candle=new THREE.Mesh(new THREE.CylinderGeometry(.055,.062,.30,20),
@@ -5147,10 +5148,10 @@ addEventListener('resize',()=>{
   /* ---- The Rider: your faction's big card is held apart, beneath the relics, to be played when YOU choose
          (once per round). It no longer shuffles into the deck. Plus table-text tidy-up. ---- */
   { const css=document.createElement('style');
-    css.textContent=`#tag-enemy,#tag-mid,#tag-you{display:none!important;} #relics{top:30%!important;}
+    css.textContent=`#tag-enemy,#tag-mid,#tag-you,#help{display:none!important;} #relics{top:30%!important;}
       #hand{padding-left:210px!important;justify-content:safe center!important;}   /* hand sits right of centre, clear of the Rider */
       #reckoning{position:absolute!important;left:50%;top:10px;transform:translateX(-50%);}
-      #glass{transform:scale(2);transform-origin:top center;margin-bottom:132px;} #boss{max-width:440px;} #souls-line{position:absolute;left:calc(100% + 42px);top:206px;white-space:nowrap;font-size:1.5rem;text-shadow:0 1px 3px #000,0 0 8px #000;} #glass{margin-bottom:0!important;}
+      #glass{transform:scale(1.6);transform-origin:top center;margin-bottom:80px;} #boss{max-width:440px;} #souls-line{white-space:nowrap;font-size:1.5rem;text-shadow:0 1px 3px #000,0 0 8px #000;}
       #boss{flex-wrap:wrap;} #boss #reck-label{flex-basis:100%;text-align:center;font-size:.95rem;margin-top:2px;}
       #rk-rider{position:fixed;left:12px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
       #rk-rider .tag{font-family:'Pirata One';font-size:21px;letter-spacing:.1em;color:var(--parch-dim,#c9b48a);text-shadow:0 1px 3px #000;}
