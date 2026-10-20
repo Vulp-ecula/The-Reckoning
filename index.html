@@ -4107,12 +4107,49 @@ for(const sx of [-1,1]){
    struck horizontally through the ring */
 const SX=-2.3, SZ=BACK+.06;
 const sigil=[];
-function sPart(geo,x,y){ const m=new THREE.Mesh(geo,M_dark); m.position.set(x,y,SZ);
-  m.castShadow=true; scene.add(m); sigil.push(m); return m; }
-sPart(new THREE.BoxGeometry(.09,.95,.08), SX,2.05);      /* upright         */
-sPart(new THREE.BoxGeometry(.55,.09,.08), SX,1.88);      /* low crossbar    */
-sPart(new THREE.TorusGeometry(.17,.035,10,32), SX,2.695);/* ring            */
-sPart(new THREE.BoxGeometry(.52,.05,.08), SX,2.695);     /* bar through ring */
+/* ornate version: blackened wrought iron with gilt bosses, bevelled bars, flared trefoil ends, scrollwork and rivets */
+const M_sIron=new THREE.MeshStandardMaterial({color:0x2b241f,metalness:.75,roughness:.42});
+const M_sGilt=new THREE.MeshStandardMaterial({color:0xb48a3c,metalness:.9,roughness:.32,emissive:0x2a1a04,emissiveIntensity:.5});
+const sg=new THREE.Group(); sg.position.set(SX,0,SZ); scene.add(sg);
+function sAdd(geo,mat,x,y,z,rz){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z||0); if(rz) m.rotation.z=rz; m.castShadow=true; sg.add(m); sigil.push(m); return m; }
+/* a bevelled bar between two points (in the wall plane) */
+function bar(x0,y0,x1,y1,w){ const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy);
+  const sh=new THREE.Shape(); sh.moveTo(-L/2,-w/2); sh.lineTo(L/2,-w/2); sh.lineTo(L/2,w/2); sh.lineTo(-L/2,w/2); sh.lineTo(-L/2,-w/2);
+  const g=new THREE.ExtrudeGeometry(sh,{depth:.035,bevelEnabled:true,bevelThickness:.012,bevelSize:.012,bevelSegments:2}); g.translate(0,0,-.017);
+  return sAdd(g,M_sIron,(x0+x1)/2,(y0+y1)/2,0,Math.atan2(dy,dx)); }
+/* a flared trefoil terminal pointing along angle a */
+function trefoil(x,y,a){ const c=Math.cos(a), s2=Math.sin(a);
+  sAdd(new THREE.CylinderGeometry(.0,.05,.07,4),M_sIron,x-c*.02,y-s2*.02,0,a+Math.PI/2).rotation.y=Math.PI/4;
+  sAdd(new THREE.SphereGeometry(.03,14,10),M_sGilt,x+c*.035,y+s2*.035,.008);
+  for(const o of [-1,1]) sAdd(new THREE.SphereGeometry(.022,12,8),M_sGilt,x+c*.005-s2*o*.034,y+s2*.005+c*o*.034,.006); }
+/* a scroll curl: a tapering spiral tube */
+function curl(x,y,r,dir,start,turns){ const pts=[]; for(let i=0;i<=40;i++){ const t=i/40, ang=start+dir*t*turns*Math.PI*2, rr=r*(1-t*.75); pts.push(new THREE.Vector3(x+Math.cos(ang)*rr,y+Math.sin(ang)*rr,.012)); }
+  sAdd(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),48,.008,6,false),M_sIron,0,0,0); sAdd(new THREE.SphereGeometry(.011,8,6),M_sGilt,pts[40].x,pts[40].y,.014); }
+const rivet=(x,y)=>sAdd(new THREE.SphereGeometry(.011,8,6),M_sGilt,x,y,.03);
+/* upright, with a pointed foot */
+bar(0,1.62,0,2.525,.075);
+sAdd(new THREE.ConeGeometry(.05,.12,4),M_sIron,0,1.55,0,Math.PI).rotation.y=Math.PI/4;
+sAdd(new THREE.SphereGeometry(.028,12,8),M_sGilt,0,1.615,.02);
+/* low crossbar with trefoil ends and scrolls beneath */
+bar(-.25,1.88,.25,1.88,.075);
+trefoil(-.285,1.88,Math.PI); trefoil(.285,1.88,0);
+curl(-.14,1.80,.07,-1,Math.PI*.5,1.1); curl(.14,1.80,.07,1,Math.PI*.5,1.1);
+for(const x of [-.19,-.09,.09,.19]) rivet(x,1.88);
+/* gilt rosette boss at the crossing */
+sAdd(new THREE.CylinderGeometry(.058,.058,.02,24),M_sGilt,0,1.88,.035).rotation.x=Math.PI/2;
+sAdd(new THREE.SphereGeometry(.03,14,10),M_sGilt,0,1.88,.05);
+for(let i=0;i<8;i++){ const a=i*Math.PI/4; sAdd(new THREE.SphereGeometry(.014,8,6),M_sGilt,Math.cos(a)*.072,1.88+Math.sin(a)*.072,.03); }
+for(const y of [2.05,2.25,2.42]) rivet(0,y);
+/* the ring: heavy iron hoop, a thin gilt inner line, studs around it, and a crown-point on top */
+sAdd(new THREE.TorusGeometry(.17,.034,14,48),M_sIron,0,2.695,0);
+sAdd(new THREE.TorusGeometry(.17,.009,8,48),M_sGilt,0,2.695,.03);
+for(let i=0;i<12;i++){ const a=i*Math.PI/6; sAdd(new THREE.SphereGeometry(.013,8,6),M_sGilt,Math.cos(a)*.17,2.695+Math.sin(a)*.17,.034); }
+trefoil(0,2.905,Math.PI/2);
+curl(-.07,2.86,.05,1,0,.9); curl(.07,2.86,.05,-1,Math.PI,.9);
+/* the bar struck through the ring, with trefoil ends */
+bar(-.23,2.695,.23,2.695,.045);
+trefoil(-.265,2.695,Math.PI); trefoil(.265,2.695,0);
+sAdd(new THREE.SphereGeometry(.026,12,8),M_sGilt,0,2.695,.035);
 for(const m of sigil) hotspot(m, {go:'marker', title:'The sigil', body:'Placeholder — wire to lore.'});
 /* the bloodied banner: cut-out cloth with soft vertical folds that deepen
    toward the frayed hem */
@@ -5189,7 +5226,7 @@ addEventListener('resize',()=>{
           <span class="b bc">${costLabel(c.cost)}</span><span class="b bp">${c.pow}</span><span class="b bh">♥${c.hp}</span></div>
         <div class="note">${R.used?'has ridden this round':'play when you choose'}</div>`;
       const rc=box.querySelector('.rc');
-      const hc=document.querySelector('#hand .hcard'); if(hc&&hc.offsetWidth>20){ const hs=parseFloat(getComputedStyle(document.getElementById('hand')).getPropertyValue('--hand-scale'))||1; rc.style.width=hc.offsetWidth*hs+'px'; rc.style.height=hc.offsetHeight*hs+'px'; }   /* same size as a card in hand */
+      { const h=Math.round(Math.max(200,Math.min(innerHeight*.365,440))); rc.style.height=h+'px'; rc.style.width=Math.round(h*.71)+'px'; }   /* big: about a third of the screen's height */   /* same size as a card in hand */
       rc.onclick=()=>{ if(R.used) return; handClick(c); };
       rc.onmouseenter=e=>{ try{ showTip(e,cardTip(c)); }catch(_){} }; rc.onmousemove=e=>{ try{ moveTip(e); }catch(_){} }; rc.onmouseleave=()=>{ try{ hideTip(); }catch(_){} };
       /* sit just beneath the relic tray (or mid-left when there are no relics) */
@@ -5202,6 +5239,15 @@ addEventListener('resize',()=>{
     window.__rider=R;
     const css2=document.createElement('style'); css2.textContent='body:has(#overlay.show) #rk-rider, body.cabin-away #rk-rider{display:none!important;}'; document.head.appendChild(css2);
   }
+  /* ---- the bloody hoard is clickable: walk over and look down at it ---- */
+  { const pile=window.__greedPile;
+    if(pile){ NODES.hoard={pos:new THREE.Vector3(2.45,1.55,-.75), yaw:-.25, pitch:-.78, label:'The hoard'};
+      const hit=new THREE.Mesh(new THREE.SphereGeometry(.6,16,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+      hit.scale.set(1.1,.45,.9); hit.position.y=.08; pile.add(hit);
+      const T={holy_assessor:'Coins in a pool of blood that has not dried. Someone counted them first; the stacks were neat once.',
+               holy_tithemaster:'The heap is higher than it was. Every coin is warm, and every one is wet.',
+               holy_greed:'It has grown past the corner. You could drown in it, and someone already has.'};
+      hotspot(hit,{go:'hoard',title:'A bloody hoard',body:()=>T[bossKey]||'A heap of coins sitting in blood. Nobody has dared take one.'}); } }
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
   { const LEVEL={holy_assessor:1,holy_tithemaster:2,holy_greed:3}, K=[0,.18,.34,.5], GOLD=new THREE.Color(0xffb52e);
     let lights=null;
