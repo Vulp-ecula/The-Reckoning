@@ -4888,7 +4888,8 @@ const BSHELF={x:R/2-.34, z:FRONT-3.45, w:1.7, d:.62, h:.90};   /* name kept: the
   for(const sz of[-1,1]) for(const sx of[-1,1]) bx(.07,h-.06,.07, sx*(d/2-.05),(h-.06)/2,sz*(w/2-.05));   /* four legs */
   bx(.04,.12,w-.14, d/2-.05,h-.12,0); bx(.04,.12,w-.14, -d/2+.05,h-.12,0);           /* long aprons */
   bx(d-.14,.12,.04, 0,h-.12,w/2-.05); bx(d-.14,.12,.04, 0,h-.12,-w/2+.05);           /* short aprons */
-  bx(.04,.05,w-.14, 0,.22,0);                                             /* low stretcher */
+  bx(.05,.06,w-.14, 0,.22,0);                                             /* low stretcher, centre of an H... */
+  for(const sz of[-1,1]) bx(d-.10,.06,.05, 0,.22,sz*(w/2-.05));          /* ...joined to the legs by an end rail at each end */
   const bl=new THREE.PointLight(0xffb070,16,3.6,1.7); bl.position.set(x-.55,1.75,z+.05); scene.add(bl);   /* faint warm spill so the table reads */
   /* thick oak cutting board (top face from Joy's photo, flattened) lying on the table */
   { const cv=document.createElement('canvas'); cv.width=740; cv.height=520; const cx=cv.getContext('2d'); cx.fillStyle='#5a4228'; cx.fillRect(0,0,740,520);
@@ -5269,32 +5270,35 @@ addEventListener('resize',()=>{
   { const FOE_HELD=['holy_assessor'];
     if(typeof CARDS!=='undefined'&&CARDS.holy_assessor){ CARDS.holy_assessor.pow=3; CARDS.holy_assessor.hp=6; }   /* +1 power, +1 health */
     const css=document.createElement('style');
-    css.textContent=`#rk-foe{position:fixed;right:12px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
-      #rk-foe .tag{font-family:'Pirata One';font-size:21px;letter-spacing:.1em;color:#d98a7a;text-shadow:0 1px 3px #000;}
+    css.textContent=`#rk-foe{position:fixed;right:14px;top:66px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
+      #rk-foe .tag{font-family:'Pirata One';font-size:26px;color:var(--bone,#eadfc6);text-shadow:0 1px 3px #000;text-align:center;line-height:1.05;}
+      #rk-foe .tag small{display:block;font-family:Georgia,serif;font-style:italic;font-size:13px;color:var(--parch-dim,#c9b48a);}
+      #boss{display:none!important;} #rk-foe .rc.gone{filter:grayscale(.85) brightness(.45);}
       #rk-foe .rc{position:relative;border-radius:9px;overflow:hidden;background:#1a120c;border:2px solid #8a2a1a;
         box-shadow:0 0 10px 2px rgba(200,60,40,.5),0 0 24px 6px rgba(160,30,20,.25),0 4px 18px #000;}
       #rk-foe .rc.gone{filter:grayscale(1) brightness(.35);} #rk-foe .rc img{width:100%;height:100%;object-fit:cover;display:block;}
       #rk-foe .rc .em{font-size:96px;text-align:center;}
       #rk-foe .b{position:absolute;font:bold 19px Georgia,serif;color:#f3e6c4;background:rgba(10,6,3,.78);border-radius:6px;padding:1px 6px;}
       #rk-foe .bp{left:4px;bottom:4px;} #rk-foe .bh{right:4px;bottom:4px;}
-      #rk-foe .note{font-size:13px;color:var(--parch-dim,#c9b48a);opacity:.8;text-align:center;}
+      #rk-foe .note{font-size:12px;color:var(--parch-dim,#c9b48a);opacity:.85;text-align:center;max-width:270px;}
       body:has(#overlay.show) #rk-foe, body.cabin-away #rk-foe{display:none!important;}`;
     document.head.appendChild(css);
     const box=document.createElement('div'); box.id='rk-foe'; document.body.appendChild(box);
     function renderFoe(){
-      const c=state&&state._foeRider; const on=!!c&&!!state.ladder;
+      const b=state&&state.boss; const on=!!b&&!!state.ladder;
       box.style.display=on?'flex':'none'; if(!on) return;
-      const used=!!state._foeRiderUsed, img=artFor(c);
+      const held=state._foeRider, c=held||(CARDS[b.key]?makeCard(b.key):null);
+      const live=!held&&state.enemyBoard?state.enemyBoard.find(x=>x&&x.isBoss):null;
+      const faded=held?!!state._foeRiderUsed:true, img=c?artFor(c):null;
       const h=Math.round(Math.max(200,Math.min(innerHeight*.365,440)));
-      box.innerHTML=`<div class="tag">${c.name.toUpperCase()} WAITS</div>
-        <div class="rc${used?' gone':''}" style="height:${h}px;width:${Math.round(h*.71)}px">${img?`<img src="${img}" alt="${c.name}">`:`<div class="em" style="line-height:${h}px">${c.art}</div>`}
-          <span class="b bp">${c.pow}</span><span class="b bh">♥${c.hp}</span></div>
-        <div class="note">${used?'has taken the table':'he chooses his moment'}</div>`;
+      const lab=document.getElementById('reck-label');
+      box.innerHTML=`<div class="tag">${b.name}<small>${b.sub||''}</small></div>
+        <div class="rc${faded?' gone':''}" style="height:${h}px;width:${Math.round(h*.71)}px">${img?`<img src="${img}" alt="${b.name}">`:`<div class="em" style="line-height:${h}px">${c?c.art:(b.face||'☠')}</div>`}
+          ${c?`<span class="b bp">${c.pow}</span><span class="b bh">♥${(live||c).curHp??c.hp}</span>`:''}</div>
+        <div class="note">${lab?lab.textContent:''}</div>`;
       const rc=box.querySelector('.rc');
-      rc.onmouseenter=e=>{ try{ previewAnchor=rc; showPreview(c,true,true); positionPreview(e); }catch(_){} };
+      rc.onmouseenter=e=>{ try{ previewAnchor=rc; showPreview(live||c,true,true); positionPreview(e); }catch(_){} };
       rc.onmousemove=e=>{ try{ positionPreview(e); }catch(_){} }; rc.onmouseleave=()=>{ try{ hidePreview(); }catch(_){} };
-      const bp=document.getElementById('boss'); let top=90; if(bp){ const r=bp.getBoundingClientRect(); if(r.height) top=r.bottom+14; }
-      box.style.top=Math.max(70,Math.min(top,innerHeight-box.offsetHeight-90))+'px';
     }
     /* seat: take the boss off the table and hold him; stand a host card in his lane instead */
     if(typeof seatBoss==='function'){ const sb=seatBoss; window.seatBoss=function(...a){ const r=sb.apply(this,a);
