@@ -5359,6 +5359,11 @@ addEventListener('resize',()=>{
   addEventListener('click',e=>{ try{ if(!state||!(state.awaitingSac>0)) return;
     if(e.target.closest&&e.target.closest('.sac-target,.hcard,button,#rk-rider,#rk-foe,#relics,.rcard,#howto,#rk-pp,#rk-sp,#overlay,#card-preview,#dock')) return;
     e.stopPropagation(); const cb=document.getElementById('cancel-btn'); if(cb) cb.click(); }catch(_){} },true);   /* capture: decide before the click rebuilds the board */
+  /* seated, the card layer sits over the 3D view, so a click on the bell itself is picked up here (hover is the live raycast hit) */
+  addEventListener('click',e=>{ try{ if(node!=='table'||!hover||!hover.userData||hover.userData.title!=='The bell') return;
+      if(e.target.closest&&e.target.closest('.hcard,.card,.sac-target,button,#rk-rider,#rk-foe,#relics,#howto,#rk-pp,#rk-sp,#overlay,#dock,#hand')) return;
+      const b=document.getElementById('horn-btn'); if(b&&!b.disabled) b.click(); }catch(_){} });
+  fireTicks.push(()=>{ try{ const on=node==='table'&&hover&&hover.userData&&hover.userData.title==='The bell'; document.body.style.cursor=on?'pointer':''; }catch(_){} });
   /* the bell rocks when rung */
   fireTicks.push((dt)=>{ if(bellRing.t>2.5) return; bellRing.t+=dt; const a=.22*Math.exp(-bellRing.t*2.2)*Math.sin(bellRing.t*18); bell.rotation.z=a; bell.rotation.x=a*.4; });
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
