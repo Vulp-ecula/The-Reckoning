@@ -3268,10 +3268,10 @@ const holders={};
     if(x||z){ /* lit: a small flickering flame on each of the three side candles */
       add(new THREE.CylinderGeometry(.0018,.002,.012,5),M_dk,x,cy0+h+.006,z).castShadow=false;
       if(!window.__wrFlameTex){ const fc=document.createElement('canvas'); fc.width=32; fc.height=64; const fx=fc.getContext('2d'), gr=fx.createRadialGradient(16,44,1,16,36,26);
-        gr.addColorStop(0,'rgba(255,252,220,1)'); gr.addColorStop(.3,'rgba(255,205,100,.95)'); gr.addColorStop(.65,'rgba(255,130,30,.4)'); gr.addColorStop(1,'rgba(255,90,10,0)'); fx.fillStyle=gr; fx.fillRect(0,0,32,64);
+        gr.addColorStop(0,'rgba(255,255,245,1)'); gr.addColorStop(.45,'rgba(255,236,170,1)'); gr.addColorStop(.75,'rgba(255,170,60,.7)'); gr.addColorStop(1,'rgba(255,90,10,0)'); fx.fillStyle=gr; fx.fillRect(0,0,32,64);
         window.__wrFlameTex=new THREE.CanvasTexture(fc); }
       const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:window.__wrFlameTex,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
-      sp.position.set(x,cy0+h+.026,z); sp.scale.set(.022,.044,1); g.add(sp); (window.__wrFlames=window.__wrFlames||[]).push(sp); } }
+      sp.position.set(x,cy0+h+.034,z); sp.scale.set(.034,.07,1); g.add(sp); (window.__wrFlames=window.__wrFlames||[]).push(sp); } }
   /* pedestal */
   add(new THREE.BoxGeometry(.17,.016,.17),M_dk,0,.008,-.028);
   add(new THREE.CylinderGeometry(.016,.026,.07,14),M_bronze,0,.05,-.028);
@@ -5380,7 +5380,7 @@ addEventListener('resize',()=>{
     try{ if(state&&state.ladder&&state.boss&&!state._foeRider&&state.enemyBoard.some(c=>c&&c.isBoss)){ holdBoss(); renderAll(); } }catch(e){}
   }
   /* flicker the Wrath holder's three side flames */
-  fireTicks.push((dt,t)=>{ (window.__wrFlames||[]).forEach((sp,i)=>{ const f=1+.14*Math.sin(t*12.7+i*2.1)+.08*Math.sin(t*23.3+i); sp.scale.set(.022*(1+.08*Math.sin(t*17+i)),.044*f,1); }); });
+  fireTicks.push((dt,t)=>{ (window.__wrFlames||[]).forEach((sp,i)=>{ const f=1+.14*Math.sin(t*12.7+i*2.1)+.08*Math.sin(t*23.3+i); sp.scale.set(.034*(1+.08*Math.sin(t*17+i)),.07*f,1); }); });
   /* a card won away from the table (e.g. the roundel puzzle before a game) is handed to you when the next fight is seated */
   addEventListener('reckoning:boss',()=>setTimeout(()=>{ try{ const p=JSON.parse(localStorage.getItem('reckoning_pending_hand')||'[]'); if(!p.length||!state||!state.ladder) return;
     localStorage.removeItem('reckoning_pending_hand'); for(const k of p){ const c=makeCard(k); if(c){ if(state.hand.length<10) state.hand.push(c); else state.deck.push(c); } } renderAll(); }catch(e){} },600));
@@ -5562,6 +5562,13 @@ addEventListener('resize',()=>{
     function crawl(id){ fade.style.opacity=1; setTimeout(()=>{ goTo(id); setTimeout(()=>{ fade.style.opacity=0; },650);
       if(id==='crawl1') note('Crawling','Soot, then cold stone under your palms. The passage runs on into the dark. Somewhere ahead, someone is whispering.'); },360); }
     window.__crawl=crawl; window.__spots=spots;
+    /* crawl back the way you came: one stretch at a time, and out through the hearth at the end */
+    { const PREV={crawlEnd:'crawlB2',crawlB2:'crawlB1',crawlB1:'crawl1',crawl1:'hearth'};
+      const bk=document.createElement('button'); bk.id='rk-crawlback'; bk.textContent='\u21A9 Crawl back';
+      bk.style.cssText='position:fixed;right:calc(50% + 112px);bottom:31px;z-index:45;display:none;padding:9px 18px;border-radius:7px;cursor:pointer;font:13px Georgia,serif;letter-spacing:.12em;text-transform:uppercase;color:#e8d9bb;background:rgba(20,14,9,.85);border:1px solid rgba(255,190,110,.4);';
+      document.body.appendChild(bk);
+      bk.onclick=e=>{ e.stopPropagation(); const p=PREV[node]; if(!p) return; if(p==='hearth') goTo('hearth'); else crawl(p); };
+      fireTicks.push(()=>{ bk.style.display=PREV[node]?'block':'none'; bk.textContent=node==='crawl1'?'\u21A9 Crawl back out':'\u21A9 Crawl back'; }); }
     let lastNode=node;
     fireTicks.push(()=>{ if(node!==lastNode){ const was=/^crawl/.test(lastNode), is=/^crawl/.test(node); if(was&&!is){ fade.style.opacity=1; setTimeout(()=>fade.style.opacity=0,650); } lastNode=node; } });
     /* crawling forward: click anywhere down the passage to move along it */
