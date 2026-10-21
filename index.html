@@ -5203,7 +5203,7 @@ addEventListener('resize',()=>{
   /* ---- The Rider: your faction's big card is held apart, beneath the relics, to be played when YOU choose
          (once per round). It no longer shuffles into the deck. Plus table-text tidy-up. ---- */
   { const css=document.createElement('style');
-    css.textContent=`#tag-enemy,#tag-mid,#tag-you,#help,#artbook-btn{display:none!important;} #howto{left:18px!important;right:auto!important;top:92px!important;bottom:auto!important;transform:none!important;} #relics{top:30%!important;}
+    css.textContent=`#tag-enemy,#tag-mid,#tag-you,#help,#artbook-btn,#felt{display:none!important;} #howto{left:18px!important;right:auto!important;top:92px!important;bottom:auto!important;transform:none!important;} #relics{top:30%!important;}
       #hand{padding-left:210px!important;justify-content:safe center!important;}   /* hand sits right of centre, clear of the Rider */
       #reckoning{position:absolute!important;left:50%;top:10px;transform:translateX(-50%);}
       #glass{transform:scale(1.6);transform-origin:top center;margin-bottom:80px;} #boss{max-width:440px;} #souls-line{white-space:nowrap;font-size:1.5rem;text-shadow:0 1px 3px #000,0 0 8px #000;}
@@ -5273,7 +5273,7 @@ addEventListener('resize',()=>{
     css.textContent=`#rk-foe{position:fixed;right:14px;top:66px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
       #rk-foe .tag{font-family:'Pirata One';font-size:26px;color:var(--bone,#eadfc6);text-shadow:0 1px 3px #000;text-align:center;line-height:1.05;}
       #rk-foe .tag small{display:block;font-family:Georgia,serif;font-style:italic;font-size:13px;color:var(--parch-dim,#c9b48a);}
-      #boss{display:none!important;} #rk-foe .rc.gone{filter:grayscale(.85) brightness(.45);}
+      #boss{visibility:hidden!important;pointer-events:none!important;}   /* hidden but still holding its space, so the board keeps its place below the hourglass */ #rk-foe .rc.gone{filter:grayscale(.85) brightness(.45);}
       #rk-foe .rc{position:relative;border-radius:9px;overflow:hidden;background:#1a120c;border:2px solid #8a2a1a;
         box-shadow:0 0 10px 2px rgba(200,60,40,.5),0 0 24px 6px rgba(160,30,20,.25),0 4px 18px #000;}
       #rk-foe .rc.gone{filter:grayscale(1) brightness(.35);} #rk-foe .rc img{width:100%;height:100%;object-fit:cover;display:block;}
