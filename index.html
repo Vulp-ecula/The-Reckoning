@@ -5793,6 +5793,56 @@ addEventListener('resize',()=>{
   { const GR=['holy_assessor','holy_tithemaster','holy_greed'];
     fireTicks.push(()=>{ const on=GR.includes(bossKey); for(const k in pzWorld){ if(!on) pzWorld[k].visible=false; else pzWorld[k].visible=!pzWorld[k].userData._taken; } });
     const _ref=pzRefresh; addEventListener('reckoning:boss',()=>{ try{ pzRefresh(); if(window.__pzChanged) window.__pzChanged(); }catch(e){} }); }
+  /* ==== the magpie's brandy: the Gilt Herald points you to it in the second Greed match; smash it or drink it, and the Forge key is yours ==== */
+  { const BKEY='reckoning_brandy'; let BR={hinted:false,done:false,unlocked:false}; try{ const r=JSON.parse(localStorage.getItem(BKEY)); if(r) BR=Object.assign(BR,r); }catch(e){}
+    const bsave=()=>{ try{ localStorage.setItem(BKEY,JSON.stringify(BR)); }catch(e){} };
+    const note=(t,b)=>{ try{ elRT.textContent=t; elRB.textContent=b; elRead.classList.add('on'); }catch(e){} };
+    const GREED=['holy_assessor','holy_tithemaster','holy_greed'];
+    ITEMS.forgekey={name:'An iron key',icon:'\u{1F5DD}️',keep:true};
+    /* the hint: the first time you play a Gilt Herald in the Tithe-Master's match */
+    let said=false; addEventListener('reckoning:boss',()=>{ said=false; });
+    if(typeof onPlay==='function'){ const op=onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
+      try{ if(side==='player'&&c&&c.key==='herald'&&bossKey==='holy_tithemaster'&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
+        setTimeout(()=>say('<b>Gilt Herald:</b> You deserve a drink, friend. Try the magpie’s brandy, that’ll fortify you.',5200),300); } }catch(e){} return r; }; }
+    /* the bottle, beside the magpie */
+    const MX=R/2-.26, MZ=-.86, SY=1.815+.035;
+    const bg=new THREE.Group(); bg.position.set(MX-.02,SY,MZ+.2); scene.add(bg);
+    const glass=new THREE.MeshStandardMaterial({color:0x6a3008,roughness:.12,metalness:.1,transparent:true,opacity:.78,emissive:0x2a0e02});
+    const prof=[[.0,0],[.046,0],[.05,.01],[.05,.13],[.042,.16],[.018,.19],[.016,.25],[.019,.26],[.0,.26]].map(([r,y])=>new THREE.Vector2(r,y));
+    const bot=new THREE.Mesh(new THREE.LatheGeometry(prof,20),glass); bot.castShadow=true; bg.add(bot);
+    const cork=new THREE.Mesh(new THREE.CylinderGeometry(.015,.013,.03,10),new THREE.MeshStandardMaterial({color:0x8a6a42,roughness:.9})); cork.position.y=.268; bg.add(cork);
+    const keyIn=new THREE.Mesh(new THREE.TorusGeometry(.012,.003,6,12),new THREE.MeshStandardMaterial({color:0x2a2420,metalness:.7,roughness:.5})); keyIn.position.set(0,.03,0); keyIn.rotation.x=1.3; bg.add(keyIn);
+    const shaft=new THREE.Mesh(new THREE.BoxGeometry(.004,.004,.04),keyIn.material); shaft.position.set(0,.025,.024); bg.add(shaft);
+    const hit=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.3,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); hit.position.y=.14; bg.add(hit);
+    const dlg=document.createElement('div'); dlg.className='rk-panel'; dlg.style.cssText='left:50%;bottom:110px;transform:translateX(-50%);max-width:400px;text-align:center;'; document.body.appendChild(dlg);
+    addEventListener('keydown',e=>{ if(e.key==='Escape') dlg.classList.remove('on'); });
+    function take(){ BR.done=true; bsave(); PACK.add('forgekey'); }
+    function ask(){ dlg.innerHTML='<h4>The magpie’s brandy</h4><div style="margin:0 0 12px;line-height:1.5">A squat bottle of dark brandy. Something small and heavy has settled at the bottom.</div><button class="rk-act" id="br-s">Smash the bottle</button> <button class="rk-act" id="br-d">Drink it</button> <button class="rk-slot" id="br-n" style="display:inline-block;width:auto;margin:6px 0 0 0">Leave it</button>';
+      dlg.querySelector('#br-n').onclick=()=>dlg.classList.remove('on');
+      dlg.querySelector('#br-s').onclick=()=>{ dlg.classList.remove('on'); take();
+        let gained=false; try{ if(state&&state.ladder){ state.blood=Math.min(4,(state.blood||0)+1); gained=true; renderAll(); } }catch(e){}
+        note('Glass and brandy','You bring the bottle down on the shelf edge. It bursts, and a sliver opens the heel of your hand. '+(gained?'Your blood runs — one more drop of blood to spend. ':'')+'In the wet glass lies an iron key. It goes into your rucksack.'); };
+      dlg.querySelector('#br-d').onclick=()=>{ dlg.classList.remove('on'); take();
+        let hurt=false; try{ if(state&&state.ladder){ state.soulsFoe=(state.soulsFoe||0)+1; hurt=true; if(typeof renderReckoning==='function') renderReckoning(); } }catch(e){}
+        note('Fortified','The brandy burns all the way down — and then something hard catches in your throat. You cough until your eyes stream, and spit an iron key into your palm.'+(hurt?' The sand runs one grain the Adversary’s way.':'')+' It goes into your rucksack.'); };
+      dlg.classList.add('on'); }
+    hotspot(hit,{go:'shelvesR',title:'A bottle of brandy',body:()=>{ if(BR.done) return null; if(!BR.hinted) return 'Dark brandy in a squat bottle, set beside the magpie as if it were his.'; ask(); return null; }});
+    fireTicks.push(()=>{ bg.visible=GREED.includes(bossKey)&&!BR.done; });
+    /* the oak door: the key opens the way to the Forge */
+    for(const m of doorHot){ const u=m.userData; m.userData={...u, body:()=>{
+      if(BR.unlocked) return 'The lock turns freely now. Beyond the door: the Forge. (To come.)';
+      if(PACK.has('forgekey')){ BR.unlocked=true; bsave(); return 'The iron key fits. The lock grinds over, and heat breathes through the gap: the Forge lies beyond. (To come.)'; }
+      return 'Heavy oak, iron-strapped, and locked. Through the little barred window: only dark.'; }}; }
+    /* in the Tithe-Master's match you always start each hand with a Gilt Herald, so the hint can come */
+    const ensureHerald=()=>{ try{ if(bossKey!=='holy_tithemaster'||BR.done||!state||!state.ladder||!state.hand) return;
+      if(state.hand.some(c=>c.key==='herald')) return;
+      const i=(state.deck||[]).findIndex(c=>c.key==='herald'); const c=i>=0?state.deck.splice(i,1)[0]:makeCard('herald');
+      if(state.hand.length>=10){ const j=state.hand.findIndex(x=>x.key==='peasant'); if(j>=0) state.deck.push(state.hand.splice(j,1)[0]); }
+      state.hand.push(c); renderAll(); }catch(e){} };
+    if(typeof dealFreshHand==='function'){ const df=window.dealFreshHand; window.dealFreshHand=function(...a){ const r=df.apply(this,a); ensureHerald(); return r; }; }
+    addEventListener('reckoning:boss',()=>{ setTimeout(ensureHerald,300); setTimeout(ensureHerald,1500); }); window.__ensureHerald=ensureHerald;
+    window.__brandy=BR;
+  }
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
   { const LEVEL={holy_assessor:1,holy_tithemaster:2,holy_greed:3}, K=[0,.18,.34,.5], GOLD=new THREE.Color(0xffb52e);
     let lights=null;
