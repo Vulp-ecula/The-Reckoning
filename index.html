@@ -767,7 +767,7 @@ body.cabin-away #howto,body.cabin-away #artbook-btn{
     <li><b>Play.</b> Click a card, then click an empty lane. (Dragging works too.)</li>
     <li><b>Pay.</b> <span class="gl">🩸</span> means sacrifice that many of your own creatures — click them on the table. Marrow will <i>not</i> buy blood.</li>
     <li><b>Relics.</b> Click one on the left. Once per fight, then it returns at the next seat.</li>
-    <li><b>Sound the horn.</b> Each creature strikes the lane facing it. Hit an <i>empty</i> lane and the souls are yours.</li>
+    <li><b>Ring the bell.</b> Each creature strikes the lane facing it. Hit an <i>empty</i> lane and the souls are yours.</li>
     <li><b>Win.</b> First to <b>35 souls</b> takes the round; <b>best of three</b> takes the seat. Beat all three seats to face the last one.</li>
   </ol>
   <div class="legend">
@@ -804,7 +804,7 @@ body.cabin-away #howto,body.cabin-away #artbook-btn{
   </div>
   <div id="controls">
     <button class="act" id="cancel-btn" style="display:none;">✕ recant</button>
-    <button class="act horn" id="horn-btn">📯 sound the horn</button>
+    <button class="act horn" id="horn-btn">🔔 ring the bell</button>
     <button class="act horn" id="reck-btn" style="display:none;">🏳 yield the Reckoning</button>
     <button class="act horn" id="draw-btn" style="display:none;">🂠 draw a card</button>
   </div>
@@ -1095,7 +1095,7 @@ function artFor(c){ return ART[c.key] || (c.boss && c.faction ? FACTION_ART[c.fa
 // sub-faction; Phase 2 builds the other three matched sub-factions.
 const BOSSES=[
   {key:'boss_knight',face:'🤺',name:'The Lord Marshal',sub:'shield of the Holy Host',host:['knight','knight','knightcap'],
-   intro:"<b>The Lord Marshal:</b> Rider. The Host has stood at this ford since before your kind were prophesied. Sound your horn — the wall does not break.",
+   intro:"<b>The Lord Marshal:</b> Rider. The Host has stood at this ford since before your kind were prophesied. Ring your bell — the wall does not break.",
    defeat:"<b>The Lord Marshal:</b> ...the line... fails. Ride on, pale thing. Others of the Host still stand between you and the Light.",
    quip:["The wall holds.","Shields! Close the line!","We do not tire. We do not yield."]},
   {key:'boss_leper',face:'🕷️',name:'The Reliquarch',sub:'keeper of the clean flame',host:['leper','leperlord','leper'],
@@ -1118,7 +1118,7 @@ const WALL_LADDER=[
    defeat:"<b>Chanter of Mercy:</b> My song... falters. You struck faster than mercy could mend. Go — the Marshal will not be so gentle.",
    quip:["Be whole again.","Your fury feeds nothing here.","Mercy outlasts wrath."]},
   {key:'holy_marshal',face:'⚜️',name:'The Lord Marshal',sub:'the wall that does not break',host:['holy_bastion','holy_warden','holy_chanter'],
-   intro:"<b>The Lord Marshal:</b> So War itself sits at my table. Good. I have broken every rider who thought speed enough. Sound your horn — and learn what patience costs the impatient.",
+   intro:"<b>The Lord Marshal:</b> So War itself sits at my table. Good. I have broken every rider who thought speed enough. Ring your bell — and learn what patience costs the impatient.",
    defeat:"<b>The Lord Marshal:</b> <i>(the great shield falls)</i> ...impossible. Nothing has ever come through the wall so fast. Ride on, Red Rider. Ride on, and let the Light fear you.",
    quip:["The wall does not break.","You cannot rush a stone.","Spend it all. I have all day.","Fast is not the same as through."]},
 ];
@@ -2117,8 +2117,8 @@ function bossDown(){
   else{ov.innerHTML=`<h2>${b.name} falls</h2><p>${b.defeat}</p>`;btn.textContent='To the next seat →';btn.onclick=async()=>{ov.classList.remove('show');state.playerBoard=Array(LANES).fill(null);state.enemyBoard=Array(LANES).fill(null);state.charmed={};const nextBoss=ladder[state.bossIndex+1];dealFreshHand(nextBoss&&nextBoss.key==='holy_lustboss');renderAll();await boonPhase();loadBoss(state.bossIndex+1);renderAll();};ov.appendChild(btn);}
   ov.classList.add('show');
 }
-function lose(){state.over=true;const ov=$('#overlay');ov.innerHTML=`<h2>The horn falls silent</h2><p>Your host lies still across the long table. ${state.boss.name} gathers the cards, unhurried, and shuffles for the next fool to sit down.</p>`;const btn=el('button','act');btn.textContent='Sit down again';btn.onclick=()=>location.reload();ov.appendChild(btn);ov.classList.add('show');}
-function updateControls(){const my=state.turn==='player'&&!state.over;const horn=$('#horn-btn');const draw=$('#draw-btn');if(draw)draw.style.display='none';horn.style.display='inline-block';horn.disabled=!my||state.awaitingSac>0;if(state.over)horn.textContent='📯 the horn is silent';else if(state.awaitingSac>0)horn.textContent='⚰ choosing sacrifice…';else if(my)horn.textContent='📯 sound the horn';else horn.textContent='⏳ the adversary acts…';$('#cancel-btn').style.display=state.awaitingSac>0?'inline-block':'none';const yb=$('#reck-btn');if(yb)yb.style.display='none';}
+function lose(){state.over=true;const ov=$('#overlay');ov.innerHTML=`<h2>The bell falls silent</h2><p>Your host lies still across the long table. ${state.boss.name} gathers the cards, unhurried, and shuffles for the next fool to sit down.</p>`;const btn=el('button','act');btn.textContent='Sit down again';btn.onclick=()=>location.reload();ov.appendChild(btn);ov.classList.add('show');}
+function updateControls(){const my=state.turn==='player'&&!state.over;const horn=$('#horn-btn');const draw=$('#draw-btn');if(draw)draw.style.display='none';horn.style.display='inline-block';horn.disabled=!my||state.awaitingSac>0;if(state.over)horn.textContent='🔔 the bell is silent';else if(state.awaitingSac>0)horn.textContent='⚰ choosing sacrifice…';else if(my)horn.textContent='🔔 ring the bell';else horn.textContent='⏳ the adversary acts…';$('#cancel-btn').style.display=state.awaitingSac>0?'inline-block':'none';const yb=$('#reck-btn');if(yb)yb.style.display='none';}
 $('#cancel-btn').onclick=()=>{state.awaitingSac=0;state.sacrifices=[];state.pendingCard=null;state.selected=null;state.readyCard=null;state.dragCard=null;say('');renderAll();};
 // Fallback for placing an armed card: #table sits on a tilted 3D surface (rotateX(22deg)),
 // so a lane's on-screen shape can be narrower near its far edge than its layout box, and a
@@ -3390,10 +3390,19 @@ const BOSS_HOLDER={holy_assessor:'greed', holy_tithemaster:'greed', holy_greed:'
   holy_penitent:'lust', holy_martyr:'lust', holy_lustboss:'lust'};
 window.addEventListener('reckoning:boss',e=>setCandleholder(BOSS_HOLDER[e.detail&&e.detail.key]||'plain'));
 if(window.__bossKey) setTimeout(()=>setCandleholder(BOSS_HOLDER[window.__bossKey]||'plain'),0);
-const bell=new THREE.Mesh(new THREE.ConeGeometry(.075,.13,10),M_iron);
-bell.position.set(-.80,1.02,-.40);bell.castShadow=true;scene.add(bell);
+/* the iron hand-bell (placeholder) at your near-right corner of the table: you ring it to end your turn */
+const bell=new THREE.Group(); bell.position.set(.93,.955,.56); scene.add(bell);
+{ const M_bz=new THREE.MeshStandardMaterial({color:0x5a4424,metalness:.75,roughness:.38});
+  const prof=[[.0,.0],[.072,.0],[.074,.008],[.062,.03],[.046,.07],[.040,.10],[.034,.118],[.020,.128],[.0,.13]].map(([r,y])=>new THREE.Vector2(r,y));
+  const body=new THREE.Mesh(new THREE.LatheGeometry(prof,28),M_bz); body.castShadow=true; bell.add(body);
+  const lip=new THREE.Mesh(new THREE.TorusGeometry(.072,.006,8,28),M_bz); lip.rotation.x=Math.PI/2; lip.position.y=.006; bell.add(lip);
+  const hnd=new THREE.Mesh(new THREE.CylinderGeometry(.011,.014,.09,12),new THREE.MeshStandardMaterial({color:0x3a2614,roughness:.7})); hnd.position.y=.17; bell.add(hnd);
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(.018,12,8),hnd.material); knob.position.y=.22; bell.add(knob);
+  setTimeout(()=>{ for(const m of bell.children) hotspot(m,{title:'The bell',act:()=>{ const b=document.getElementById('horn-btn'); if(b&&!b.disabled) b.click(); }}); },0); }
+const bellRing={t:9};
+document.addEventListener('click',e=>{ if(e.target&&e.target.id==='horn-btn') bellRing.t=0; },true);
 const knife=new THREE.Mesh(new THREE.BoxGeometry(.028,.012,.30),M_iron);
-knife.position.set(-.72,.965,.40);knife.rotation.y=.5;knife.castShadow=true;scene.add(knife);
+knife.position.set(-.72,.965,.40);knife.rotation.y=.5;knife.castShadow=true;
 
 
 /* ---------- hanging larder: herbs, sausages, cured meats ---------- */
@@ -4303,7 +4312,7 @@ const pzHitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrit
 /* the three hidden coins */
 const PZ_SPOTS={
   arm:   {parent:hearth, pos:[.50,.085,.14],  rot:[.12,0,.10]},               /* dropped in the ash at the hearth's lip */
-  bag:   {parent:scene,  pos:[2.37,1.96,BACK+.17], rot:[Math.PI/2,0,0]},      /* caught in the boar skull's tusk */
+  bag:   {parent:scene,  pos:[2.85,.23,-2.20],     rot:[.25,0,.15]},           /* on top of the bloody hoard (moved into the pile below) */
   coin:  {parent:scene,  pos:[2.265,2.196,BACK+.12], rot:[Math.PI/2,0,0], sc:.6}   /* wedged in the boar skull's eye socket */
 };
 const pzWorld={};
@@ -5262,12 +5271,14 @@ addEventListener('resize',()=>{
     if(pile){ NODES.hoard={pos:new THREE.Vector3(2.45,1.55,-.75), yaw:-.25, pitch:-.78, label:'The hoard'};
       const hit=new THREE.Mesh(new THREE.SphereGeometry(.6,16,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
       hit.scale.set(1.1,.3,.9); hit.position.y=.08; pile.add(hit);
+      /* the purse roundel lies on top of the heap, so it shows and grows with the hoard */
+      if(typeof pzWorld!=='undefined'&&pzWorld.bag){ const g=pzWorld.bag; pile.add(g); g.position.set(.05,.235,.02); g.rotation.set(.25,0,.15); g.scale.setScalar(1.9); }
       const T={holy_assessor:'Coins in a pool of blood that has not dried. Someone counted them first; the stacks were neat once.',
                holy_tithemaster:'The heap is higher than it was. Every coin is warm, and every one is wet.',
                holy_greed:'It has grown past the corner. You could drown in it, and someone already has.'};
       hotspot(hit,{go:'hoard',title:'A bloody hoard',body:()=>T[bossKey]||'A heap of coins sitting in blood. Nobody has dared take one.'}); } }
   /* ---- The Assessor is held as the enemy's own Rider card, top right: the table's logic decides when he takes a lane ---- */
-  { const FOE_HELD=['holy_assessor'];
+  { const FOE_HELD=null;   /* null = every boss is held back and played when the enemy chooses */
     if(typeof CARDS!=='undefined'&&CARDS.holy_assessor){ CARDS.holy_assessor.pow=3; CARDS.holy_assessor.hp=6; }   /* +1 power, +1 health */
     const css=document.createElement('style');
     css.textContent=`#rk-foe{position:fixed;right:14px;top:66px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
@@ -5301,11 +5312,18 @@ addEventListener('resize',()=>{
       rc.onmousemove=e=>{ try{ positionPreview(e); }catch(_){} }; rc.onmouseleave=()=>{ try{ hidePreview(); }catch(_){} };
     }
     /* seat: take the boss off the table and hold him; stand a host card in his lane instead */
-    if(typeof seatBoss==='function'){ const sb=seatBoss; window.seatBoss=function(...a){ const r=sb.apply(this,a);
+    function holdBoss(){
       try{ state._foeRider=null; state._foeRiderUsed=false;
-        const b=state.boss; if(b&&FOE_HELD.includes(b.key)){ const lane=state.enemyBoard.findIndex(c=>c&&c.isBoss);
-          if(lane>=0){ const c=state.enemyBoard[lane]; state.enemyBoard[lane]=null; c.curHp=c.hp; state._foeRider=c;
+        const b=state.boss; if(b&&(!FOE_HELD||FOE_HELD.includes(b.key))){ const lane=state.enemyBoard.findIndex(c=>c&&c.isBoss);
+          if(lane>=0){ const c=state.enemyBoard[lane]; state.enemyBoard[lane]=null;
+            if(b.key!=='holy_assessor'){ c.pow+=2; c.hp+=3; }   /* held back, he arrives in full strength */
+            c.curHp=c.hp; state._foeRider=c;
+            /* only the one: his own kind may not also be sent in from the pool while he waits */
+            if(CARDS[b.key]){ CARDS[b.key].once=true; state._onceUsed=state._onceUsed||{}; state._onceUsed[b.key]=true; }
+            for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&!x.isBoss&&x.key===b.key){ const hk=((b.host||[]).find(k=>k!==b.key))||'holy_novice'; const h2=makeCard(hk)||null; state.enemyBoard[i]=h2; if(h2) h2.curHp=h2.hp; } }
             const host=(b.host&&b.host.length)?b.host:['holy_novice']; const h=makeCard(host[0]); h.curHp=h.hp; state.enemyBoard[lane]=h; onPlay(h,'enemy',lane); } } }catch(e){}
+    }
+    if(typeof seatBoss==='function'){ const sb=seatBoss; window.seatBoss=function(...a){ const r=sb.apply(this,a); holdBoss();
       try{ renderFoe(); }catch(e){} return r; }; }
     /* the enemy's turn: once the round is under way, he picks a lane — sooner if you are winning */
     if(typeof enemyPlan==='function'){ const ep=enemyPlan; window.enemyPlan=async function(...a){
@@ -5313,18 +5331,36 @@ addEventListener('resize',()=>{
           const t=state.turnNum||1, lead=(state.soulsYou||0)-(state.soulsFoe||0);
           const want=t>=4||(t>=2&&(lead>=4||Math.random()<.35))||(state.soulsYou||0)>=SCALE_WIN*.6;
           const free=[]; for(let i=0;i<LANES;i++) if(!state.enemyBoard[i]&&!state.enemyQueue[i]) free.push(i);
+          if(want&&!free.length&&(t>=5||(state.soulsYou||0)>=SCALE_WIN*.6)){   /* no room: he devours the weakest of his own and takes its seat */
+            let wi=-1,wv=1e9; for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&x.pow+x.curHp<wv){ wv=x.pow+x.curHp; wi=i; } }
+            if(wi>=0){ state.enemyBoard[wi]=null; free.push(wi); } }
           if(want&&free.length){ free.sort((x,y)=>((state.playerBoard[y]||{pow:-1}).pow)-((state.playerBoard[x]||{pow:-1}).pow));
             const l=free[0]; c.curHp=c.hp; state.enemyBoard[l]=c; state._foeRiderUsed=true; onPlay(c,'enemy',l);
             say('<b>'+c.name+':</b> Now, I think. Let us see what you are worth.',3200); renderAll(); await wait(1600); } } }catch(e){}
       const r=await ep.apply(this,a); try{ renderFoe(); }catch(e){} return r; }; }
     if(typeof renderAll==='function'){ const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a); try{ renderFoe(); }catch(e){} return r; }; }
     addEventListener('resize',()=>{ try{ renderFoe(); }catch(e){} });
+    try{ if(state&&state.ladder&&state.boss&&!state._foeRider&&state.enemyBoard.some(c=>c&&c.isBoss)){ holdBoss(); renderAll(); } }catch(e){}
   }
   /* flicker the Wrath holder's three side flames */
   fireTicks.push((dt,t)=>{ (window.__wrFlames||[]).forEach((sp,i)=>{ const f=1+.14*Math.sin(t*12.7+i*2.1)+.08*Math.sin(t*23.3+i); sp.scale.set(.022*(1+.08*Math.sin(t*17+i)),.044*f,1); }); });
   /* a card won away from the table (e.g. the roundel puzzle before a game) is handed to you when the next fight is seated */
   addEventListener('reckoning:boss',()=>setTimeout(()=>{ try{ const p=JSON.parse(localStorage.getItem('reckoning_pending_hand')||'[]'); if(!p.length||!state||!state.ladder) return;
     localStorage.removeItem('reckoning_pending_hand'); for(const k of p){ const c=makeCard(k); if(c){ if(state.hand.length<10) state.hand.push(c); else state.deck.push(c); } } renderAll(); }catch(e){} },600));
+  /* ---- Stillness (Fast-Keeper) reworked: while it lives, the first of your creatures to die each turn returns 1 extra Marrow ---- */
+  { try{ if(typeof SIG!=='undefined'&&SIG.still) SIG.still.d='While this lives, the first of your creatures to die each turn returns 1 extra Marrow.';
+      if(typeof countDeath==='function'){ window.countDeath=function(side,c){
+        const add=(c&&c.sig==='carrion')?2:1;
+        if(side==='player'&&state.playerBoard.some(x=>x&&x.sig==='still')&&!(state._stillCount>0)){
+          state._stillCount=1; state.marrowP=(state.marrowP||0)+1;
+          try{ say('<b>Stillness:</b> the Fast-Keeper gathers what falls. +1 Marrow.',1800); }catch(e){} }
+        state.deathsThisTurn+=add; }; } }catch(e){} }
+  /* ---- a click on blank space while choosing a sacrifice cancels it (the recant button still works too) ---- */
+  addEventListener('click',e=>{ try{ if(!state||!(state.awaitingSac>0)) return;
+    if(e.target.closest&&e.target.closest('.sac-target,.hcard,button,#rk-rider,#rk-foe,#relics,.rcard,#howto,#rk-pp,#rk-sp,#overlay,#card-preview,#dock')) return;
+    e.stopPropagation(); const cb=document.getElementById('cancel-btn'); if(cb) cb.click(); }catch(_){} },true);   /* capture: decide before the click rebuilds the board */
+  /* the bell rocks when rung */
+  fireTicks.push((dt)=>{ if(bellRing.t>2.5) return; bellRing.t+=dt; const a=.22*Math.exp(-bellRing.t*2.2)*Math.sin(bellRing.t*18); bell.rotation.z=a; bell.rotation.x=a*.4; });
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
   { const LEVEL={holy_assessor:1,holy_tithemaster:2,holy_greed:3}, K=[0,.18,.34,.5], GOLD=new THREE.Color(0xffb52e);
     let lights=null;
