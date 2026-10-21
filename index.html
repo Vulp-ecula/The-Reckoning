@@ -1128,11 +1128,11 @@ const WALL_LADDER=[
 const GREED_LADDER=[
   {key:'holy_assessor',face:'📜',name:'The Assessor',sub:'who prices the living',host:['holy_acolyte','holy_novice','holy_reeve'],
    intro:"<b>The Assessor:</b> A crown is only a debt with a head on it, white rider. Let me weigh what you carry, and what each piece will cost you to keep.",
-   defeat:"<b>The Assessor:</b> ...the sum... will not close... the Tithe-Master keeps better books than I.<br><i>\u201cI name the price before any hand is raised.\u201d</i>",
+   defeat:"<b>The Assessor:</b> ...the sum... will not close... the Tithe-Master keeps better books than I.",
    quip:["Everything has a price.","Your coin costs more here.","Item: one crown, forfeit."]},
   {key:'holy_tithemaster',face:'💰',name:'The Tithe-Master',sub:'who takes the last coin',host:['holy_verger','holy_almoner','holy_reeve'],
    intro:"<b>The Tithe-Master:</b> They told me to tax the conqueror last, when there is most to take. Every coin you hold is a coin you owe. Sit still, white rider, and be collected.",
-   defeat:"<b>The Tithe-Master:</b> ...the chest... is empty... Greed will count this against us.<br><i>\u201cI take only what has been named.\u201d</i>",
+   defeat:"<b>The Tithe-Master:</b> ...the chest... is empty... Greed will count this against us.",
    quip:["The Church takes its third.","Hoard it. I can wait.","Pay what you owe."]},
   {key:'holy_greed',face:'🪙',name:'Greed',sub:'one hunger, many hands',host:['holy_assessor','holy_reeve','holy_almoner'],
    intro:"<b>Greed:</b> Assessor, Reeve, Tithe-Master \u2014 I have worn all three, white rider, and I will wear them again before you are done. Every coin you take has already been counted against you.",
@@ -3265,7 +3265,13 @@ const holders={};
   for(const [x,z,h] of [[0,0,.052],[-.057,-.02,.046],[.057,-.02,.046],[0,-.05,.040]]){
     add(new THREE.CylinderGeometry(.027,.019,.015,20),M_bronze,x,trayY+.0135,z);
     add(new THREE.CylinderGeometry(.0185,.0185,h,20),M_wax,x,cy0+h/2,z);
-    if(x||z) add(new THREE.ConeGeometry(.0065,.024,8),M_fl,x,cy0+h+.013,z).castShadow=false; }
+    if(x||z){ /* lit: a small flickering flame on each of the three side candles */
+      add(new THREE.CylinderGeometry(.0018,.002,.012,5),M_dk,x,cy0+h+.006,z).castShadow=false;
+      if(!window.__wrFlameTex){ const fc=document.createElement('canvas'); fc.width=32; fc.height=64; const fx=fc.getContext('2d'), gr=fx.createRadialGradient(16,44,1,16,36,26);
+        gr.addColorStop(0,'rgba(255,252,220,1)'); gr.addColorStop(.3,'rgba(255,205,100,.95)'); gr.addColorStop(.65,'rgba(255,130,30,.4)'); gr.addColorStop(1,'rgba(255,90,10,0)'); fx.fillStyle=gr; fx.fillRect(0,0,32,64);
+        window.__wrFlameTex=new THREE.CanvasTexture(fc); }
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:window.__wrFlameTex,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
+      sp.position.set(x,cy0+h+.026,z); sp.scale.set(.022,.044,1); g.add(sp); (window.__wrFlames=window.__wrFlames||[]).push(sp); } }
   /* pedestal */
   add(new THREE.BoxGeometry(.17,.016,.17),M_dk,0,.008,-.028);
   add(new THREE.CylinderGeometry(.016,.026,.07,14),M_bronze,0,.05,-.028);
@@ -4174,7 +4180,7 @@ for(let k=0;k<b2Pos.count;k++){
 b2Geo.computeVertexNormals();
 const wallBanner2=new THREE.Mesh(b2Geo,new THREE.MeshStandardMaterial({map:T_banner2,emissive:0xffffff,emissiveMap:T_banner2,emissiveIntensity:.3,
   transparent:true,alphaTest:.08,side:THREE.DoubleSide,roughness:.95}));
-wallBanner2.position.set(-2.98,2.685-B2H/2,BACK+.06); wallBanner2.castShadow=true; scene.add(wallBanner2);
+wallBanner2.position.set(-3.06,2.685-B2H/2,BACK+.06); wallBanner2.castShadow=true; scene.add(wallBanner2);
 hotspot(wallBanner2, {go:'banner2', title:'A faded banner', body:'Placeholder — wire to lore.'});
 hotspot(crateHearthA, {go:'hearth', title:'Crates'});
 hotspot(crateHearthB, {go:'hearth', title:'Crates'});
@@ -4298,11 +4304,11 @@ const pzHitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrit
 const PZ_SPOTS={
   arm:   {parent:hearth, pos:[.50,.085,.14],  rot:[.12,0,.10]},               /* dropped in the ash at the hearth's lip */
   bag:   {parent:scene,  pos:[2.37,1.96,BACK+.17], rot:[Math.PI/2,0,0]},      /* caught in the boar skull's tusk */
-  coin:  {parent:scene,  pos:[-2.08,.018,-2.20],   rot:[0,0,.12]}               /* on the floor behind the kneeler */
+  coin:  {parent:scene,  pos:[2.265,2.196,BACK+.12], rot:[Math.PI/2,0,0], sc:.6}   /* wedged in the boar skull's eye socket */
 };
 const pzWorld={};
 for(const k of PZ_ORDER){
-  const sp=PZ_SPOTS[k], grp=new THREE.Group(); grp.position.set(...sp.pos); grp.rotation.set(...sp.rot); sp.parent.add(grp);
+  const sp=PZ_SPOTS[k], grp=new THREE.Group(); grp.position.set(...sp.pos); grp.rotation.set(...sp.rot); if(sp.sc) grp.scale.setScalar(sp.sc); sp.parent.add(grp);
   const m=new THREE.Mesh(pzCoinGeo,[pzGold,pzFace(k),pzFace(k)]); m.castShadow=true; grp.add(m);
   const hit=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),pzHitMat); grp.add(hit);
   hotspot(hit,{title:'A roundel', act:()=>pzPick(k)}); pzWorld[k]=grp;
@@ -4360,7 +4366,10 @@ function pzJudge(){
     PZ.solved=true; pzSave(); pzRefresh();
     const fresh=window.__unlockCard?window.__unlockCard('paymaster'):false;
     PZrevealed=true; pzRev.t=0; pzRev.on=true; pzCard.visible=true;
-    pzNote('The bear is paid','The roundels sink home with a sound like a ledger closing, and the frame’s lower rail slides open. '+(fresh?'The Paymaster joins your Conquest deck.':'The Paymaster is already yours.'));
+    let inHand=false;   /* like the other Greed rewards: straight into your hand if you're seated at a game */
+    try{ if(!(typeof state!=='undefined'&&state&&state.ladder)){ localStorage.setItem('reckoning_pending_hand',JSON.stringify(['paymaster'])); }
+      if(typeof state!=='undefined'&&state&&state.ladder){ const c=makeCard('paymaster'); if(c){ if(state.hand.length<10){ state.hand.push(c); inHand=true; } else state.deck.push(c); } if(typeof renderAll==='function') renderAll(); } }catch(e){}
+    pzNote('The bear is paid','The roundels sink home with a sound like a ledger closing, and the frame’s lower rail slides open. The Paymaster is '+(inHand?'in your hand':'yours, and will be in your hand when you sit down to play')+(fresh?', and joins your Conquest deck for good.':'.'));
   } else {
     pzNote('Out of order','The roundels shudder in their seats and spill back into your hands. The bear’s eyes do not move.');
     setTimeout(()=>{ PZ.placed=[null,null,null]; pzSave(); pzRefresh(); },900);
@@ -5012,6 +5021,7 @@ addEventListener('resize',()=>{
   bPack.title='Rucksack'; bGear.title='Settings';
   pSet.innerHTML=`<h4>Settings</h4>
     <label class="rk-row"><input type="checkbox" id="rk-hl"> Highlight interactables</label>
+    <button class="rk-slot" id="rk-art">📖 The artbook</button>
     <button class="rk-act" id="rk-reset">New run — reset progress</button><div class="rk-note" id="rk-rn"></div>`;
   const cnt=bPack.querySelector('#rk-count');
   function renderPack(){
@@ -5026,6 +5036,7 @@ addEventListener('resize',()=>{
   }
   bPack.onclick=()=>{ pSet.classList.remove('on'); pPack.classList.toggle('on'); };
   bGear.onclick=()=>{ pPack.classList.remove('on'); pSet.classList.toggle('on'); };
+  pSet.querySelector('#rk-art').onclick=()=>{ pSet.classList.remove('on'); const b=document.getElementById('artbook-btn'); if(b) b.click(); };
   const chk=pSet.querySelector('#rk-hl'); chk.checked=!!SET.hl; chk.onchange=()=>{ SET.hl=chk.checked; sv(SET_KEY,SET); hlRebuild(); };
   let armed=0; const rb=pSet.querySelector('#rk-reset'), rn=pSet.querySelector('#rk-rn');
   rb.onclick=()=>{ if(!armed){ armed=1; rb.textContent='Click again to erase all progress'; rn.textContent='Cards, puzzles and the rucksack reset. Settings stay.'; setTimeout(()=>{ armed=0; rb.textContent='New run — reset progress'; rn.textContent=''; },5000); return; }
@@ -5175,7 +5186,7 @@ addEventListener('resize',()=>{
     flame.position.set(wx,wy+.014,.004); flame.scale.set(.06,.085,1); g.add(flame);
     const lt=new THREE.PointLight(0xffb060,2.2,2.2,1.6); lt.position.set(wx-.02,wy+.05,0); g.add(lt);
     hotspot(bod,{go:'bshelf',title:'A coiled taper',body:'Beeswax drawn out into a long rope and wound round an iron spindle. The scissors on top are to trim the wick. It burns a hand\u2019s width at a time.'});
-    PACK.gate([bod,flame,lt],['holy_assessor','holy_tithemaster','holy_greed']);
+    /* shown for every boss */
     fireTicks.push((dt,t)=>{ const f=1+.12*Math.sin(t*13)+.08*Math.sin(t*23.7+1)+.05*Math.sin(t*5.3); flame.scale.set(.06*(1+.1*Math.sin(t*17)),.085*f,1); lt.intensity=2.2*(.92+.1*f); });
   }
   /* ---- Greed: the player's gilded throne at your seat, facing the opponent (back seen when you stand) ---- */
@@ -5191,7 +5202,7 @@ addEventListener('resize',()=>{
   /* ---- The Rider: your faction's big card is held apart, beneath the relics, to be played when YOU choose
          (once per round). It no longer shuffles into the deck. Plus table-text tidy-up. ---- */
   { const css=document.createElement('style');
-    css.textContent=`#tag-enemy,#tag-mid,#tag-you,#help{display:none!important;} #relics{top:30%!important;}
+    css.textContent=`#tag-enemy,#tag-mid,#tag-you,#help,#artbook-btn{display:none!important;} #howto{left:18px!important;right:auto!important;top:92px!important;bottom:auto!important;transform:none!important;} #relics{top:30%!important;}
       #hand{padding-left:210px!important;justify-content:safe center!important;}   /* hand sits right of centre, clear of the Rider */
       #reckoning{position:absolute!important;left:50%;top:10px;transform:translateX(-50%);}
       #glass{transform:scale(1.6);transform-origin:top center;margin-bottom:80px;} #boss{max-width:440px;} #souls-line{white-space:nowrap;font-size:1.5rem;text-shadow:0 1px 3px #000,0 0 8px #000;}
@@ -5249,11 +5260,67 @@ addEventListener('resize',()=>{
   { const pile=window.__greedPile;
     if(pile){ NODES.hoard={pos:new THREE.Vector3(2.45,1.55,-.75), yaw:-.25, pitch:-.78, label:'The hoard'};
       const hit=new THREE.Mesh(new THREE.SphereGeometry(.6,16,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
-      hit.scale.set(1.1,.45,.9); hit.position.y=.08; pile.add(hit);
+      hit.scale.set(1.1,.3,.9); hit.position.y=.08; pile.add(hit);
       const T={holy_assessor:'Coins in a pool of blood that has not dried. Someone counted them first; the stacks were neat once.',
                holy_tithemaster:'The heap is higher than it was. Every coin is warm, and every one is wet.',
                holy_greed:'It has grown past the corner. You could drown in it, and someone already has.'};
       hotspot(hit,{go:'hoard',title:'A bloody hoard',body:()=>T[bossKey]||'A heap of coins sitting in blood. Nobody has dared take one.'}); } }
+  /* ---- The Assessor is held as the enemy's own Rider card, top right: the table's logic decides when he takes a lane ---- */
+  { const FOE_HELD=['holy_assessor'];
+    if(typeof CARDS!=='undefined'&&CARDS.holy_assessor){ CARDS.holy_assessor.pow=3; CARDS.holy_assessor.hp=6; }   /* +1 power, +1 health */
+    const css=document.createElement('style');
+    css.textContent=`#rk-foe{position:fixed;right:12px;z-index:13;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;}
+      #rk-foe .tag{font-family:'Pirata One';font-size:21px;letter-spacing:.1em;color:#d98a7a;text-shadow:0 1px 3px #000;}
+      #rk-foe .rc{position:relative;border-radius:9px;overflow:hidden;background:#1a120c;border:2px solid #8a2a1a;
+        box-shadow:0 0 10px 2px rgba(200,60,40,.5),0 0 24px 6px rgba(160,30,20,.25),0 4px 18px #000;}
+      #rk-foe .rc.gone{filter:grayscale(1) brightness(.35);} #rk-foe .rc img{width:100%;height:100%;object-fit:cover;display:block;}
+      #rk-foe .rc .em{font-size:96px;text-align:center;}
+      #rk-foe .b{position:absolute;font:bold 19px Georgia,serif;color:#f3e6c4;background:rgba(10,6,3,.78);border-radius:6px;padding:1px 6px;}
+      #rk-foe .bp{left:4px;bottom:4px;} #rk-foe .bh{right:4px;bottom:4px;}
+      #rk-foe .note{font-size:13px;color:var(--parch-dim,#c9b48a);opacity:.8;text-align:center;}
+      body:has(#overlay.show) #rk-foe, body.cabin-away #rk-foe{display:none!important;}`;
+    document.head.appendChild(css);
+    const box=document.createElement('div'); box.id='rk-foe'; document.body.appendChild(box);
+    function renderFoe(){
+      const c=state&&state._foeRider; const on=!!c&&!!state.ladder;
+      box.style.display=on?'flex':'none'; if(!on) return;
+      const used=!!state._foeRiderUsed, img=artFor(c);
+      const h=Math.round(Math.max(200,Math.min(innerHeight*.365,440)));
+      box.innerHTML=`<div class="tag">${c.name.toUpperCase()} WAITS</div>
+        <div class="rc${used?' gone':''}" style="height:${h}px;width:${Math.round(h*.71)}px">${img?`<img src="${img}" alt="${c.name}">`:`<div class="em" style="line-height:${h}px">${c.art}</div>`}
+          <span class="b bp">${c.pow}</span><span class="b bh">♥${c.hp}</span></div>
+        <div class="note">${used?'has taken the table':'he chooses his moment'}</div>`;
+      const rc=box.querySelector('.rc');
+      rc.onmouseenter=e=>{ try{ previewAnchor=rc; showPreview(c,true,true); positionPreview(e); }catch(_){} };
+      rc.onmousemove=e=>{ try{ positionPreview(e); }catch(_){} }; rc.onmouseleave=()=>{ try{ hidePreview(); }catch(_){} };
+      const bp=document.getElementById('boss'); let top=90; if(bp){ const r=bp.getBoundingClientRect(); if(r.height) top=r.bottom+14; }
+      box.style.top=Math.max(70,Math.min(top,innerHeight-box.offsetHeight-90))+'px';
+    }
+    /* seat: take the boss off the table and hold him; stand a host card in his lane instead */
+    if(typeof seatBoss==='function'){ const sb=seatBoss; window.seatBoss=function(...a){ const r=sb.apply(this,a);
+      try{ state._foeRider=null; state._foeRiderUsed=false;
+        const b=state.boss; if(b&&FOE_HELD.includes(b.key)){ const lane=state.enemyBoard.findIndex(c=>c&&c.isBoss);
+          if(lane>=0){ const c=state.enemyBoard[lane]; state.enemyBoard[lane]=null; c.curHp=c.hp; state._foeRider=c;
+            const host=(b.host&&b.host.length)?b.host:['holy_novice']; const h=makeCard(host[0]); h.curHp=h.hp; state.enemyBoard[lane]=h; onPlay(h,'enemy',lane); } } }catch(e){}
+      try{ renderFoe(); }catch(e){} return r; }; }
+    /* the enemy's turn: once the round is under way, he picks a lane — sooner if you are winning */
+    if(typeof enemyPlan==='function'){ const ep=enemyPlan; window.enemyPlan=async function(...a){
+      try{ const c=state._foeRider; if(c&&!state._foeRiderUsed&&!state.over){
+          const t=state.turnNum||1, lead=(state.soulsYou||0)-(state.soulsFoe||0);
+          const want=t>=4||(t>=2&&(lead>=4||Math.random()<.35))||(state.soulsYou||0)>=SCALE_WIN*.6;
+          const free=[]; for(let i=0;i<LANES;i++) if(!state.enemyBoard[i]&&!state.enemyQueue[i]) free.push(i);
+          if(want&&free.length){ free.sort((x,y)=>((state.playerBoard[y]||{pow:-1}).pow)-((state.playerBoard[x]||{pow:-1}).pow));
+            const l=free[0]; c.curHp=c.hp; state.enemyBoard[l]=c; state._foeRiderUsed=true; onPlay(c,'enemy',l);
+            say('<b>'+c.name+':</b> Now, I think. Let us see what you are worth.',3200); renderAll(); await wait(1600); } } }catch(e){}
+      const r=await ep.apply(this,a); try{ renderFoe(); }catch(e){} return r; }; }
+    if(typeof renderAll==='function'){ const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a); try{ renderFoe(); }catch(e){} return r; }; }
+    addEventListener('resize',()=>{ try{ renderFoe(); }catch(e){} });
+  }
+  /* flicker the Wrath holder's three side flames */
+  fireTicks.push((dt,t)=>{ (window.__wrFlames||[]).forEach((sp,i)=>{ const f=1+.14*Math.sin(t*12.7+i*2.1)+.08*Math.sin(t*23.3+i); sp.scale.set(.022*(1+.08*Math.sin(t*17+i)),.044*f,1); }); });
+  /* a card won away from the table (e.g. the roundel puzzle before a game) is handed to you when the next fight is seated */
+  addEventListener('reckoning:boss',()=>setTimeout(()=>{ try{ const p=JSON.parse(localStorage.getItem('reckoning_pending_hand')||'[]'); if(!p.length||!state||!state.ladder) return;
+    localStorage.removeItem('reckoning_pending_hand'); for(const k of p){ const c=makeCard(k); if(c){ if(state.hand.length<10) state.hand.push(c); else state.deck.push(c); } } renderAll(); }catch(e){} },600));
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
   { const LEVEL={holy_assessor:1,holy_tithemaster:2,holy_greed:3}, K=[0,.18,.34,.5], GOLD=new THREE.Color(0xffb52e);
     let lights=null;
