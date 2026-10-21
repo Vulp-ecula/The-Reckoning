@@ -5346,6 +5346,10 @@ addEventListener('resize',()=>{
     }
     /* seat: take the boss off the table and hold him; stand a host card in his lane instead */
     function holdBoss(){
+      /* a boss you have already broken never takes the table again, not even as a card in a later boss's host */
+      try{ const L=state.ladder||[], bi=state.bossIndex||0; state._onceUsed=state._onceUsed||{};
+        for(let j=0;j<bi&&j<L.length;j++){ const k=L[j]&&L[j].key; if(k&&CARDS[k]){ CARDS[k].once=true; state._onceUsed[k]=true; }
+          for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&x.key===k){ const h=makeCard('holy_novice'); h.curHp=h.hp; state.enemyBoard[i]=h; } if(state.enemyQueue[i]&&state.enemyQueue[i].key===k) state.enemyQueue[i]=null; } } }catch(e){}
       try{ state._foeRider=null; state._foeRiderUsed=false;
         const b=state.boss; if(b&&(!FOE_HELD||FOE_HELD.includes(b.key))){ const lane=state.enemyBoard.findIndex(c=>c&&c.isBoss);
           if(lane>=0){ const c=state.enemyBoard[lane]; state.enemyBoard[lane]=null;
