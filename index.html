@@ -5178,9 +5178,41 @@ addEventListener('resize',()=>{
     PACK.gate([pouch,...W],['holy_tithemaster']);
     fireTicks.push((dt)=>{ tilt.cur+=(tilt.tgt-tilt.cur)*Math.min(1,dt*3); sgv.rotation.z=tilt.cur; });
     /* the ledger text (Tithe-Master rung only; other rungs keep the old line) */
-    for(const m of (PACK.ledgerParts||[])){ m.userData.body=()=>bossKey==='holy_tithemaster'
-      ? 'Last page, in a clerk’s hand:\n“Received of the miller, twelve marks.\nPaid for lamp oil, three marks.\nPaid for the bishop’s wine, two marks.\nWhat remains is sealed in the pouch on the scale. Weigh it true.”'
-      : 'Columns of debts in a cramped hand. Most lines are struck through in red. One is not.'; }
+    /* the ledger page, opened full-screen on the Tithe-Master rung: a word sum whose answer is the weight of the pouch */
+    { const fl=document.createElement('link'); fl.rel='stylesheet'; fl.href='https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=UnifrakturMaguntia&display=swap'; document.head.appendChild(fl);
+      const st=document.createElement('style'); st.textContent=`
+        #rk-ledger{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);}
+        #rk-ledger.on{display:flex;}
+        #rk-ledger .pg{position:relative;width:min(560px,92vw);max-height:88vh;overflow:auto;padding:38px 44px 34px;border-radius:4px;
+          background:radial-gradient(ellipse at 40% 30%,#e6d3a6 0%,#d4bc88 55%,#b39563 100%);box-shadow:0 0 0 1px #6a4a26,0 12px 50px #000,inset 0 0 60px rgba(90,55,20,.45);
+          font-family:'IM Fell English',Georgia,serif;color:#2e1d0e;line-height:1.55;}
+        #rk-ledger h3{margin:0 0 4px;text-align:center;font-family:'UnifrakturMaguntia',serif;font-weight:normal;font-size:30px;color:#6a1410;}
+        #rk-ledger .sub{text-align:center;font-style:italic;font-size:15px;margin-bottom:18px;opacity:.8;}
+        #rk-ledger .lg-row{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid rgba(90,55,25,.35);padding:7px 0;font-size:18px;}
+        #rk-ledger .lg-row b{font-weight:normal;font-style:italic;white-space:nowrap;}
+        #rk-ledger .lg-row.out{color:#5a140e;}
+        #rk-ledger .lg-row.sum{border-bottom:2px double rgba(90,30,20,.6);}
+        #rk-ledger .blank{display:inline-block;min-width:110px;border-bottom:1px dashed #5a140e;}
+        #rk-ledger .foot{margin-top:18px;text-align:center;font-style:italic;font-size:16px;}
+        #rk-ledger .x{position:absolute;right:12px;top:8px;border:0;background:none;font-size:22px;color:#5a3418;cursor:pointer;}
+        #rk-ledger .strike{text-decoration:line-through;text-decoration-color:#8a1a14;opacity:.55;}`;
+      document.head.appendChild(st);
+      const ov=document.createElement('div'); ov.id='rk-ledger'; document.body.appendChild(ov);
+      ov.innerHTML=`<div class="pg"><button class="x" title="Close">\u2715</button>
+        <h3>The Tithe-Master\u2019s Accompt</h3><div class="sub">the last page, in a clerk\u2019s cramped hand</div>
+        <div class="lg-row strike"><span>Of the widow at the mill-race, her husband\u2019s boots</span><b>taken</b></div>
+        <div class="lg-row strike"><span>Of the smith, for the use of his own forge</span><b>taken</b></div>
+        <div class="lg-row"><span>Received of the miller, at Michaelmas</span><b>twelve marks</b></div>
+        <div class="lg-row out"><span>Paid out, for lamp oil to read by</span><b>three marks</b></div>
+        <div class="lg-row out"><span>Paid out, for the bishop\u2019s wine</span><b>two marks</b></div>
+        <div class="lg-row sum"><span>Remaining, and sealed in the pouch upon the scale</span><b><span class="blank">&nbsp;</span> marks</b></div>
+        <div class="foot">Let the pouch be weighed true, and the account is closed.</div></div>`;
+      const close=()=>ov.classList.remove('on');
+      ov.querySelector('.x').onclick=close; ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+      addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+      for(const m of (PACK.ledgerParts||[])){ m.userData.body=()=>{ if(bossKey==='holy_tithemaster'){ ov.classList.add('on'); return null; }
+        return 'Columns of debts in a cramped hand. Most lines are struck through in red. One is not.'; }; }
+      window.__ledger=ov; }
     addEventListener('reckoning:boss',()=>{ PUZ.done=false; for(const m of W) m.wat='table'; layout(); tilt.tgt=0; });
     if(typeof CARDS!=='undefined'&&!CARDS.auditor) CARDS.auditor={name:'The Auditor',art:'\u{1F4D2}',pow:1,hp:4,cost:{type:'coin',n:2},faction:'conquest',sig:'even',unlockable:true};
   }
@@ -5432,46 +5464,80 @@ addEventListener('resize',()=>{
           return 'You heave the pail. The blood hits the coals with a scream of steam, and the fire dies. In the sudden dark, something behind the soot-black stones shifts: a gap, low, just wide enough to crawl into.'; }
         return 'It burns hot and low. Behind the flames the back stones are black with soot, and one of them is a little proud of the others.'; }});
     const hiss={t:9};
+    /* the fire, once out: ash you can click to relight */
+    const ashHit=new THREE.Mesh(new THREE.BoxGeometry(.12,.1,.9),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+    ashHit.position.set(.44,.05,0); hearth.add(ashHit);
+    const rdlg=document.createElement('div'); rdlg.className='rk-panel'; rdlg.style.cssText='left:50%;bottom:110px;transform:translateX(-50%);max-width:380px;text-align:center;';
+    rdlg.innerHTML='<h4>Relight?</h4><div class="rk-note" id="rk-rl-t" style="opacity:1;font-size:13px;margin:0 0 12px;line-height:1.5"></div><button class="rk-act" id="rk-rl-y">Relight it</button> <button class="rk-slot" id="rk-rl-n" style="display:inline-block;width:auto;margin:0 0 0 8px">Leave it dark</button>';
+    document.body.appendChild(rdlg);
+    rdlg.querySelector('#rk-rl-n').onclick=()=>rdlg.classList.remove('on');
+    rdlg.querySelector('#rk-rl-y').onclick=()=>{ rdlg.classList.remove('on'); WP.relit=true; wsave(); hiss.t=0;
+      note('The fire takes again','You rake the wet coals and the kindling catches. The flames climb, and the black gap behind them is only shadow again. Of the pail there is nothing left but a hoop of iron in the ash.'); };
+    hotspot(ashHit,{go:'hearth',title:'Cold ashes',body:()=>{ if(!(onWar()&&WP.fireOut&&!WP.relit)) return null;
+        rdlg.querySelector('#rk-rl-t').textContent=WP.relic?'The fire is out and the room is cold. Rake the coals and light it again?':'If you light it again, the way behind the fire will be closed. Light it anyway?';
+        rdlg.classList.add('on'); return null; }});
 
     /* -- the opening in the back of the firebox -- */
     const holeSh=new THREE.Shape(); holeSh.moveTo(-.25,0); holeSh.lineTo(.25,0); holeSh.lineTo(.25,.34); holeSh.quadraticCurveTo(.25,.5,0,.52); holeSh.quadraticCurveTo(-.25,.5,-.25,.34); holeSh.lineTo(-.25,0);
     const hole=new THREE.Mesh(new THREE.ShapeGeometry(holeSh,12),new THREE.MeshBasicMaterial({color:0x020101}));
     hole.rotation.y=Math.PI/2; hole.position.set(.247,.07,0); hole.visible=false; hearth.add(hole);
     const backStones=hearth.children.filter(m=>Math.abs(m.position.x-.205)<.012&&m.position.y<.62&&Math.abs(m.position.z)<.36);
-    hotspot(hole,{go:null,title:'A gap behind the fire',act:()=>{ crawl('crawl1'); }});
+    hotspot(hole,{go:null,title:'A gap behind the fire',act:()=>{ if(WP.relit) return; crawl('crawl1'); }});
 
     /* -- the passage itself, behind the wall: low, rough, a faint light at the far end -- */
+    /* centre-line of the crawl: in behind the hearth, a right-angle bend, then another, to a grate */
+    const TP=[[-4.45,-.2],[-5.9,-.2],[-5.9,1.2],[-7.64,1.2]], TW=.42, TH=.8, EX=-7.62, EZ=1.2;
     NODES.crawl1={pos:new THREE.Vector3(-4.78,.40,-.2), yaw:Math.PI/2, pitch:-.05, label:'Crawling'};
-    NODES.crawl2={pos:new THREE.Vector3(-6.55,.40,-.2), yaw:Math.PI/2, pitch:-.12, label:'The end of the passage'};
+    NODES.crawlB1={pos:new THREE.Vector3(-5.9,.40,-.42), yaw:Math.PI, pitch:-.05, label:'Crawling'};
+    NODES.crawlB2={pos:new THREE.Vector3(-5.72,.40,1.2), yaw:Math.PI/2, pitch:-.05, label:'Crawling'};
+    NODES.crawlEnd={pos:new THREE.Vector3(-6.75,.40,1.2), yaw:Math.PI/2, pitch:-.12, label:'The end of the passage'};
     const tun=new THREE.Group(); tun.visible=false; scene.add(tun);
-    { const st=T_stoneH.clone(); st.wrapS=st.wrapT=THREE.RepeatWrapping; st.repeat.set(4,1); st.needsUpdate=true;
-      const tm=new THREE.MeshStandardMaterial({map:st,color:0x6a5a4c,roughness:1,side:THREE.BackSide});
-      const box=new THREE.Mesh(new THREE.BoxGeometry(3.2,.82,.92),tm); box.position.set(-6.05,.41,-.2); box.receiveShadow=true; tun.add(box);
-      const dirt=new THREE.Mesh(new THREE.PlaneGeometry(3.2,.9),new THREE.MeshStandardMaterial({color:0x2a2018,roughness:1})); dirt.rotation.x=-Math.PI/2; dirt.position.set(-6.05,.005,-.2); tun.add(dirt);
+    { const st=T_stoneH.clone(); st.wrapS=st.wrapT=THREE.RepeatWrapping; st.needsUpdate=true;
+      const tm=new THREE.MeshStandardMaterial({map:st,color:0x6a5a4c,roughness:1,side:THREE.DoubleSide,emissive:0x2a1c10,emissiveMap:st});
+      const fm=new THREE.MeshStandardMaterial({color:0x2a2018,roughness:1,side:THREE.DoubleSide});
+      /* offset the centre-line to the two walls, mitred at the bends */
+      const L=[],Rr=[];
+      for(let i=0;i<TP.length;i++){ const nrm=(a,b)=>{ const dx=b[0]-a[0], dz=b[1]-a[1], l=Math.hypot(dx,dz); return [-dz/l,dx/l]; };
+        let n; if(i===0) n=nrm(TP[0],TP[1]); else if(i===TP.length-1) n=nrm(TP[i-1],TP[i]);
+        else { const n1=nrm(TP[i-1],TP[i]), n2=nrm(TP[i],TP[i+1]); let mx=n1[0]+n2[0], mz=n1[1]+n2[1]; const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml; const k=1/(mx*n1[0]+mz*n1[1]); n=[mx*k,mz*k]; }
+        L.push([TP[i][0]+n[0]*TW,TP[i][1]+n[1]*TW]); Rr.push([TP[i][0]-n[0]*TW,TP[i][1]-n[1]*TW]); }
+      const wp=[],wu=[],fp=[],fu=[];
+      const quad=(P,U,a,b,c,d,ua,ub)=>{ P.push(...a,...b,...c, ...a,...c,...d); U.push(ua[0],ua[1],ub[0],ua[1],ub[0],ub[1], ua[0],ua[1],ub[0],ub[1],ua[0],ub[1]); };
+      let run=0;
+      for(let i=0;i<TP.length-1;i++){ const len=Math.hypot(TP[i+1][0]-TP[i][0],TP[i+1][1]-TP[i][1]);
+        for(const S of [L,Rr]){ const A=S[i], B=S[i+1]; quad(wp,wu,[A[0],0,A[1]],[B[0],0,B[1]],[B[0],TH,B[1]],[A[0],TH,A[1]],[run*1.3,0],[(run+len)*1.3,TH*1.3]); }
+        quad(wp,wu,[L[i][0],TH,L[i][1]],[L[i+1][0],TH,L[i+1][1]],[Rr[i+1][0],TH,Rr[i+1][1]],[Rr[i][0],TH,Rr[i][1]],[run*1.3,0],[(run+len)*1.3,1.1]);
+        quad(fp,fu,[L[i][0],0,L[i][1]],[L[i+1][0],0,L[i+1][1]],[Rr[i+1][0],0,Rr[i+1][1]],[Rr[i][0],0,Rr[i][1]],[0,0],[1,1]);
+        run+=len; }
+      const e=TP.length-1; quad(wp,wu,[L[e][0],0,L[e][1]],[Rr[e][0],0,Rr[e][1]],[Rr[e][0],TH,Rr[e][1]],[L[e][0],TH,L[e][1]],[0,0],[1.1,1.04]);
+      const mk=(P,U,m)=>{ const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2)); g.computeVertexNormals(); const o=new THREE.Mesh(g,m); o.receiveShadow=true; tun.add(o); };
+      mk(wp,wu,tm); mk(fp,fu,fm);
+      /* a little light at each bend, so the turns read */
+      for(const [x,z,i] of [[-5.9,-.2,.45],[-5.9,1.2,.35]]){ const l=new THREE.PointLight(0xff7a30,i,1.4,1.8); l.position.set(x+.2,.55,z); tun.add(l); }
       /* the grate at the far end, warm light beyond it */
-      const glow=new THREE.Mesh(new THREE.PlaneGeometry(.42,.34),new THREE.MeshBasicMaterial({color:0x7a3a14})); glow.rotation.y=Math.PI/2; glow.position.set(-7.62,.42,-.2); tun.add(glow);
-      for(let i=-3;i<=3;i++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.016,.016,.36,8),iron); b.position.set(-7.6,.42,-.2+i*.055); tun.add(b); }
-      for(const y of [.27,.57]){ const b=new THREE.Mesh(new THREE.BoxGeometry(.012,.014,.44),iron); b.position.set(-7.6,y,-.2); tun.add(b); }
-      const gl=new THREE.PointLight(0xff9a50,3.2,3.4,1.6); gl.position.set(-7.4,.45,-.2); tun.add(gl);
+      const glow=new THREE.Mesh(new THREE.PlaneGeometry(.42,.34),new THREE.MeshBasicMaterial({color:0x7a3a14})); glow.rotation.y=Math.PI/2; glow.position.set(EX,.42,EZ); tun.add(glow);
+      for(let i=-3;i<=3;i++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.016,.016,.36,8),iron); b.position.set(EX+.02,.42,EZ+i*.055); tun.add(b); }
+      for(const y of [.27,.57]){ const b=new THREE.Mesh(new THREE.BoxGeometry(.012,.014,.44),iron); b.position.set(EX+.02,y,EZ); tun.add(b); }
+      const gl=new THREE.PointLight(0xff9a50,3.2,3.4,1.6); gl.position.set(EX+.22,.45,EZ); tun.add(gl);
       const el=new THREE.PointLight(0xff5a20,.9,1.6,1.8); el.position.set(-4.65,.35,-.2); tun.add(el);
       fireTicks.push((dt,t)=>{ gl.intensity=3.2+Math.sin(t*5.1)*.4+Math.sin(t*13.3)*.25; });
-      const ghit=new THREE.Mesh(new THREE.BoxGeometry(.06,.4,.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); ghit.position.set(-7.56,.42,-.2); tun.add(ghit);
+      const ghit=new THREE.Mesh(new THREE.BoxGeometry(.06,.4,.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); ghit.position.set(EX+.06,.42,EZ); tun.add(ghit);
       const W=['…don’t stop. Keep coming. He can’t hear you in here…',
                '…they lit that fire so nobody would find this way. You did. You bled for it…',
                '…take what’s at your knees. Put it to a wall and you’ll hear them before they move…',
                '…go back now. Quickly. And don’t tell him where you’ve been.'];
-      hotspot(ghit,{go:'crawl2',title:'A grate',body:()=>{ const w=W[Math.min(WP.heard,W.length-1)]; WP.heard=Math.min(WP.heard+1,W.length); wsave(); return 'Through the bars: warm light, and nothing you can see. A voice, close to the iron:\n“'+w+'”'; }});
+      hotspot(ghit,{go:'crawlEnd',title:'A grate',body:()=>{ const w=W[Math.min(WP.heard,W.length-1)]; WP.heard=Math.min(WP.heard+1,W.length); wsave(); return 'Through the bars: warm light, and nothing you can see. A voice, close to the iron:\n“'+w+'”'; }});
       /* the relic: an iron ear-trumpet left on the floor */
-      const rel=new THREE.Group(); rel.position.set(-7.36,.035,-.02); rel.rotation.y=-.9; tun.add(rel);
+      const rel=new THREE.Group(); rel.position.set(EX+.26,.035,EZ+.18); rel.rotation.y=-.9; tun.add(rel);
       const brass=new THREE.MeshStandardMaterial({color:0x8a6a32,metalness:.8,roughness:.35,side:THREE.DoubleSide});
       const bell=new THREE.Mesh(new THREE.CylinderGeometry(.06,.012,.16,18,1,true),brass); bell.rotation.z=Math.PI/2; bell.position.x=.08; rel.add(bell);
       const tube=new THREE.Mesh(new THREE.TorusGeometry(.05,.009,8,18,Math.PI),brass); tube.position.set(-.0,.05,0); tube.rotation.z=Math.PI/2; rel.add(tube);
       const rhit=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); rel.add(rhit);
-      hotspot(rhit,{go:'crawl2',title:'An ear-trumpet',act:()=>{ if(WP.relic) return; WP.relic=true; wsave(); rel.visible=false; giveRelic();
+      hotspot(rhit,{go:'crawlEnd',title:'An ear-trumpet',act:()=>{ if(WP.relic) return; WP.relic=true; wsave(); rel.visible=false; giveRelic();
         note('The Eavesdropper','A battered brass ear-trumpet, its bell dented, its mouthpiece worn bright by someone’s ear. It joins your relics: once a fight, put it to the wall and hear what the Holy mean to send — and turn it back.'); }});
       fireTicks.push(()=>{ rel.visible=!WP.relic; });
       /* the passage view: rubble and stones that rise past you as you crawl in */
-      for(let i=0;i<9;i++){ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.03+Math.random()*.05,0),new THREE.MeshStandardMaterial({color:0x3a322a,roughness:1})); r.position.set(-4.9-Math.random()*2.4,.03,-.2+(Math.random()-.5)*.7); tun.add(r); }
+      for(let i=0;i<9;i++){ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.03+Math.random()*.05,0),new THREE.MeshStandardMaterial({color:0x3a322a,roughness:1})); const sg=Math.floor(Math.random()*3), f=Math.random(); const A=TP[sg], B=TP[sg+1]; r.position.set(A[0]+(B[0]-A[0])*f+(Math.random()-.5)*.5*(B[1]!==A[1]?1:0), .03, A[1]+(B[1]-A[1])*f+(Math.random()-.5)*.5*(B[0]!==A[0]?1:0)); tun.add(r); }
     }
 
     /* -- the relic card -- */
@@ -5495,22 +5561,108 @@ addEventListener('resize',()=>{
     let lastNode=node;
     fireTicks.push(()=>{ if(node!==lastNode){ const was=/^crawl/.test(lastNode), is=/^crawl/.test(node); if(was&&!is){ fade.style.opacity=1; setTimeout(()=>fade.style.opacity=0,650); } lastNode=node; } });
     /* crawling forward: click anywhere down the passage to move along it */
-    { const fwd=new THREE.Mesh(new THREE.PlaneGeometry(1.4,.7),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
-      fwd.rotation.y=Math.PI/2; fwd.position.set(-5.9,.4,-.2); tun.add(fwd); hotspot(fwd,{go:'crawl2',title:'Crawl on'}); }
+    const FWD=[];
+    for(const [from,to,x,z,ry] of [['crawl1','crawlB1',-5.75,-.2,Math.PI/2],['crawlB1','crawlB2',-5.9,1.05,0],['crawlB2','crawlEnd',-6.5,1.2,Math.PI/2]]){
+      const f=new THREE.Mesh(new THREE.PlaneGeometry(.84,.76),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+      f.rotation.y=ry; f.position.set(x,.4,z); f.userData.from=from; tun.add(f); hotspot(f,{go:to,title:'Crawl on'}); FWD.push(f); }
+    fireTicks.push(()=>{ for(const f of FWD) f.visible=(node===f.userData.from); });
 
     /* -- each frame: fire state, hole, tunnel visibility -- */
     fireTicks.push((dt,t)=>{
-      const out=onWar()&&WP.fireOut;
+      const out=onWar()&&WP.fireOut&&!WP.relit;
       for(const f of flames) f.visible=!out; if(embersP) embersP.visible=!out;
       if(out){ fireLight.intensity=1.6+Math.sin(t*2.1)*.3; }
-      hole.visible=out; for(const s of backStones) s.visible=!out; fireHit.visible=!out;
+      hole.visible=out; for(const s of backStones) s.visible=!out; fireHit.visible=!out; ashHit.visible=out;
       tun.visible=out||/^crawl/.test(node);
       blood.visible=onWar()&&WP.bled&&!PACK.has('bloodpail')&&!WP.fireOut;
-      if(pailG) pailG.visible=onWar()&&!PACK.has('bloodpail')&&!WP.fireOut;
+      if(pailG){ const burnt=WP.fireOut&&!WP.relit;   /* thrown: it lies on its side in the ash until the fire is relit and takes it */
+        pailG.visible=onWar()&&!PACK.has('bloodpail')&&!WP.relit;
+        if(burnt){ pailG.position.set(-3.86,.15,-.62); pailG.rotation.set(0,.3,Math.PI/2); } else { pailG.position.set(-3.72,0,-.86); pailG.rotation.set(0,0,0); } }
       fl.visible=onWar()&&!PACK.has('fleam')&&!WP.bled;
       if(hiss.t<3){ hiss.t+=dt; fireLight.intensity=Math.max(fireLight.intensity, 18*Math.exp(-hiss.t*3)); }
     });
   }
+  /* ==== (a) confessional wood: an uneven hand-planed light oak instead of the too-perfect photo grain ==== */
+  { const W=512,H=1024, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
+    let sd=91; const r=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647; };
+    g.fillStyle='#a8834f'; g.fillRect(0,0,W,H);
+    /* boards of slightly different tone and width */
+    let x=0; while(x<W){ const bw=90+r()*80, t=r(); g.fillStyle=`rgba(${t<.5?'120,82,44':'196,160,110'},${.10+r()*.14})`; g.fillRect(x,0,bw,H); x+=bw; }
+    /* long wandering grain lines: uneven spacing, thickness and darkness, drifting with low-frequency wobble */
+    for(let i=0;i<150;i++){ let gx=r()*W; const amp=2+r()*7, f1=.002+r()*.006, f2=.01+r()*.02, ph=r()*6.28, dk=r();
+      g.strokeStyle=dk<.75?`rgba(92,60,30,${.10+r()*.22})`:`rgba(220,190,140,${.08+r()*.12})`; g.lineWidth=.5+r()*(dk<.2?2.6:1.3);
+      g.beginPath(); for(let y=0;y<=H;y+=6){ const xx=gx+Math.sin(y*f1+ph)*amp+Math.sin(y*f2+ph*2)*amp*.25; y?g.lineTo(xx,y):g.moveTo(xx,y); } g.stroke(); }
+    /* a few knots with the grain bending round them */
+    for(let k=0;k<5;k++){ const kx=r()*W, ky=r()*H, kr=5+r()*9;
+      for(let j=6;j>0;j--){ g.strokeStyle=`rgba(80,50,24,${.08+.05*j})`; g.lineWidth=1; g.beginPath(); g.ellipse(kx,ky,kr*j*.45,kr*j*1.1,0,0,6.28); g.stroke(); }
+      g.fillStyle='rgba(60,36,16,.65)'; g.beginPath(); g.ellipse(kx,ky,kr*.55,kr*.8,0,0,6.28); g.fill(); }
+    /* wear: soft blotches, a few scratches, darker toward one end */
+    for(let i=0;i<40;i++){ const bx=r()*W, by=r()*H, br=20+r()*90, gr=g.createRadialGradient(bx,by,0,bx,by,br);
+      gr.addColorStop(0,`rgba(${r()<.5?'70,45,20':'215,185,135'},${.06+r()*.08})`); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(bx-br,by-br,br*2,br*2); }
+    for(let i=0;i<25;i++){ const sx=r()*W, sy=r()*H; g.strokeStyle='rgba(60,38,18,.25)'; g.lineWidth=.6; g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx+(r()-.5)*40,sy+(r()-.5)*60); g.stroke(); }
+    const lg=g.createLinearGradient(0,0,0,H); lg.addColorStop(0,'rgba(40,25,10,.10)'); lg.addColorStop(1,'rgba(40,25,10,.0)'); g.fillStyle=lg; g.fillRect(0,0,W,H);
+    T_confess.image=cv; T_confess.needsUpdate=true; }
+
+  /* ==== (b) the roundel moves into the boar skull's actual eye socket (its right-hand orbit) ==== */
+  { const g=typeof pzWorld!=='undefined'&&pzWorld.coin; if(g){ g.position.set(2.405,2.378,BACK+.115); g.scale.setScalar(.5); } }
+
+  /* ==== (c) when you stand, a faint copy of the table's cards stays lying on the wood ==== */
+  { const BW=1.95, BD=1.22, CW=1024, CH=Math.round(1024*BD/BW);
+    const cv=document.createElement('canvas'); cv.width=CW; cv.height=CH; const cx=cv.getContext('2d');
+    const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace; tx.anisotropy=4;
+    const ghost=new THREE.Mesh(new THREE.PlaneGeometry(BW,BD),new THREE.MeshStandardMaterial({map:tx,transparent:true,opacity:.62,roughness:.9,depthWrite:false}));
+    ghost.rotation.x=-Math.PI/2; ghost.position.set(0,.959,0); ghost.visible=false; scene.add(ghost);
+    const imgs={}; const im=src=>{ if(!imgs[src]){ const i=new Image(); i.onload=()=>{ if(ghost.visible) draw(); }; i.src=src; imgs[src]=i; } return imgs[src]; };
+    const px=m=>m/BW*CW;
+    function card(c,cxm,czm,wm,rot){ const w=px(wm), h=w*1.42, x=px(cxm+BW/2), y=px(czm+BD/2);
+      cx.save(); cx.translate(x,y); cx.rotate(rot||0); cx.shadowColor='rgba(0,0,0,.6)'; cx.shadowBlur=8;
+      const a=c?artFor(c):null, i=a?im(a):null;
+      if(i&&i.complete&&i.naturalWidth){ cx.drawImage(i,-w/2,-h/2,w,h); }
+      else { cx.fillStyle=c?'#cdbb92':'#3a2a1a'; cx.fillRect(-w/2,-h/2,w,h); if(c){ cx.shadowBlur=0; cx.fillStyle='#3a2410'; cx.font=Math.round(w*.42)+'px serif'; cx.textAlign='center'; cx.fillText(c.art||'',0,w*.15); } }
+      cx.restore(); }
+    function draw(){ cx.clearRect(0,0,CW,CH); if(typeof state==='undefined'||!state||!state.ladder) return;
+      const lx=i=>(i-1.5)*.39;
+      (state.enemyBoard||[]).forEach((c,i)=>{ if(c) card(c,lx(i),-.30,.27,0); });
+      (state.enemyQueue||[]).forEach((c,i)=>{ if(c&&!state.enemyBoard[i]) card(null,lx(i),-.30,.27,0); });
+      (state.playerBoard||[]).forEach((c,i)=>{ if(c) card(c,lx(i),.12,.27,0); });
+      const h=state.hand||[], n=h.length; h.forEach((c,k)=>{ const t=n>1?k/(n-1)-.5:0; card(c,t*.8,.47,.2,t*.5); });
+      tx.needsUpdate=true; }
+    let was=node;
+    fireTicks.push(()=>{ const away=node!=='table'; if(away&&was==='table'){ draw(); } ghost.visible=away&&!!(typeof state!=='undefined'&&state&&state.ladder); was=node; });
+    window.__ghostDraw=draw; }
+
+  /* ==== (d) feed the fire: three or more logs from the woodpile and it roars for two minutes, lighting a carving inside the hearth ==== */
+  { const FCODE='IRA';   /* the three letters carved into the left inside stone of the firebox (placeholder) */
+    const FW={n:0,until:0,logs:[]};
+    const wh=new THREE.Mesh(new THREE.BoxGeometry(.6,1.05,1.3),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+    wh.position.set(NWALL-NDEPTH/2,.5,NZC); scene.add(wh);
+    const flamesF=hearth.children.filter(m=>m.material&&m.material.uniforms&&m.material.uniforms.uSeed);
+    const lm=new THREE.MeshStandardMaterial({color:0x4b3524,roughness:.95});
+    const isOut=()=>!!(window.__war&&window.__war.fireOut&&!window.__war.relit&&['holy_zealot','holy_inquisitor','holy_wrathboss'].includes(bossKey));
+    hotspot(wh,{go:'hearth',title:'Firewood',body:()=>{ if(isOut()) return 'Dry logs, stacked end-out. The fire they were cut for is dead.';
+      if(FW.until>performance.now()) return 'The fire is already roaring. It can take no more.';
+      FW.n++; const l=new THREE.Mesh(new THREE.CylinderGeometry(.045,.05,.42,10),lm); l.rotation.set(Math.PI/2,0,(FW.n%2?.3:-.3)); l.position.set(.33+FW.n*.012,.2+FW.n*.035,(FW.n%2?.08:-.1)); hearth.add(l); FW.logs.push(l);
+      if(FW.n>=3){ FW.until=performance.now()+120000; FW.n=0;
+        return 'You lay the third log on. The fire catches it with a rush and roars up the chimney, and the whole firebox turns white-gold. On the stone at the left, inside the hearth, something cut into the rock stands out in hard shadow.'; }
+      return ['You lay a log on the fire.','You lay a second log on. The flames lick at it.'][FW.n-1]; }});
+    /* the carving: three letters cut into the inner face of the left jamb, invisible until the fire roars */
+    const ccv=document.createElement('canvas'); ccv.width=256; ccv.height=128; const c=ccv.getContext('2d');
+    c.font='bold 92px Georgia,serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle='rgba(255,220,170,.55)'; c.fillText(FCODE,130,66); c.fillStyle='rgba(20,10,4,.95)'; c.fillText(FCODE,128,64);
+    const cm=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(ccv),transparent:true,opacity:0,depthWrite:false});
+    const carve=new THREE.Mesh(new THREE.PlaneGeometry(.26,.13),cm); carve.rotation.y=Math.PI/2; carve.position.set(.252,.64,.37);   /* on the soot-black back stones, left of the flames */ hearth.add(carve);
+    hotspot(carve,{go:'hearth',title:'A carving',body:()=>FW.until>performance.now()?'Three letters, cut deep into the stone and blackened by years of smoke: '+FCODE+'.':null});
+    fireTicks.push((dt,t)=>{ const on=FW.until>performance.now(); const left=(FW.until-performance.now())/1000;
+      const k=on?Math.min(1,(120-left)/2,left/4):0;   /* swell in, fade out over the last few seconds */
+      for(const f of flamesF) f.scale.setScalar(1+.55*k);
+      if(k>0&&!isOut()) fireLight.intensity*=1+1.1*k;
+      cm.opacity=k*.95; carve.visible=k>0.02;
+      if(!on&&FW.logs.length&&FW.until){ for(const l of FW.logs) hearth.remove(l); FW.logs.length=0; FW.until=0; } });
+    window.__fw=FW; }
+
+  /* ==== (e) the crawl is lit faintly from where you are, so you can see the turns ==== */
+  { const cl=new THREE.PointLight(0xffa060,7,3.2,1.5); scene.add(cl);
+    fireTicks.push(()=>{ const on=/^crawl/.test(node); cl.visible=on; if(on){ cl.position.copy(camera.position); cl.position.y+=.15; } }); }
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
   { const LEVEL={holy_assessor:1,holy_tithemaster:2,holy_greed:3}, K=[0,.18,.34,.5], GOLD=new THREE.Color(0xffb52e);
     let lights=null;
