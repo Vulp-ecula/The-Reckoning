@@ -5861,16 +5861,16 @@ addEventListener('resize',()=>{
       if(ms) box._t=setTimeout(()=>box.classList.remove('on'),ms); };
     window.__cardPromptClose=()=>box.classList.remove('on'); }
   /* ---- a card speaks: a speech bubble beside the card on the table, typed out letter by letter ---- */
-  { const st=document.createElement('style'); st.textContent=`.rk-say{position:fixed;z-index:63;max-width:260px;padding:10px 13px;border-radius:8px;pointer-events:auto;cursor:pointer;
+  { const st=document.createElement('style'); st.textContent=`.rk-say{position:fixed;z-index:63;max-width:330px;padding:12px 16px;border-radius:8px;pointer-events:auto;cursor:pointer;
       background:rgba(14,10,7,.94);border:1px solid rgba(255,200,120,.55);box-shadow:0 6px 24px #000;color:#f0e2c2;
-      font-family:"IM Fell English","Iowan Old Style",Georgia,serif;font-style:italic;font-size:16px;line-height:1.4;}
- .rk-say b{display:block;font-style:normal;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#e0b860;margin-bottom:3px;}
+      font-family:"IM Fell English","Iowan Old Style",Georgia,serif;font-style:italic;font-size:20px;line-height:1.35;}
+ .rk-say b{display:block;font-style:normal;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#e0b860;margin-bottom:3px;}
     .rk-say:after{content:'';position:absolute;left:22px;bottom:-9px;border:9px solid transparent;border-bottom:0;border-top-color:rgba(255,200,120,.55);}
     body.cabin-away .rk-say{display:none;}`; document.head.appendChild(st);
     window.__cardSay=(side,lane,name,text,ms)=>{ const row=side==='enemy'?'enemy-row':'player-row';
       const el=document.querySelector('#'+row+' .slot[data-lane="'+lane+'"] .card')||document.querySelector('#'+row+' .slot[data-lane="'+lane+'"]'); if(!el) return;
       const r=el.getBoundingClientRect(), b=document.createElement('div'); b.className='rk-say'; b.innerHTML='<b>'+name+'</b><span></span>'; document.body.appendChild(b);
-      const place=()=>{ const h=b.offsetHeight; b.style.left=Math.max(8,Math.min(innerWidth-280,r.left+r.width*.25))+'px'; b.style.top=Math.max(8,r.top-h-12)+'px'; };
+      const place=()=>{ const h=b.offsetHeight; b.style.left=Math.max(8,Math.min(innerWidth-350,r.left+r.width*.25))+'px'; b.style.top=Math.max(8,r.top-h-12)+'px'; };
       place(); b.animate([{opacity:0},{opacity:1}],{duration:250});
       const sp=b.querySelector('span'), t0=performance.now(); const tick=setInterval(()=>{ const i=Math.min(text.length,Math.ceil((performance.now()-t0)/28)); sp.textContent=text.slice(0,i); place(); if(i>=text.length) clearInterval(tick); },28);   /* typed by elapsed time, so a slow frame never stalls it */
       const kill=()=>{ clearInterval(tick); b.animate([{opacity:1},{opacity:0}],{duration:250}); setTimeout(()=>b.remove(),240); };
