@@ -5806,7 +5806,7 @@ addEventListener('resize',()=>{
     let said=false; addEventListener('reckoning:boss',()=>{ said=false; });
     if(typeof onPlay==='function'){ const op=onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
       try{ if(side==='player'&&c&&c.key==='herald'&&bossKey==='holy_tithemaster'&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
-        setTimeout(()=>say('<b>Gilt Herald:</b> You deserve a drink, friend. Try the magpie’s brandy, that’ll fortify you.',5200),300); } }catch(e){} return r; }; }
+        setTimeout(()=>__cardPrompt('The Gilt Herald','“You deserve a drink, friend. Try the magpie’s brandy, that’ll fortify you.”','Close',null,9000),300); } }catch(e){} return r; }; }
     /* the bottle, beside the magpie */
     const MX=R/2-.26, MZ=-.86, SY=1.815+.035;
     const bg=new THREE.Group(); bg.position.set(MX-.02,SY,MZ+.2); scene.add(bg);
@@ -5846,25 +5846,38 @@ addEventListener('resize',()=>{
     addEventListener('reckoning:boss',()=>{ setTimeout(ensureHerald,300); setTimeout(ensureHerald,1500); }); window.__ensureHerald=ensureHerald;
     window.__brandy=BR;
   }
+  /* ---- a clear prompt box for card moments (the Spy's choice, a card speaking up) ---- */
+  { const st=document.createElement('style'); st.textContent=`#rk-cp{position:fixed;left:18px;top:160px;z-index:62;display:none;max-width:320px;padding:10px 14px;text-align:center;
+      border-radius:10px;background:rgba(20,14,9,.95);border:1px solid rgba(255,200,120,.6);box-shadow:0 0 30px rgba(255,180,80,.25),0 8px 30px #000;color:#eadcbf;
+      font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:13.5px;line-height:1.4;pointer-events:auto;}
+    #rk-cp.on{display:block;} #rk-cp h4{margin:0 0 6px;font-weight:normal;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#e0b860;}
+    #rk-cp button{margin-top:10px;padding:7px 14px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;color:#e8d9bb;background:rgba(255,255,255,.06);border:1px solid rgba(255,190,110,.35);}
+    body.cabin-away #rk-cp{display:none!important;}
+    .slot.spy-target .card{box-shadow:0 0 0 3px #ffd77a,0 0 22px rgba(255,210,100,.8)!important;animation:spyPulse 1.1s ease-in-out infinite;}
+    @keyframes spyPulse{50%{box-shadow:0 0 0 3px #ffd77a,0 0 34px rgba(255,210,100,1)}}`; document.head.appendChild(st);
+    const box=document.createElement('div'); box.id='rk-cp'; document.body.appendChild(box);
+    window.__cardPrompt=(title,html,btn,onBtn,ms)=>{ box.innerHTML='<h4>'+title+'</h4><div>'+html+'</div>'+(btn?'<button>'+btn+'</button>':'');
+      box.classList.add('on'); clearTimeout(box._t); if(btn) box.querySelector('button').onclick=e=>{ e.stopPropagation(); box.classList.remove('on'); onBtn&&onBtn(); };
+      if(ms) box._t=setTimeout(()=>box.classList.remove('on'),ms); };
+    window.__cardPromptClose=()=>box.classList.remove('on'); }
   /* ---- The Spy (Conquest): when played, swap places with any card, yours or theirs. Swapping with an enemy turns it to your side, and sends the Spy to theirs. ---- */
   { try{
     SIG.swap={i:'\u{1F575}\uFE0F',n:'Turncoat',d:'When played, choose any card on the table. The Spy swaps places with it. Choose an enemy, and it comes over to your side while the Spy takes its seat among them.'};
     CARDS.spy={name:'The Spy',art:'\u{1F575}\uFE0F',pow:1,hp:2,cost:{type:'coin',n:2},faction:'conquest',sig:'swap'};
     if(FACTIONS.conquest&&!FACTIONS.conquest.deck.includes('spy')) FACTIONS.conquest.deck.push('spy');
-    const spyCancel=()=>{ if(state&&state._spySel){ state._spySel=null; say('',10); renderAll(); } };
+    const spyCancel=()=>{ __cardPromptClose(); if(state&&state._spySel){ state._spySel=null; renderAll(); } };
     const op=window.onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
       try{ if(side==='player'&&c&&c.sig==='swap'){ const any=state.playerBoard.some(x=>x&&x!==c)||state.enemyBoard.some(x=>x&&!x.isBoss);
-          if(any){ state._spySel=c.uid; setTimeout(()=>{ say('<b>The Spy</b> slips into the crowd. <b>Click any card</b> to trade places with it, or anywhere else to stay put.',6000); renderAll(); },50); } } }catch(e){} return r; };
+          if(any){ state._spySel=c.uid; setTimeout(()=>{ __cardPrompt('The Spy','The Spy slips into the crowd.<br><b>Click a glowing card</b> to trade places with it.<br><i>An enemy you choose will cross over and fight for you.</i>','Keep the Spy where it is',spyCancel); renderAll(); },50); } } }catch(e){} return r; };
     const os=window.onSlotClick; window.onSlotClick=function(lane,isEnemy){
-      try{ if(state._spySel&&state.turn==='player'&&!state.over){ const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
+      try{ if(state._spySel&&state.turn==='player'&&!state.over){ __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
           if(spy){ if(!isEnemy){ const t=state.playerBoard[lane]; if(t&&t!==spy){ state.playerBoard[lane]=spy; state.playerBoard[si]=t; say('<b>The Spy</b> trades places with the '+t.name+'.',2600); } else say('',10); }
             else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Holy, and the '+t.name+' crosses over to fight for you.',3400); }
               else if(t&&t.isBoss) say('<b>The Spy</b> will not get close enough to that one.',2200); } }
           renderAll(); return; } }catch(e){}
       return os.apply(this,arguments); };
-    addEventListener('click',e=>{ try{ if(!state||!state._spySel) return; if(e.target.closest&&e.target.closest('.slot,.card')) return; spyCancel(); }catch(_){} },true);
     const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a);
-      try{ if(state._spySel){ for(const [row,b] of [['player-row',state.playerBoard],['enemy-row',state.enemyBoard]]) document.querySelectorAll('#'+row+' .slot').forEach((el,i)=>{ const c=b[i]; if(c&&c.uid!==state._spySel&&!c.isBoss) el.classList.add('sac-target'); }); } }catch(e){} return r; };
+      try{ if(state._spySel){ for(const [row,b] of [['player-row',state.playerBoard],['enemy-row',state.enemyBoard]]) document.querySelectorAll('#'+row+' .slot').forEach((el,i)=>{ const c=b[i]; if(c&&c.uid!==state._spySel&&!c.isBoss) el.classList.add('sac-target','spy-target'); }); } }catch(e){} return r; };
   }catch(e){} }
   /* ---- Greed grows greedier up the ladder: warmer, golder light; a bigger hoard; a spotlight on the table at the end ---- */
   { const LEVEL={holy_assessor:1,holy_tithemaster:2,holy_greed:3}, K=[0,.18,.34,.5], GOLD=new THREE.Color(0xffb52e);
