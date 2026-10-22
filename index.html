@@ -1128,11 +1128,11 @@ const WALL_LADDER=[
 const GREED_LADDER=[
   {key:'holy_assessor',face:'📜',name:'The Assessor',sub:'who prices the living',host:['holy_acolyte','holy_novice','holy_reeve'],
    intro:"<b>The Assessor:</b> A crown is only a debt with a head on it, white rider. Let me weigh what you carry, and what each piece will cost you to keep.",
-   defeat:"<b>The Assessor:</b> ...the sum... will not close... the Tithe-Master keeps better books than I.",
+   defeat:"<b>The Assessor:</b> ...the sum... will not close... the Tithe-Master keeps better books than I.<br><i>\u201cI name the price before any hand is raised.\u201d</i>",
    quip:["Everything has a price.","Your coin costs more here.","Item: one crown, forfeit."]},
   {key:'holy_tithemaster',face:'💰',name:'The Tithe-Master',sub:'who takes the last coin',host:['holy_verger','holy_almoner','holy_reeve'],
    intro:"<b>The Tithe-Master:</b> They told me to tax the conqueror last, when there is most to take. Every coin you hold is a coin you owe. Sit still, white rider, and be collected.",
-   defeat:"<b>The Tithe-Master:</b> ...the chest... is empty... Greed will count this against us.",
+   defeat:"<b>The Tithe-Master:</b> ...the chest... is empty... Greed will count this against us.<br><i>\u201cI take only what has been named.\u201d</i>",
    quip:["The Church takes its third.","Hoard it. I can wait.","Pay what you owe."]},
   {key:'holy_greed',face:'🪙',name:'Greed',sub:'one hunger, many hands',host:['holy_assessor','holy_reeve','holy_almoner'],
    intro:"<b>Greed:</b> Assessor, Reeve, Tithe-Master \u2014 I have worn all three, white rider, and I will wear them again before you are done. Every coin you take has already been counted against you.",
@@ -2436,8 +2436,8 @@ function adversaryHit(){
   const fig=$('#adversary'); const bub=$('#adv-bubble');
   if(fig){fig.classList.remove('hit');void fig.offsetWidth;fig.classList.add('hit');}
   if(bub){
-    bub.textContent=ADV_LINES[_advLine%ADV_LINES.length];_advLine++;
-    bub.classList.add('show');
+    /* the adversary's 'Ouch' quips are retired */
+    if(false){ bub.textContent=ADV_LINES[_advLine%ADV_LINES.length];_advLine++; bub.classList.add('show'); }
     clearTimeout(_advBubbleTimer);
     _advBubbleTimer=setTimeout(()=>bub&&bub.classList.remove('show'),1400);
   }
