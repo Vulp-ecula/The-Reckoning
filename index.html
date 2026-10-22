@@ -5941,6 +5941,60 @@ addEventListener('resize',()=>{
   PACK.marks=()=>marks;
   { const vq=new URLSearchParams(location.search).get('view'); if(vq&&NODES[vq]) setTimeout(()=>goTo(vq),3000); }   /* ?view=bshelf lands you in that room view (testing) */
   setTimeout(hlRebuild,1500);   /* after the rest of the room has registered its hotspots */
+  /* ---- card quips: Conquest cards speak once in a while, each line only ever once ---- */
+  { const QK='reckoning_quips_used'; let used={}; try{ used=JSON.parse(localStorage.getItem(QK))||{}; }catch(e){}
+    const mark=id=>{ used[id]=1; try{ localStorage.setItem(QK,JSON.stringify(used)); }catch(e){} };
+    /* to: 'ally:key' | 'foe:key' | 'boss:key' | omitted = says it to no one in particular. re = the target answers. */
+    const Q={
+      bowman:[{t:'Two arrows left and a whole Church to spend them on.'},
+              {to:'foe:holy_verger',t:'Hold still, broom-man. You’re the only thing in here I can’t miss.',re:'I’ve swept up better archers than you.'},
+              {to:'foe:holy_novice',t:'Say a prayer, boy. Make it a short one.'}],
+      herald:[{to:'ally:crown',t:'All rise for the Crowned Rider!',re:'Sit down. You’ll get us both shot.'},
+              {t:'Hear ye, hear ye: the white rider owes nothing to anyone.'}],
+      squire:[{t:'I polished the whole crown myself. Twice.'},
+              {to:'ally:crown',t:'Shall I carry your helm, sir?',re:'Carry yourself out of the arrows, lad.'}],
+      crown:[{to:'foe:holy_reeve',t:'The King’s Reeve. Which king?',re:'Whichever one is left.'},
+             {t:'I have taken cities with less gold than this table.'}],
+      ballista:[{t:'Wind it. Aim it. Loose it. Don’t ask it to think.'},
+                {to:'foe:holy_almoner',t:'Look at the chains on that one. Good. Big target.'}],
+      garrison:[{t:'Nobody passes. I’m told that’s the whole job.'},
+                {to:'foe:holy_acolyte',t:'Put the candle down, son. You’ll set the table alight.',re:'It’s blessed. It won’t.'}],
+      cantor:[{t:'A hymn for the dying. Whose dying depends on who pays.'},
+              {to:'foe:holy_novice',t:'You’re flat, little brother.',re:'I’m not singing. I’m praying.'}],
+      shieldbear:[{t:'I’ll stand in front. Somebody always has to.'},
+                  {to:'ally:bowman',t:'Shoot past my ear once more and I drop this on your foot.',re:'Then stop moving your ear.'}],
+      plunderer:[{to:'foe:holy_almoner',t:'Those chains are gold. I can tell from here.',re:'Everything I wear was given freely.'},
+                 {to:'boss:holy_tithemaster',t:'That chest looks heavy, Father. Let me help you with it.'}],
+      paymaster:[{t:'Wages first. Prayers after.'},
+                 {to:'ally:plunderer',t:'Hand it over. All of it. I’ll know.',re:'Wouldn’t dream of keeping any.'}],
+      pawnbroker:[{t:'Bring me what you love. I’ll give you a fair price for it.'},
+                  {to:'foe:holy_assessor',t:'We’re in the same trade, you and I.',re:'I have never once given anything back.'}],
+      auditor:[{to:'boss:holy_greed',t:'Your books don’t balance. I checked them twice.'},
+               {t:'Someone is skimming. Probably everyone.'}],
+      spy:[{t:'Don’t look at me. I’m not here.'},
+           {to:'foe:holy_reeve',t:'Nice eye. Shame it only looks the one way.',re:'It sees you.'}],
+      peasant:[{t:'I was promised bread for this.'},
+               {to:'ally:crown',t:'Is that the king?',re:'No. Keep walking.'}]
+    };
+    let last=0;
+    const find=(row,key,not)=>row.findIndex(x=>x&&x.key===key&&x!==not);
+    const op=window.onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
+      try{ const L=c&&Q[c.key]; const bk=window.__bossKey||'';
+        if(side!=='player'||!L||state.over||state._spySel) return r;
+        if(c.key==='herald'&&bk==='holy_tithemaster') return r;          /* the Herald's brandy line owns that match */
+        if(performance.now()-last<20000||Math.random()>.45) return r;
+        const ok=L.map((q,i)=>({q,id:c.key+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to) return true;
+          const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return find(state.enemyBoard,key)>=0; return find(state.playerBoard,key,c)>=0; });
+        if(!ok.length) return r;
+        const pick=ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
+        setTimeout(()=>{ if(document.querySelector('.rk-say')) return;
+          const ln=state.playerBoard.indexOf(c); if(ln<0) return;
+          __cardSay('player',ln,c.name,'“'+q.t+'”',5200);
+          if(q.re){ const [k,key]=q.to.split(':'); setTimeout(()=>{ const foe=k==='foe', row=foe?state.enemyBoard:state.playerBoard, i=find(row,key,c);
+            if(i>=0) __cardSay(foe?'enemy':'player',i,row[i].name,'“'+q.re+'”',5200); },5600); }
+        },500);
+      }catch(e){} return r; };
+  }
   renderPack();
 }
 
