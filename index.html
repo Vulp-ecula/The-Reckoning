@@ -852,7 +852,7 @@ const SIG={
   zeal:{i:'🔥',n:'Zeal',d:'Each time you attack, this gains +1 power (up to +2 per turn). Holy fury feeds on your aggression.'},
   enthrall:{i:'💋',n:'Enthral',d:'While this lives, the creature it faces is besotted and will not attack.'},
   rapture:{i:'🌹',n:'Rapture',d:'Whoever strikes this down is seduced by the dying — that creature will not attack next turn.'},
-  mirror:{i:'🪞',n:'Mirror',d:'Its power always matches the creature it faces. It becomes whatever it beholds.'},
+  mirror:{i:'🪞',n:'Mirror',d:'Its power matches the creature it faces, and that creature takes on its health in turn while they face each other. The mirror cuts both ways.'},
   // --- Chain A: adjacency (spatial puzzle) ---
   anchor:{i:'⚓',n:'Anchor',d:'On play, allies in each neighbouring lane gain +1 max health. That gift is lost when this falls.'},
   choir:{i:'🎶',n:'Choir',d:'Gains +1 power for each neighbouring ally that also bears a sigil.'},
@@ -864,6 +864,16 @@ const SIG={
   // --- Chain C: card advantage (the Gwent axis) ---
   tithebody:{i:'📿',n:'Tithe of Flesh',d:'On play, this offers itself up at once — it falls, and you draw a card.'},
   harvest:{i:'🌾',n:'Harvest',d:'When it dies, you draw a card. Its death feeds your hand.'},
+  drain:{i:'💉',n:'Drain',d:'Heals itself by whatever damage it deals.'},
+  pilfer:{i:'🪶',n:'Pilfer',d:'On arrival, steals a random card from your hand. Kill it to get the card back.'},
+  jewel:{i:'💎',n:'Jewel',d:'Never attacks. When it dies, you gain 2 coin.'},
+  grip:{i:'✋',n:'Grip',d:'The creature facing it cannot be sacrificed or moved while this lives.'},
+  challenge:{i:'🤺',n:'Challenge',d:'Strikes your strongest creature, whatever lane it stands in, until one of them falls.'},
+  charge:{i:'🐂',n:'Charge',d:'Its first strike deals double damage.'},
+  grudge:{i:'👊',n:'Grudge',d:'When its brother falls, it gains +2 power.'},
+  vengeance:{i:'🖤',n:'Vengeance',d:'Gains +1 power whenever another Holy creature dies.'},
+  parasite:{i:'🪱',n:'Parasite',d:'At turn\'s end, the creature facing it loses 1 health, and this gains 1.'},
+  drunk:{i:'🍺',n:'Strong Drink',d:'Your creatures facing it, or beside that lane, have -1 power while this lives.'},
   cull:{i:'🎯',n:'Cull',d:'When it strikes, it also deals its power to the enemy\'s weakest other creature.'},
 };
 const CARDS={
@@ -929,7 +939,7 @@ const CARDS={
   boss_death:{name:'Lady Death',art:'🥀',pow:3,hp:8,cost:{},faction:'',sig:'reap',boss:true},
   // ---- FACTION BOSSES: playable apex cards, one per faction. Art = the faction banner. ----
   boss_war:{name:'War',art:'⚔️',pow:6,hp:6,cost:{type:'marrow',n:3},faction:'war',sig:'rally',boss:true},
-  warpig:{name:'The War Pig',art:'🐗',atk:'fist',pow:5,hp:7,cost:{type:'blood',n:3},faction:'war',sig:'rally'},
+  warpig:{name:'The War Pig',art:'🐗',atk:'fist',pow:5,hp:7,cost:{type:'blood',n:2},faction:'war',sig:'rally'},
   boss_conquest:{name:'Conquest',art:'👑',pow:4,hp:7,cost:{type:'marrow',n:3},faction:'conquest',sig:'coin',boss:true},
   boss_famine:{name:'Famine',art:'⚖️',atk:'poison',pow:4,hp:8,cost:{type:'marrow',n:3},faction:'famine',sig:'wither',boss:true},
   death_boss:{name:'Death',art:'☠️',pow:4,hp:6,cost:{type:'marrow',n:3},faction:'death',sig:'raise',boss:true},
@@ -938,7 +948,7 @@ const CARDS={
   holy_warden:{name:'Warden of the Ford',art:'⛪',pow:2,hp:5,cost:{type:'blood',n:2},faction:'holy',sig:'leap'},
   holy_bastion:{name:'Bastion Knight',art:'🏯',pow:2,hp:6,cost:{type:'blood',n:2},faction:'holy',sig:'bulwark'},
   holy_chanter:{name:'Chanter of Mercy',art:'🕊️',pow:1,hp:4,cost:{type:'blood',n:1},faction:'holy',sig:'radiant'},
-  holy_marshal:{name:'The Lord Marshal',art:'⚜️',pow:3,hp:9,cost:{},faction:'holy',sig:'bulwark',boss:true},
+  holy_marshal:{name:'The Lord Marshal',art:'⚜️',pow:3,hp:9,cost:{},faction:'holy',sig:'bulwark',boss:true,once:true},
   // ---- GREED (vs Conquest): tax and choke the coin economy ----
   holy_almoner:{name:'The Almoner',art:'⛓️',pow:1,hp:5,cost:{type:'blood',n:1},faction:'holy',sig:'tithe',once:true},
   holy_assessor:{name:'The Assessor',art:'📜',pow:2,hp:5,cost:{type:'blood',n:2},faction:'holy',sig:'sanction',once:true},
@@ -947,9 +957,7 @@ const CARDS={
   // ---- HOLY RABBLE: the Church's own peasants. Free, weak, endless — the bodies that fill
   // the wall so the named collectors don't have to appear over and over.
   holy_acolyte:{name:'Acolyte',art:'🕯️',pow:1,hp:2,cost:{},faction:'holy'},
-  holy_novice:{name:'Novice',art:'📿',pow:1,hp:1,cost:{},faction:'holy'},
   holy_verger:{name:'Verger',art:'🧹',pow:1,hp:2,cost:{},faction:'holy'},
-  holy_pilgrim:{name:'Pilgrim',art:'🥾',pow:2,hp:1,cost:{},faction:'holy'},
   // Greed itself — the sin behind all three collectors, fielded as an elite reinforcement.
   holy_greed:{name:'Greed',art:'🪙',pow:3,hp:9,cost:{},faction:'holy',sig:'tithe',boss:true},
   // ---- GLUTTONY (vs Famine): feed on decay, shrug off wither/rot ----
@@ -970,6 +978,17 @@ const CARDS={
   holy_favoured:{name:'The Favoured',art:'💐',pow:3,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'choir'},
   holy_jilted:{name:'The Jilted',art:'💔',atk:'fist',pow:3,hp:2,cost:{type:'blood',n:1},faction:'holy',sig:'rally'},
   holy_veiled:{name:'The Veiled',art:'🎭',pow:2,hp:5,cost:{type:'blood',n:2},faction:'holy',sig:'leap'},
+  holy_leech:{name:'The Leech',art:'🩸',pow:1,hp:2,cost:{type:'blood',n:1},faction:'holy',sig:'drain'},
+  holy_magpie:{name:'The Magpie',art:'🐦‍⬛',pow:1,hp:1,cost:{},faction:'holy',sig:'pilfer'},
+  holy_wolf:{name:'The Wolf',art:'🐺',pow:3,hp:3,cost:{type:'blood',n:2},faction:'holy',sig:'cleave'},
+  holy_toad:{name:'The Toad',art:'🐸',pow:0,hp:5,cost:{},faction:'holy',sig:'jewel'},
+  holy_hand:{name:'The Gilded Hand',art:'✋',pow:2,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'grip'},
+  holy_duel:{name:'The Duellist',art:'🤺',pow:2,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'challenge'},
+  holy_bull:{name:'The Bull',art:'🐂',pow:3,hp:4,cost:{type:'blood',n:2},faction:'holy',sig:'charge'},
+  holy_brother:{name:'Feuding Brother',art:'👊',pow:2,hp:2,cost:{},faction:'holy',sig:'grudge'},
+  holy_widow:{name:'The Vengeful Widow',art:'🖤',pow:1,hp:4,cost:{type:'blood',n:1},faction:'holy',sig:'vengeance'},
+  holy_tapeworm:{name:'The Tapeworm',art:'🪱',pow:1,hp:2,cost:{type:'blood',n:1},faction:'holy',sig:'parasite'},
+  holy_brewer:{name:'The Brewer',art:'🍺',pow:1,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'drunk'},
   holy_lustboss:{name:'Lust',art:'💋',pow:2,hp:10,cost:{},faction:'holy',sig:'enthrall',boss:true},
 };
 // ---- ART: full-card illustrations (Path 1). Key by card key. ----
@@ -983,9 +1002,7 @@ const ART={
   hoarder: 'assets/cf00c4fb46e5.jpg',
   gravedigger: 'assets/7b5dfa42c34d.jpg',
   holy_acolyte: 'assets/b361a0ae9833.jpg',
-  holy_novice: 'assets/e0bf31c37af9.jpg',
   holy_verger: 'assets/90f4d7766917.jpg',
-  holy_pilgrim: 'assets/04fc54d3e7f0.jpg',
   revenant: 'assets/019e6b4faaaf.jpg',
   rookseer: 'assets/3c9e7cbfb592.jpg',
   relic_medicae: 'assets/2899a8d1a3c0.jpg',
@@ -1126,45 +1143,45 @@ const WALL_LADDER=[
 // the others still use the shared placeholder ladder until Phase 2.
 // ---- GREED: the Church's tax-collectors, counter to Conquest's coin economy ----
 const GREED_LADDER=[
-  {key:'holy_assessor',face:'📜',name:'The Assessor',sub:'who prices the living',host:['holy_acolyte','holy_novice','holy_reeve'],
+  {key:'holy_assessor',face:'📜',name:'The Assessor',sub:'who prices the living',host:['holy_bastion','holy_magpie','holy_reeve'],
    intro:"<b>The Assessor:</b> A crown is only a debt with a head on it, white rider. Let me weigh what you carry, and what each piece will cost you to keep.",
    defeat:"<b>The Assessor:</b> ...the sum... will not close... the Tithe-Master keeps better books than I.<br><i>\u201cI name the price before any hand is raised.\u201d</i>",
    quip:["Everything has a price.","Your coin costs more here.","Item: one crown, forfeit."]},
-  {key:'holy_tithemaster',face:'💰',name:'The Tithe-Master',sub:'who takes the last coin',host:['holy_verger','holy_almoner','holy_reeve'],
+  {key:'holy_tithemaster',face:'💰',name:'The Tithe-Master',sub:'who takes the last coin',host:['holy_warden','holy_almoner','holy_reeve'],
    intro:"<b>The Tithe-Master:</b> They told me to tax the conqueror last, when there is most to take. Every coin you hold is a coin you owe. Sit still, white rider, and be collected.",
    defeat:"<b>The Tithe-Master:</b> ...the chest... is empty... Greed will count this against us.<br><i>\u201cI take only what has been named.\u201d</i>",
    quip:["The Church takes its third.","Hoard it. I can wait.","Pay what you owe."]},
-  {key:'holy_greed',face:'🪙',name:'Greed',sub:'one hunger, many hands',host:['holy_assessor','holy_reeve','holy_almoner'],
+  {key:'holy_greed',face:'🪙',name:'Greed',sub:'one hunger, many hands',host:['holy_wolf','holy_hand','holy_almoner'],
    intro:"<b>Greed:</b> Assessor, Reeve, Tithe-Master \u2014 I have worn all three, white rider, and I will wear them again before you are done. Every coin you take has already been counted against you.",
    defeat:"<b>Greed:</b> ...the ledger... closes. Take it all, then. It was never going to be enough \u2014 not for you, not for me.<br><i>\u201cI keep what is taken. There is no after me.\u201d</i>",
    quip:["The ledger remembers.","Your gold is borrowed.","All coin comes home.","Count it while you can.","The proud fall cheapest.","Nothing is yours."]},
 ];
 // ---- GLUTTONY: eaters of the dying, counter to Famine's attrition ----
 const GLUTTONY_LADDER=[
-  {key:'holy_maw',face:'🦷',name:'The Sated Maw',sub:'who cannot be starved',host:['holy_glutton','holy_maw','holy_ossuary','holy_ossuary'],
+  {key:'holy_maw',face:'🦷',name:'The Sated Maw',sub:'who cannot be starved',host:['holy_glutton','holy_tapeworm','holy_ossuary','holy_maw'],
    intro:"<b>The Sated Maw:</b> Wither me? Rot me? I have eaten famine itself, grey rider. Your slow poisons are seasoning.",
    defeat:"<b>The Sated Maw:</b> ...too much... even I... could not swallow this...",
    quip:["Feed me your dead.","Starvation is a feast.","More. Always more."]},
-  {key:'holy_glutton',face:'🍖',name:'The Glutton',sub:'who grows on the grave',host:['holy_ossuary','holy_ossuary','holy_glutton','holy_maw'],
+  {key:'holy_glutton',face:'🍖',name:'The Glutton',sub:'who grows on the grave',host:['holy_brewer','holy_ossuary','holy_chanter'],
    intro:"<b>The Glutton:</b> Every soul you starve falls onto my plate. Kill them slowly — I like them tender.",
    defeat:"<b>The Glutton:</b> ...my belly... finally... empty...",
    quip:["Death fattens me.","Waste nothing.","Your losses are my supper."]},
-  {key:'holy_devourer',face:'🍷',name:'The Devourer',sub:'the hunger that ends worlds',host:['holy_glutton','holy_maw','holy_ossuary','holy_ossuary'],
+  {key:'holy_devourer',face:'🍷',name:'The Devourer',sub:'the hunger that ends worlds',host:['holy_tapeworm','holy_brewer','holy_chanter'],
    intro:"<b>The Devourer:</b> Famine, you thin the world to bone. I am what comes after — the mouth that eats the bones. Let the dying pile high; each corpse only makes me larger.",
    defeat:"<b>The Devourer:</b> ...the hunger... sleeps... you have fed me... to death...",
    quip:["The grave is my larder.","I swell on the fallen.","Bring me your attrition."]},
 ];
 // ---- WRATH: holy fury turned on the aggressor, counter to War's Bloodlust rush ----
 const WRATH_LADDER=[
-  {key:'holy_zealot',face:'🔥',name:'The Zealot',sub:'whose fury is your fault',host:['holy_flagellant','holy_acolyte','holy_novice'],
+  {key:'holy_zealot',face:'🔥',name:'The Zealot',sub:'whose fury is your fault',host:['holy_flagellant','holy_bull','holy_acolyte'],
    intro:"<b>The Zealot:</b> Strike, red rider. Strike again. Every blow you land is another log on the pyre — and I am the fire.",
    defeat:"<b>The Zealot:</b> ...spent... my rage... you gave me nothing left to burn...",
    quip:["Feed my fury.","Every blow inflames me.","Rage begets rage."]},
-  {key:'holy_inquisitor',face:'🗡️',name:'The Inquisitor',sub:'who judges the violent',host:['holy_zealot','holy_acolyte','holy_verger'],
+  {key:'holy_inquisitor',face:'🗡️',name:'The Inquisitor',sub:'who judges the violent',host:['holy_zealot','holy_widow','holy_acolyte'],
    intro:"<b>The Inquisitor:</b> War, you are a confession waiting to be beaten out. Come — the more you swing, the more righteous my answer.",
    defeat:"<b>The Inquisitor:</b> ...the sentence... falls upon me instead...",
    quip:["Your aggression convicts you.","Righteous wrath.","I grow with every sin."]},
-  {key:'holy_wrathboss',face:'☀️',name:'Wrath',sub:'the fury of the Church made flesh',host:['holy_inquisitor','holy_acolyte','holy_pilgrim'],
+  {key:'holy_wrathboss',face:'☀️',name:'Wrath',sub:'the fury of the Church made flesh',host:['holy_brother','holy_duel','holy_shield'],
    intro:"<b>Wrath:</b> You are War itself, and I am what War earns. Swing your fury, Horseman — I turn every stroke of it back upon you, tenfold and holy.",
    defeat:"<b>Wrath:</b> ...even the fire... burns out... ride on, pale one...",
    quip:["Your violence is my fuel.","The Ninth burns with me.","Strike, and make me stronger."]},
@@ -1180,7 +1197,7 @@ const LUST_LADDER=[
    intro:"<b>The Willing Martyr:</b> Cut me down, then. I have waited so long to be wanted enough to kill. You will find you cannot put me down and walk away clean.",
    defeat:"<b>The Willing Martyr:</b> ...thank you... for the ending... but she still sits behind me...",
    quip:["Be my undoing.","Killing me only binds you.","I die grateful."]},
-  {key:'holy_lustboss',face:'💋',name:'Lust',sub:'who has bedded every sin',host:['holy_shield','holy_warden','holy_bastion','holy_chanter','holy_marshal','holy_almoner','holy_assessor','holy_reeve','holy_tithemaster','holy_greed','holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_glutton','holy_maw','holy_ossuary','holy_devourer','holy_zealot','holy_flagellant','holy_inquisitor','holy_wrathboss','holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled'],
+  {key:'holy_lustboss',face:'💋',name:'Lust',sub:'who has bedded every sin',host:['holy_favoured','holy_jilted','holy_veiled','holy_beheld'],
    intro:"<b>Lust:</b> Wrath, Greed, Gluttony — I took them all to my bed, rider, and they gave me their teeth. Four riders could not resist me. What makes you think you can?",
    defeat:"<b>Lust:</b> ...cold... at last... you wanted the ending more than you wanted me... ride on, then, unlovely one...",
    quip:["Come closer. Closer.","You already belong to me.","Every sin answers to my hand.","Strike me — you'll only fall harder."]},
@@ -1596,6 +1613,8 @@ function effPow(c,isEnemy){
     // Wither/Terror sap a point, but can never silence a creature outright: anything
     // that started with power still swings for at least 1, so a lane is never fully locked.
     if(facing&&(facing.sig==='wither'||facing.sig==='terror')&&c.sig!=='gorge')p=Math.max(c.pow>0?1:0,p-1);
+    // Strong Drink (the Brewer): your creature facing it or beside its lane loses 1 power.
+    if(!isEnemy&&[lane-1,lane,lane+1].some(k=>opp[k]&&opp[k].sig==='drunk')&&c.sig!=='gorge')p=Math.max(c.pow>0?1:0,p-1);
     // Choir: +1 for each neighbouring ally that also bears a sigil (live read).
     if(c.sig==='choir')p+=neighbours(own,lane).filter(a=>a.sig).length;
   }
@@ -1679,6 +1698,7 @@ function onSlotClick(lane,isEnemy){
   // sacrifice mode: click your own creatures to pay blood
   if(state.awaitingSac>0&&!isEnemy){
     const v=state.playerBoard[lane];
+    if(v&&state.enemyBoard[lane]&&state.enemyBoard[lane].sig==='grip'){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
     if(v&&!state.sacrifices.includes(v.uid)){
       state.sacrifices.push(v.uid);state.awaitingSac--;
       if(state.awaitingSac===0)finalizeBloodPaid();
@@ -1724,7 +1744,15 @@ function placeCard(c,lane){c.curHp=c.hp;state.playerBoard[lane]=c;onPlay(c,'play
 function onPlay(c,side,lane){
   if(!c)return;
   const board=side==='player'?state.playerBoard:state.enemyBoard;
+  // Mirror (the Beheld) cuts both ways: your creature facing it takes on its health while they face.
+  { const mine=side==='player'?c:state.playerBoard[lane], m=side==='player'?state.enemyBoard[lane]:c;
+    if(mine&&m&&m.sig==='mirror'&&!mine._mirrorBy){ const add=Math.max(0,m.curHp-mine.hp); if(add){ mine.hp+=add; mine.curHp+=add; mine._mirrorBy=m.uid; mine._mirrorAdd=add; } } }
   switch(c.sig){
+    case 'pilfer':{
+      // The Magpie: snatches a random card from your hand; it drops it again when it dies. Never the Herald (the brandy hint needs him).
+      if(side==='enemy'){const pool=state.hand.filter(x=>!x.relic&&x.key!=='herald');if(pool.length){const t=pick(pool);removeHand(t);c._stolen=t;say('<b>The Magpie</b> snatches your '+t.name+' from your hand. Kill it to get it back.',3200);}}
+      break;
+    }
     case 'anchor':{
       // Give each neighbouring ally +1 max health, tagged so it can be revoked on this card's death.
       for(const n of [lane-1,lane+1]){const a=board[n];if(a){a.hp+=1;a.curHp+=1;a._anchoredBy=c.uid;}}
@@ -1785,11 +1813,12 @@ async function combat(side){
     // Rapture (Lust): a creature seduced by something it slew skips this one attack, then recovers.
     if(side==='player'&&a._besotted){a._besotted=false;continue;}
     if(side==='player'&&state.charmed[a.uid])continue;
-    const p=effPow(a,side==='enemy');if(p<=0)continue;
+    let p=effPow(a,side==='enemy');if(p<=0)continue;if(a.sig==='charge'&&!a._charged){p*=2;a._charged=true;}
     // Zeal (Wrath): each player attack inflames every Holy Zealot, up to +2 per turn.
     if(side==='player'){for(const z of state.enemyBoard){if(z&&z.sig==='zeal'){z._zt=z._zt||0;if(z._zt<2){z.pow++;z._zt++;}}}}
     let targets=[];
     if(a.sig==='cleave'){if(i-1>=0)targets.push(i-1);if(i+1<LANES)targets.push(i+1);}else targets=[i];
+    if(a.sig==='challenge'){let d=foe.findIndex(x=>x&&x.uid===a._duel);if(d<0){let bp=-1;for(let k=0;k<LANES;k++){const v=foe[k];if(v){const vp=effPow(v,side==='player');if(vp>bp){bp=vp;d=k;}}}if(d>=0)a._duel=foe[d].uid;}if(d>=0)targets=[d];}
     for(const t of targets){
       const blk=foe[t];const airborne=a.sig==='arrow';const canBlockAir=blk&&blk.sig==='leap';
       const willHitBlocker=!!(blk&&!(airborne&&!canBlockAir));
@@ -1799,6 +1828,7 @@ async function combat(side){
       if(willHitBlocker)strike(foeRow,t);     // spark on the struck defender
       if(blk&&!(airborne&&!canBlockAir)){const lethal=a.sig==='reap'?9999:p;dmg(blk,lethal,foe,foeRow);if(blk.sig==='rot'&&a.sig!=='gorge')dmg(a,1,board,rowId);if(side==='player'&&blk.sig==='rapture'&&blk.curHp<=0)a._besotted=true;}
       else{const face=(a.sig==='arrow')?Math.max(1,p-2):p;if(side==='player'){state.soulsYou+=face;if(a.sig==='coin')state.coin++;adversaryHit();}else{state.soulsFoe+=face;}pulseGlass(side);floatDamage(side==='player'?$('#fill-top'):$('#fill-bot'),'+'+face);}
+      if(a.sig==='drain')a.curHp=Math.min(a.hp,a.curHp+p);   // Drain (the Leech)
       // Cull: after the primary strike, deal p to the foe's weakest OTHER living creature (not lane t).
       if(a.sig==='cull'){let wi=-1,wl=Infinity;for(let k=0;k<LANES;k++){if(k===t)continue;const v=foe[k];if(v&&v.curHp>0&&v.curHp<wl){wl=v.curHp;wi=k;}}if(wi>=0){strike(foeRow,wi);dmg(foe[wi],p,foe,foeRow);}}
       renderReckoning();await wait(560);cleanup();   // hold so you can read the outcome
@@ -1860,7 +1890,13 @@ function countDeath(side,c){
   }
   state.deathsThisTurn+=add;
 }
-function deathTriggers(c,side,lane){const board=side==='player'?state.playerBoard:state.enemyBoard;if(c.sig==='raise'){if(c.key==='death_boss'){state.pendingResurrect=true;}else{setTimeout(()=>{if(!board[lane]){board[lane]=makeCard('wraith');renderAll();}},260);}}if(c.sig==='dread'){if(side==='player')state.soulsYou+=1;else state.soulsFoe+=1;}
+function deathTriggers(c,side,lane){const board=side==='player'?state.playerBoard:state.enemyBoard;
+  if(side==='enemy'){
+    if(c.sig==='mirror'){const v=state.playerBoard[lane];if(v&&v._mirrorBy===c.uid){v.hp=Math.max(1,v.hp-v._mirrorAdd);v.curHp=Math.max(1,Math.min(v.curHp,v.hp));v._mirrorBy=null;v._mirrorAdd=0;}}
+    if(c.sig==='jewel'){state.coin+=2;say('<b>The Toad</b> bursts, and a jewel rolls out. +2 coin.',2400);}
+    if(c.sig==='pilfer'&&c._stolen){if(state.hand.length<10){state.hand.push(c._stolen);say('<b>The Magpie</b> drops what it stole: your '+c._stolen.name+' is back in hand.',2800);}c._stolen=null;}
+    for(const x of board){if(!x||x===c||x.curHp<=0)continue;if(x.sig==='vengeance')x.pow++;if(c.sig==='grudge'&&x.key===c.key)x.pow+=2;}
+  }if(c.sig==='raise'){if(c.key==='death_boss'){state.pendingResurrect=true;}else{setTimeout(()=>{if(!board[lane]){board[lane]=makeCard('wraith');renderAll();}},260);}}if(c.sig==='dread'){if(side==='player')state.soulsYou+=1;else state.soulsFoe+=1;}
   // Harvest: this card's death draws you one (player side only — the enemy has no hand).
   if(c.sig==='harvest'&&side==='player'&&state.hand.length<10&&state.deck.length){state.hand.push(state.deck.pop());}
   // Anchor: the +1 max-hp gift it gave neighbours evaporates when it falls.
@@ -1901,6 +1937,9 @@ function holySins(){
   for(const c of state.enemyBoard){
     if(c&&c.sig==='tithe'&&state.coin>=3){state.coin--;c.pow++;taxed++;}
   }
+  // Parasite (the Tapeworm): the creature facing it loses 1 health, and the worm grows by 1.
+  let fed=false;for(let i=0;i<LANES;i++){const w=state.enemyBoard[i],v=state.playerBoard[i];if(w&&w.sig==='parasite'&&v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');w.hp++;w.curHp++;fed=true;}}
+  if(fed)cleanup();
   if(taxed){say('<b>The Tithe:</b> the Church takes its due — '+taxed+' coin levied.',2200);}
 }
 async function enemyDeploy(){for(let i=0;i<LANES;i++){if(state.enemyQueue[i]&&!state.enemyBoard[i]){const c=state.enemyQueue[i];c.curHp=c.hp;state.enemyBoard[i]=c;state.enemyQueue[i]=null;onPlay(c,'enemy',i);renderAll();await wait(200);}}}
@@ -1910,18 +1949,18 @@ async function enemyPlan(){
     holy_warden:['holy_shield','holy_shield','holy_bastion'],
     holy_chanter:['holy_shield','holy_bastion','holy_chanter','holy_warden'],
     holy_marshal:['holy_bastion','holy_bastion','holy_warden','holy_chanter'],
-    holy_assessor:['holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_acolyte','holy_verger','holy_reeve','holy_almoner'],
-    holy_tithemaster:['holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_acolyte','holy_verger','holy_assessor','holy_reeve','holy_almoner'],
-    holy_greed:['holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_acolyte','holy_verger','holy_assessor','holy_reeve','holy_almoner','holy_tithemaster'],
-    holy_maw:['holy_glutton','holy_maw','holy_ossuary','holy_ossuary'],
-    holy_glutton:['holy_ossuary','holy_ossuary','holy_glutton','holy_maw'],
-    holy_devourer:['holy_glutton','holy_maw','holy_ossuary','holy_ossuary','holy_devourer'],
-    holy_zealot:['holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_acolyte','holy_verger','holy_shield','holy_flagellant'],
-    holy_inquisitor:['holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_acolyte','holy_pilgrim','holy_shield','holy_zealot','holy_flagellant'],
-    holy_wrathboss:['holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_acolyte','holy_verger','holy_bastion','holy_zealot','holy_inquisitor','holy_flagellant'],
+    holy_assessor:['holy_magpie','holy_toad','holy_leech','holy_bastion','holy_magpie','holy_reeve','holy_almoner'],
+    holy_tithemaster:['holy_magpie','holy_toad','holy_leech','holy_warden','holy_leech','holy_wolf','holy_assessor','holy_reeve','holy_almoner'],
+    holy_greed:['holy_magpie','holy_toad','holy_leech','holy_wolf','holy_hand','holy_bastion','holy_warden','holy_assessor','holy_reeve','holy_almoner','holy_tithemaster'],
+    holy_maw:['holy_glutton','holy_maw','holy_ossuary','holy_tapeworm','holy_ossuary'],
+    holy_glutton:['holy_ossuary','holy_brewer','holy_glutton','holy_maw','holy_chanter','holy_tapeworm'],
+    holy_devourer:['holy_glutton','holy_maw','holy_ossuary','holy_tapeworm','holy_brewer','holy_chanter','holy_devourer'],
+    holy_zealot:['holy_acolyte','holy_verger','holy_acolyte','holy_shield','holy_flagellant','holy_bull','holy_verger'],
+    holy_inquisitor:['holy_acolyte','holy_verger','holy_shield','holy_zealot','holy_flagellant','holy_widow','holy_bull'],
+    holy_wrathboss:['holy_acolyte','holy_verger','holy_shield','holy_brother','holy_duel','holy_marshal','holy_widow','holy_zealot','holy_inquisitor','holy_flagellant'],
     holy_penitent:['holy_beheld','holy_suitor','holy_veiled','holy_martyr','holy_penitent'],
-    holy_martyr:['holy_martyr','holy_favoured','holy_beheld','holy_veiled','holy_suitor','holy_penitent','holy_glutton'],
-    holy_lustboss:['holy_shield','holy_warden','holy_bastion','holy_chanter','holy_marshal','holy_almoner','holy_assessor','holy_reeve','holy_tithemaster','holy_greed','holy_acolyte','holy_novice','holy_verger','holy_pilgrim','holy_glutton','holy_maw','holy_ossuary','holy_devourer','holy_zealot','holy_flagellant','holy_inquisitor','holy_wrathboss','holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled']};
+    holy_martyr:['holy_martyr','holy_favoured','holy_beheld','holy_veiled','holy_suitor','holy_penitent'],
+    holy_lustboss:['holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled']};
   const pool=pools[b.key]||['knight'];
   if(b.key==='boss_death'){const attackers=state.playerBoard.map((c,i)=>c?{c,i}:null).filter(Boolean);if(attackers.length&&Math.random()<0.35){const t=pick(attackers);state.charmed[t.c.uid]=true;say("<b>Lady Death:</b> Stay a moment. Sit with me. "+pick(["You've earned a rest.","The others can wait."]),3500);}}
   const liveN=state.enemyBoard.filter(Boolean).length;const budget=liveN>=4?0:Math.min(2,Math.floor((state.turnNum||1)/2)+1);
@@ -5357,7 +5396,7 @@ addEventListener('resize',()=>{
       /* a boss you have already broken never takes the table again, not even as a card in a later boss's host */
       try{ const L=state.ladder||[], bi=state.bossIndex||0; state._onceUsed=state._onceUsed||{};
         for(let j=0;j<bi&&j<L.length;j++){ const k=L[j]&&L[j].key; if(k&&CARDS[k]){ CARDS[k].once=true; state._onceUsed[k]=true; }
-          for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&x.key===k){ const h=makeCard('holy_novice'); h.curHp=h.hp; state.enemyBoard[i]=h; } if(state.enemyQueue[i]&&state.enemyQueue[i].key===k) state.enemyQueue[i]=null; } } }catch(e){}
+          for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&x.key===k){ const FILL={holy_assessor:'holy_magpie',holy_tithemaster:'holy_magpie',holy_greed:'holy_toad',holy_zealot:'holy_acolyte',holy_inquisitor:'holy_acolyte',holy_wrathboss:'holy_shield',holy_maw:'holy_ossuary',holy_glutton:'holy_ossuary',holy_devourer:'holy_ossuary',holy_penitent:'holy_suitor',holy_martyr:'holy_suitor',holy_lustboss:'holy_suitor'}; const h=makeCard(FILL[state.boss&&state.boss.key]||'holy_acolyte'); h.curHp=h.hp; state.enemyBoard[i]=h; } if(state.enemyQueue[i]&&state.enemyQueue[i].key===k) state.enemyQueue[i]=null; } } }catch(e){}
       try{ state._foeRider=null; state._foeRiderUsed=false;
         const b=state.boss; if(b&&(!FOE_HELD||FOE_HELD.includes(b.key))){ const lane=state.enemyBoard.findIndex(c=>c&&c.isBoss);
           if(lane>=0){ const c=state.enemyBoard[lane]; state.enemyBoard[lane]=null;
@@ -5365,8 +5404,8 @@ addEventListener('resize',()=>{
             c.curHp=c.hp; state._foeRider=c;
             /* only the one: his own kind may not also be sent in from the pool while he waits */
             if(CARDS[b.key]){ CARDS[b.key].once=true; state._onceUsed=state._onceUsed||{}; state._onceUsed[b.key]=true; }
-            for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&!x.isBoss&&x.key===b.key){ const hk=((b.host||[]).find(k=>k!==b.key))||'holy_novice'; const h2=makeCard(hk)||null; state.enemyBoard[i]=h2; if(h2) h2.curHp=h2.hp; } }
-            const host=(b.host&&b.host.length)?b.host:['holy_novice']; const h=makeCard(host[0]); h.curHp=h.hp; state.enemyBoard[lane]=h; onPlay(h,'enemy',lane); } } }catch(e){}
+            for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&!x.isBoss&&x.key===b.key){ const hk=((b.host||[]).find(k=>k!==b.key))||'holy_acolyte'; const h2=makeCard(hk)||null; state.enemyBoard[i]=h2; if(h2) h2.curHp=h2.hp; } }
+            const host=(b.host&&b.host.length)?b.host:['holy_acolyte']; const h=makeCard(host[0]); h.curHp=h.hp; state.enemyBoard[lane]=h; onPlay(h,'enemy',lane); } } }catch(e){}
     }
     if(typeof seatBoss==='function'){ const sb=seatBoss; window.seatBoss=function(...a){ const r=sb.apply(this,a); holdBoss();
       try{ renderFoe(); }catch(e){} return r; }; }
@@ -5886,7 +5925,7 @@ addEventListener('resize',()=>{
       try{ if(side==='player'&&c&&c.sig==='swap'){ const any=state.playerBoard.some(x=>x&&x!==c)||state.enemyBoard.some(x=>x&&!x.isBoss);
           if(any){ state._spySel=c.uid; setTimeout(()=>{ __cardPrompt('The Spy','The Spy slips into the crowd.<br><b>Click a glowing card</b> to trade places with it.<br><i>An enemy you choose will cross over and fight for you.</i>','Keep the Spy where it is',spyCancel); renderAll(); },50); } } }catch(e){} return r; };
     const os=window.onSlotClick; window.onSlotClick=function(lane,isEnemy){
-      try{ if(state._spySel&&state.turn==='player'&&!state.over){ __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
+      try{ if(state._spySel&&state.turn==='player'&&!state.over){ const _g=l=>state.enemyBoard[l]&&state.enemyBoard[l].sig==='grip', _si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel); if(_g(_si)||(!isEnemy&&_g(lane))){ say('<b>The Gilded Hand</b> has hold of that one. It will not move.',2600); return; } __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
           if(spy){ if(!isEnemy){ const t=state.playerBoard[lane]; if(t&&t!==spy){ state.playerBoard[lane]=spy; state.playerBoard[si]=t; say('<b>The Spy</b> trades places with the '+t.name+'.',2600); } else say('',10); }
             else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Holy, and the '+t.name+' crosses over to fight for you.',3400); }
               else if(t&&t.isBoss) say('<b>The Spy</b> will not get close enough to that one.',2200); } }
@@ -5948,7 +5987,7 @@ addEventListener('resize',()=>{
     const Q={
       bowman:[{t:'Two arrows left and a whole Church to spend them on.'},
               {to:'foe:holy_verger',t:'Hold still, broom-man. You’re the only thing in here I can’t miss.',re:'I’ve swept up better archers than you.'},
-              {to:'foe:holy_novice',t:'Say a prayer, boy. Make it a short one.'}],
+              {to:'foe:holy_magpie',t:'Shoo, bird. Go and find something else shiny.'}],
       herald:[{to:'ally:crown',t:'All rise for the Crowned Rider!',re:'Sit down. You’ll get us both shot.'},
               {t:'Hear ye, hear ye: the white rider owes nothing to anyone.'}],
       squire:[{t:'I polished the whole crown myself. Twice.'},
@@ -5958,9 +5997,9 @@ addEventListener('resize',()=>{
       ballista:[{t:'Wind it. Aim it. Loose it. Don’t ask it to think.'},
                 {to:'foe:holy_almoner',t:'Look at the chains on that one. Good. Big target.'}],
       garrison:[{t:'Nobody passes. I’m told that’s the whole job.'},
-                {to:'foe:holy_acolyte',t:'Put the candle down, son. You’ll set the table alight.',re:'It’s blessed. It won’t.'}],
+                {to:'foe:holy_bastion',t:'A fellow wall. Shall we just stand here, then?',re:'We shall.'}],
       cantor:[{t:'A hymn for the dying. Whose dying depends on who pays.'},
-              {to:'foe:holy_novice',t:'You’re flat, little brother.',re:'I’m not singing. I’m praying.'}],
+              {to:'foe:holy_toad',t:'Sing for us, toad.',re:'*croaks, beautifully*'}],
       shieldbear:[{t:'I’ll stand in front. Somebody always has to.'},
                   {to:'ally:bowman',t:'Shoot past my ear once more and I drop this on your foot.',re:'Then stop moving your ear.'}],
       plunderer:[{to:'foe:holy_almoner',t:'Those chains are gold. I can tell from here.',re:'Everything I wear was given freely.'},
@@ -5977,7 +6016,7 @@ addEventListener('resize',()=>{
       reaver:[{t:'Axe is sharp. Blood is cheap. Let’s go.'},
               {to:'foe:holy_flagellant',t:'You whip yourself? Hand it here, I’ll save you the bother.',re:'It is not the same when someone else does it.'}],
       warhound:[{t:'*bares its teeth and wags, both at once*'},
-                {to:'foe:holy_pilgrim',t:'*growls at the Pilgrim’s boots*',re:'Four hundred miles in these. Leave them be.'}],
+                {to:'foe:holy_bull',t:'*barks at the Bull, from a safe distance*',re:'*snorts*'}],
       redrider:[{to:'boss:holy_wrathboss',t:'You burn bright, Wrath. I’ve watched brighter fires go out.'},
                 {to:'foe:holy_zealot',t:'Pretty fire, priest. Mine is older.',re:'Mine is holy.'}],
       berserk:[{t:'WHO’S NEXT?'},
@@ -5987,7 +6026,7 @@ addEventListener('resize',()=>{
       raider:[{t:'Burn it first. Ask whose it was later.'},
               {to:'foe:holy_verger',t:'Nice broom. Brooms burn well.',re:'So do raiders.'}],
       warpig:[{t:'*snorts, and the whole table shakes*'},
-              {to:'foe:holy_novice',t:'*looks at the Novice the way it looks at supper*',re:'Somebody hold it back. Please.'}],
+              {to:'foe:holy_brother',t:'*looks at the Brothers like a double helping*',re:'Don’t look at him. Look at me!'}],
       /* Famine (vs Gluttony's table) */
       blight:[{t:'Everything I touch goes brown. I’ve stopped apologising.'},
               {to:'foe:holy_glutton',t:'Eat up. It’s all going off anyway.',re:'It tastes better that way.'}],
@@ -6025,25 +6064,111 @@ addEventListener('resize',()=>{
              {to:'foe:holy_penitent',t:'Your sins are showing.',re:'I wear them gladly.'}],
       gravedigger:[{t:'Six feet. I measure twice.'},
                    {to:'ally:gravekn',t:'I buried you once already.',re:'And you made a poor job of it.'}],
+      /* the Holy at Greed's table */
+      holy_acolyte:[{t:'I lit every candle in the chapel. Nobody said thank you.'},
+                    {to:'foe:footsoldier',t:'Footsoldier! We’re both just carrying things for grown men.',re:'Mine came with a spear, at least.'},
+                    {to:'foe:reaver',t:'Please don’t. I’m only holding a candle.',re:'Then hold it steady.'}],
+      holy_verger:[{t:'Mind the floor. I’ve just done it.'},
+                   {to:'foe:berserk',t:'Wipe your boots, brute. I’ve only just done this floor.',re:'I’ll wipe them on you.'}],
+      holy_reeve:[{t:'I see everything. I write most of it down.'},
+                  {to:'foe:spy',t:'I know what you are, little Spy.',re:'Then you know I’m already somewhere else.'}],
+      holy_almoner:[{t:'Alms for the poor. Collected from the poor. Kept for the poor. Eventually.'},
+                    {to:'foe:paymaster',t:'You pay them? Out of your own purse?',re:'Out of yours, soon.'}],
+      holy_assessor:[{t:'Hold still. I’m pricing you.'},
+                     {to:'foe:crown',t:'One crown, gold, slightly dented. I’ll enter it as tin.',re:'Write that down and I’ll dent you.'}],
+      holy_tithemaster:[{t:'One in ten. Then one in nine. Then we’ll see.'},
+                        {to:'foe:herald',t:'And who pays for the trumpet, Herald?',re:'You do, Father, by the sound of it.'}],
+      holy_greed:[{t:'More.'},
+                  {to:'foe:*',t:'That {n} looks expensive. I’ll take two.'}],
+      /* the Holy at Wrath's table */
+      holy_zealot:[{t:'Burn! Burn, and be grateful!'},
+                   {to:'foe:raider',t:'You set fires for money? Heathen.',re:'You set them for free. Who’s the fool?'}],
+      holy_flagellant:[{t:'*lashes his own back* Again. Again.'},
+                       {to:'foe:berserk',t:'Your rage is a sin, brother. Mine is a penance.',re:'Mine’s more fun.'}],
+      holy_inquisitor:[{t:'Confess, and this will be quick. Don’t, and it will be thorough.'},
+                       {to:'foe:warhound',t:'Even the dog will talk, given time.',re:'*growls*'}],
+      holy_wrathboss:[{t:'I am the noon that never sets.'},
+                      {to:'foe:redrider',t:'Kneel, Red Rider, and burn cleanly.',re:'I don’t kneel. I trample.'}],
+      /* the Holy at Gluttony's table */
+      holy_glutton:[{t:'Is there gravy? There should be gravy.'},
+                    {to:'foe:starve',t:'You look peaky. Here, smell this.',re:'That is cruel.'}],
+      holy_maw:[{t:'*chews*'},
+                {to:'foe:ratking',t:'Rats. Crunchy.',re:'We bite back.'}],
+      holy_ossuary:[{t:'Every bone here was a man who ate too little. Or too much.'},
+                    {to:'foe:scavenger',t:'Leave my bones alone.',re:'Just the little ones?'}],
+      holy_devourer:[{t:'Another bottle. And whatever’s on that table.'},
+                     {to:'foe:blkrider',t:'Put your scales away, rider. I don’t weigh what I drink.',re:'Everything gets weighed.'}],
+      /* the old guard: Shield-Sworn and the Marshal at Wrath's table, the Warden and Bastion at Greed's, the Chanter at Gluttony's */
+      holy_shield:[{t:'Behind me. All of you. Quickly.'}],
+      holy_warden:[{t:'None cross the ford. None.'}],
+      holy_bastion:[{t:'I am a wall. Walls don’t talk. …I shouldn’t have said that.'}],
+      holy_chanter:[{t:'Mercy! For everyone! Except you.'}],
+      holy_marshal:[{t:'Form ranks. Even the dead ones.'}],
+      /* new at Greed's table */
+      holy_leech:[{t:'Just a little taste. You won’t miss it.'},
+                  {to:'foe:crown',t:'All that blue blood, wasted on a crown.',re:'It isn’t wasted. It’s mine.'}],
+      holy_magpie:[{t:'*eyes your hand* Shiny.'},
+                   {to:'foe:herald',t:'That trumpet. Is it gold? Give.',re:'Over my dead body.'}],
+      holy_wolf:[{t:'There are more sheep than I can eat. I’ll try anyway.'},
+                 {to:'foe:squire',t:'Little lamb. Stray a bit closer.',re:'I’m not a lamb, I’m a squire!'}],
+      holy_toad:[{t:'*croaks* There’s a jewel in my head. Come and get it.'},
+                 {to:'foe:plunderer',t:'Treasure in here, thief. It just takes a little digging.',re:'I’ve done worse for less.'}],
+      holy_hand:[{t:'What I hold, I keep.'},
+                 {to:'foe:*',t:'Hold still, {n}. You’re mine now.'}],
+      /* new at Wrath's table */
+      holy_duel:[{t:'I’ll have the best of you. Step forward.'},
+                 {to:'foe:berserk',t:'You. The loud one. Name your second.',re:'My second is also me.'}],
+      holy_bull:[{t:'*paws the ground*'},
+                 {to:'foe:redrider',t:'*lowers its horns at the red*',re:'Of course it’s the red.'}],
+      holy_brother:[{t:'He started it.'},
+                    {to:'ally:holy_brother',t:'Get out of my lane.',re:'It’s my lane, you fat thief.'}],
+      holy_widow:[{t:'Every one you kill, I remember.'},
+                  {to:'foe:reaver',t:'You. You were there when he fell.',re:'I’m usually there.'}],
+      /* new at Gluttony's table */
+      holy_tapeworm:[{t:'Don’t mind me. I’ll just be in here.'},
+                     {to:'foe:starve',t:'You won’t be needing this meal.',re:'I wasn’t getting it anyway.'}],
+      holy_brewer:[{t:'First round’s on the Church!'},
+                   {to:'foe:fastkeeper',t:'Go on. One sip. For the soul.',re:'Get thee behind me.'}],
+      /* Lust's own cards: they speak first, at your cards. foe:* = whichever of your cards is on the table, {n} = its name */
+      holy_penitent:[{t:'Forgive me. I have been very, very bad.'},
+                     {to:'foe:gravekn',t:'A knight all in black. Ruin me, sir.',re:'Madam, I am a skeleton.'},
+                     {to:'foe:*',t:'Is that a {n}? Come closer. I have so much to confess.'}],
+      holy_beheld:[{t:'Don’t stop looking. Please don’t ever stop looking.'},
+                   {to:'foe:palerdr',t:'That horse. Those hips. Ride over here, pale one.',re:'I come for everyone, eventually.'}],
+      holy_suitor:[{to:'foe:*',t:'This next song is for the {n}. Yes, you. Don’t be shy.'},
+                   {to:'foe:lantern',t:'Bring that lantern closer. I want to see all of you.',re:'There is very little of me left to see.'}],
+      holy_favoured:[{t:'Flowers? For me? From all of you? Again?'},
+                     {to:'foe:gleaner',t:'Strong hands, Gleaner. Gather me up.',re:'I only gather what has fallen.'},
+                     {to:'foe:*',t:'Oh, {n}. You’ve been staring all night.'}],
+      holy_jilted:[{to:'foe:*',t:'{n}. You’d never leave me. Would you. WOULD YOU.'},
+                   {t:'Fine. I didn’t want them anyway. Who’s next?'}],
+      holy_veiled:[{to:'foe:*',t:'Want to see what’s under the veil, {n}? Guess. Guess slowly.'},
+                   {to:'foe:shade',t:'Dark. Mysterious. Barely there. Exactly my type.',re:'I am a draught.'}],
+      holy_martyr:[{t:'Take me. All of me. I insist.'},
+                   {to:'foe:fleshtithe',t:'Give yourself to me and I’ll give myself right back.',re:'That is not how a tithe works.'}],
+      holy_lustboss:[{to:'foe:palerdr',t:'Death himself, at my table. Stay the night.',re:'I stay with everyone. Forever.'},
+                     {t:'Don’t fight it, darling. Nobody ever really wants to.'}],
       peasant:[{t:'I was promised bread for this.'},
                {to:'ally:crown',t:'Is that the king?',re:'No. Keep walking.'}]
     };
     let last=0;
     const find=(row,key,not)=>row.findIndex(x=>x&&x.key===key&&x!==not);
     const op=window.onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
-      try{ const L=c&&Q[c.key]; const bk=window.__bossKey||'';
-        if(side!=='player'||!L||state.over||state._spySel) return r;
+      try{ const L=c&&Q[c.key]; const bk=window.__bossKey||''; const me=side==='enemy';
+        if(!L||state.over||state._spySel) return r;
+        const mine=me?state.enemyBoard:state.playerBoard, theirs=me?state.playerBoard:state.enemyBoard;
         if(c.key==='herald'&&bk==='holy_tithemaster') return r;          /* the Herald's brandy line owns that match */
-        if(performance.now()-last<20000||Math.random()>.45) return r;
+        if(performance.now()-last<20000||Math.random()>(me?.6:.45)) return r;
         const ok=L.map((q,i)=>({q,id:c.key+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to) return true;
-          const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return find(state.enemyBoard,key)>=0; return find(state.playerBoard,key,c)>=0; });
+          const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
         if(!ok.length) return r;
-        const pick=ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
+        const pick=ok.find(o=>o.q.to&&!o.q.to.endsWith('*'))||ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
         setTimeout(()=>{ if(document.querySelector('.rk-say')) return;
-          const ln=state.playerBoard.indexOf(c); if(ln<0) return;
-          __cardSay('player',ln,c.name,'“'+q.t+'”',5200);
-          if(q.re){ const [k,key]=q.to.split(':'); setTimeout(()=>{ const foe=k==='foe', row=foe?state.enemyBoard:state.playerBoard, i=find(row,key,c);
-            if(i>=0) __cardSay(foe?'enemy':'player',i,row[i].name,'“'+q.re+'”',5200); },5600); }
+          const ln=mine.indexOf(c); if(ln<0) return; let t=q.t;
+          if(t.includes('{n}')){ const pool=theirs.filter(x=>x&&!x.isBoss); if(!pool.length) return; t=t.split('{n}').join(pool[Math.floor(Math.random()*pool.length)].name); }
+          __cardSay(me?'enemy':'player',ln,c.name,'“'+t+'”',5200);
+          if(q.re){ const [k,key]=q.to.split(':'); setTimeout(()=>{ const foe=k==='foe', row=foe?theirs:mine, i=find(row,key,c);
+            if(i>=0) __cardSay((foe!==me)?'enemy':'player',i,row[i].name,'“'+q.re+'”',5200); },5600); }
         },500);
       }catch(e){} return r; };
   }
