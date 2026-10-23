@@ -5893,10 +5893,10 @@ addEventListener('resize',()=>{
     const note=(t,b)=>{ try{ elRT.textContent=t; elRB.textContent=b; elRead.classList.add('on'); }catch(e){} };
     const GREED=['holy_assessor','holy_tithemaster','holy_greed'];
     ITEMS.forgekey={name:'An iron key',icon:'\u{1F5DD}️',keep:true};
-    /* the hint: the first time you play a Gilt Herald in the Tithe-Master's match */
+    /* the hint: the first time you play a Gilt Herald in the second round of the Assessor's match */
     let said=false; addEventListener('reckoning:boss',()=>{ said=false; });
     if(typeof onPlay==='function'){ const op=onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
-      try{ if(side==='player'&&c&&c.key==='herald'&&bossKey==='holy_tithemaster'&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
+      try{ if(side==='player'&&c&&c.key==='herald'&&bossKey==='holy_assessor'&&(state.roundNum||1)>=2&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
         setTimeout(()=>__cardSay('player',lane,'The Gilt Herald','“You deserve a drink, friend. Try the magpie’s brandy, that’ll fortify you.”',10000),450); } }catch(e){} return r; }; }
     /* the bottle, beside the magpie */
     const MX=R/2-.26, MZ=-.86, SY=1.815+.035;
@@ -5927,8 +5927,8 @@ addEventListener('resize',()=>{
       if(BR.unlocked){ setTimeout(()=>window.__openForge&&window.__openForge(),60); return null; }
       if(PACK.has('forgekey')){ BR.unlocked=true; bsave(); setTimeout(()=>window.__openForge&&window.__openForge(),2600); return 'The iron key fits. The lock grinds over, and heat breathes through the gap: the Forge lies beyond.'; }
       return 'Heavy oak, iron-strapped, and locked. Through the little barred window: only dark.'; }}; }
-    /* in the Tithe-Master's match you always start each hand with a Gilt Herald, so the hint can come */
-    const ensureHerald=()=>{ try{ if(bossKey!=='holy_tithemaster'||BR.done||!state||!state.ladder||!state.hand) return;
+    /* from the second round of the Assessor's match you always start each hand with a Gilt Herald, so the hint can come */
+    const ensureHerald=()=>{ try{ if(bossKey!=='holy_assessor'||(state&&(state.roundNum||1)<2)||BR.done||!state||!state.ladder||!state.hand) return;
       if(state.hand.some(c=>c.key==='herald')) return;
       const i=(state.deck||[]).findIndex(c=>c.key==='herald'); const c=i>=0?state.deck.splice(i,1)[0]:makeCard('herald');
       if(state.hand.length>=10){ const j=state.hand.findIndex(x=>x.key==='peasant'); if(j>=0) state.deck.push(state.hand.splice(j,1)[0]); }
@@ -6307,7 +6307,7 @@ addEventListener('resize',()=>{
       try{ const L=c&&(Q[c.key]||(c.amalgam?AQ:null)); const pre=c&&c.amalgam&&!Q[c.key]?'amal':(c&&c.key); const bk=window.__bossKey||''; const me=side==='enemy';
         if(!L||state.over||state._spySel) return r;
         const mine=me?state.enemyBoard:state.playerBoard, theirs=me?state.playerBoard:state.enemyBoard;
-        if(c.key==='herald'&&bk==='holy_tithemaster') return r;          /* the Herald's brandy line owns that match */
+        if(c.key==='herald'&&bk==='holy_assessor'&&(state.roundNum||1)>=2) return r;          /* the Herald's brandy line owns that round */
         if(performance.now()-last<20000||Math.random()>(me?.6:c.amalgam?.7:.45)) return r;
         const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
           const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
