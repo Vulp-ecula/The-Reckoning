@@ -829,6 +829,7 @@ const $=s=>document.querySelector(s);
 const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
+function hasSig(c,s){return !!c&&(c.sig===s||c.sig2===s);}
 const SIG={
   arrow:{i:'🏹',n:'Volley',d:'Strikes the enemy directly, over any blocker.'},
   leap:{i:'🛡️',n:'Shieldwall',d:'Blocks Volley attackers in its lane.'},
@@ -933,15 +934,15 @@ const CARDS={
   relic_toll:{name:'Toll of Bones',art:'🔔',relic:true,cost:{type:'free'},faction:'',rd:'Yields 3 Marrow at once.'},
   relic_purse:{name:'Heavy Purse',art:'💰',relic:true,cost:{type:'free'},faction:'',rd:'Yields 4 coin at once.'},
   relic_press:{name:'Press-Gang',art:'📜',relic:true,cost:{type:'free'},faction:'',rd:'Draws 2 cards from your own deck.'},
-  knight:{name:'Tavern Knight',art:'⚔️',pow:2,hp:2,cost:{},faction:'', sig:'leap'},
-  knightcap:{name:'Knight-Captain',art:'🛡️',pow:2,hp:4,cost:{},faction:'',sig:'leap',once:true},
-  leper:{name:'Leper', art:'🧟',atk:'poison', pow:1, hp:2, cost:{}, faction:'', sig:'rot'},
-  leperlord:{name:'Leper Lord',art:'🦠',atk:'poison',pow:2,hp:3,cost:{},faction:'',sig:'rot',once:true},
-  horror:{name:'Gibbering Horror',art:'🐙',atk:'fist',pow:2,hp:3,cost:{},faction:'',sig:'terror'},
-  bighorror:{name:'The Maw', art:'👹',atk:'fist', pow:4, hp:5, cost:{}, faction:'', sig:'terror', once:true},
-  boss_knight:{name:'The Oathbreaker',art:'🤺',pow:3,hp:6,cost:{},faction:'',sig:'leap',boss:true},
-  boss_leper:{name:'Rotmother',art:'🕷️',pow:2,hp:7,cost:{},faction:'',sig:'rot',boss:true},
-  boss_death:{name:'Lady Death',art:'🥀',pow:3,hp:8,cost:{},faction:'',sig:'reap',boss:true},
+  knight:{name:'Tavern Knight',art:'⚔️',pow:2,hp:2,cost:{},faction:'holy', sig:'leap'},
+  knightcap:{name:'Knight-Captain',art:'🛡️',pow:2,hp:4,cost:{},faction:'holy',sig:'leap',once:true},
+  leper:{name:'Leper', art:'🧟',atk:'poison', pow:1, hp:2, cost:{}, faction:'holy', sig:'rot'},
+  leperlord:{name:'Leper Lord',art:'🦠',atk:'poison',pow:2,hp:3,cost:{},faction:'holy',sig:'rot',once:true},
+  horror:{name:'Gibbering Horror',art:'🐙',atk:'fist',pow:2,hp:3,cost:{},faction:'holy',sig:'terror'},
+  bighorror:{name:'The Gaping Maw', art:'👹',atk:'fist', pow:4, hp:5, cost:{}, faction:'holy', sig:'terror', once:true},
+  boss_knight:{name:'The Oathbreaker',art:'🤺',pow:3,hp:6,cost:{},faction:'holy',sig:'leap',once:true},
+  boss_leper:{name:'Rotmother',art:'🕷️',pow:2,hp:7,cost:{},faction:'holy',sig:'rot',once:true},
+  boss_death:{name:'Lady Death',art:'🥀',pow:3,hp:8,cost:{},faction:'holy',sig:'reap',once:true},
   // ---- FACTION BOSSES: playable apex cards, one per faction. Art = the faction banner. ----
   boss_war:{name:'War',art:'⚔️',pow:6,hp:6,cost:{type:'marrow',n:3},faction:'war',sig:'rally',boss:true},
   warpig:{name:'The War Pig',art:'🐗',atk:'fist',pow:5,hp:7,cost:{type:'blood',n:2},faction:'war',sig:'rally'},
@@ -1536,13 +1537,13 @@ function cardEl(c,isEnemy){
   const pow=effPow(c,isEnemy);
   if(hasArt){
     d.innerHTML=`<img class="artimg" src="${cardArt}" alt="${c.name}">
-      ${c.sig?`<div class="badge b-sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}">${SIG[c.sig].i}</div>`:''}
+      ${c.sig?`<div class="badge b-sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}${c.sig2&&SIG[c.sig2]?' / '+SIG[c.sig2].n+': '+SIG[c.sig2].d:''}">${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''}</div>`:''}
       <div class="badge b-pow">${pow}</div>
       <div class="badge b-hp hp">♥${c.curHp}</div>`;
   } else {
     d.innerHTML=`<div class="name">${c.name}</div><div class="art">${c.art}</div>
       <div class="row2"><span class="pow">${pow}</span><span class="hp">♥${c.curHp}</span></div>
-      ${c.sig?`<div class="sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}">${SIG[c.sig].i}</div>`:''}`;
+      ${c.sig?`<div class="sigil" title="${SIG[c.sig].n}: ${SIG[c.sig].d}${c.sig2&&SIG[c.sig2]?' / '+SIG[c.sig2].n+': '+SIG[c.sig2].d:''}">${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''}</div>`:''}`;
   }
   d.onmouseenter=e=>{previewAnchor=d;showPreview(c,true,isEnemy);positionPreview(e);};
   d.onmousemove=e=>{positionPreview(e);};
@@ -1563,13 +1564,13 @@ function renderHand(){
     } else if(hasArt){
       d.innerHTML=`<img class="artimg" src="${cardArt}" alt="${c.name}">
         <div class="badge b-cost">${costLabel(c.cost)}</div>
-        ${c.sig?`<div class="badge b-sigil">${SIG[c.sig].i}</div>`:''}
+        ${c.sig?`<div class="badge b-sigil">${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''}</div>`:''}
         <div class="badge b-pow">${c.pow}</div>
         <div class="badge b-hp">♥${c.hp}</div>`;
     } else {
       d.innerHTML=`<div class="cost">${costLabel(c.cost)}</div><div class="name">${c.name}</div>
         <div class="art">${c.art}</div><div class="row2"><span class="pow">${c.pow}</span><span class="hp">♥${c.hp}</span></div>
-        ${c.sig?`<div class="sigil">${SIG[c.sig].i}</div>`:''}`;
+        ${c.sig?`<div class="sigil">${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''}</div>`:''}`;
     }
     // Draggable only when the card can currently be placed (free/coin affordable, or blood already paid)
     const canDragNow = !c.relic && !locked && (c.cost.type!=='blood' || state.readyCard===c);
@@ -1614,22 +1615,22 @@ function renderReckoning(){$('#fill-top').style.height=Math.min(100,state.soulsY
 // Neighbours of a lane on one board — linear, no wrap (lanes 0 and 3 are not adjacent).
 function neighbours(board,lane){const out=[];if(lane-1>=0&&board[lane-1])out.push(board[lane-1]);if(lane+1<LANES&&board[lane+1])out.push(board[lane+1]);return out;}
 // Does a living Ward sit in a lane adjacent to this card, on its own board? (grants bulwark-like soak)
-function wardedAt(board,lane){for(const n of [lane-1,lane+1]){const w=board[n];if(w&&w.sig==='ward')return true;}return false;}
+function wardedAt(board,lane){for(const n of [lane-1,lane+1]){const w=board[n];if(w&&hasSig(w,'ward'))return true;}return false;}
 function effPow(c,isEnemy){
   let p=c.pow;const own=isEnemy?state.enemyBoard:state.playerBoard;const opp=isEnemy?state.playerBoard:state.enemyBoard;
   const lane=own.indexOf(c);if(lane>=0){const facing=opp[lane];
     // Mirror (Lust): become as strong as whatever you behold (never mirrors another mirror).
-    if(c.sig==='mirror'&&facing&&facing.sig!=='mirror')p=Math.max(p,facing.pow);
+    if(hasSig(c,'mirror')&&facing&&!hasSig(facing,'mirror'))p=Math.max(p,facing.pow);
     // Wither/Terror sap a point, but can never silence a creature outright: anything
     // that started with power still swings for at least 1, so a lane is never fully locked.
-    if(facing&&(facing.sig==='wither'||facing.sig==='terror')&&c.sig!=='gorge')p=Math.max(c.pow>0?1:0,p-1);
+    if(facing&&(hasSig(facing,'wither')||hasSig(facing,'terror'))&&!hasSig(c,'gorge'))p=Math.max(c.pow>0?1:0,p-1);
     // Strong Drink (the Brewer): your creature facing it or beside its lane loses 1 power.
-    if(!isEnemy&&[lane-1,lane,lane+1].some(k=>opp[k]&&opp[k].sig==='drunk')&&c.sig!=='gorge')p=Math.max(c.pow>0?1:0,p-1);
+    if(!isEnemy&&[lane-1,lane,lane+1].some(k=>opp[k]&&hasSig(opp[k],'drunk'))&&!hasSig(c,'gorge'))p=Math.max(c.pow>0?1:0,p-1);
     // Choir: +1 for each neighbouring ally that also bears a sigil (live read).
-    if(c.sig==='choir')p+=neighbours(own,lane).filter(a=>a.sig).length;
+    if(hasSig(c,'choir'))p+=neighbours(own,lane).filter(a=>a.sig).length;
   }
   // Glut: +1 per creature dead so far this turn (side-agnostic count).
-  if(c.sig==='glut')p+=state.deathsThisTurn;
+  if(hasSig(c,'glut'))p+=state.deathsThisTurn;
   return p;
 }
 function handClick(c){
@@ -1694,7 +1695,7 @@ function useRelic(c){
   say(msg,3200);renderAll();
 }
 function selectCard(c){ handClick(c); } // kept for any legacy callers
-function sanctionTax(){return (state.enemyBoard||[]).some(c=>c&&c.sig==='sanction')?1:0;}
+function sanctionTax(){return (state.enemyBoard||[]).some(c=>c&&hasSig(c,'sanction'))?1:0;}
 function coinCost(c){return c.cost.n+(c.cost.type==='coin'?sanctionTax():0);}
 function canAfford(c){if(c.cost.type==='free')return true;if(c.cost.type==='coin')return state.coin>=coinCost(c);if(c.cost.type==='marrow')return (state.marrowP||0)>=c.cost.n;if(c.cost.type==='blood')return state.playerBoard.filter(Boolean).length>=c.cost.n;return true;}
 function shortfall(c){
@@ -1708,7 +1709,7 @@ function onSlotClick(lane,isEnemy){
   // sacrifice mode: click your own creatures to pay blood
   if(state.awaitingSac>0&&!isEnemy){
     const v=state.playerBoard[lane];
-    if(v&&state.enemyBoard[lane]&&state.enemyBoard[lane].sig==='grip'){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
+    if(v&&state.enemyBoard[lane]&&hasSig(state.enemyBoard[lane],'grip')){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
     if(v&&!state.sacrifices.includes(v.uid)){
       state.sacrifices.push(v.uid);state.awaitingSac--;
       if(state.awaitingSac===0)finalizeBloodPaid();
@@ -1756,10 +1757,10 @@ function onPlay(c,side,lane){
   const board=side==='player'?state.playerBoard:state.enemyBoard;
   // Mirror (the Beheld) cuts both ways: your creature facing it takes on its health while they face.
   { const mine=side==='player'?c:state.playerBoard[lane], m=side==='player'?state.enemyBoard[lane]:c;
-    if(mine&&m&&m.sig==='mirror'&&!mine._mirrorBy){ const add=Math.max(0,m.curHp-mine.hp); if(add){ mine.hp+=add; mine.curHp+=add; mine._mirrorBy=m.uid; mine._mirrorAdd=add; } } }
-  switch(c.sig){
+    if(mine&&m&&hasSig(m,'mirror')&&!mine._mirrorBy){ const add=Math.max(0,m.curHp-mine.hp); if(add){ mine.hp+=add; mine.curHp+=add; mine._mirrorBy=m.uid; mine._mirrorAdd=add; } } }
+  for(const __sg of [c.sig,c.sig2]) switch(__sg){
     case 'lure':{
-      if(side==='enemy'&&!state.playerBoard[lane]){let best=-1,bp=-1;for(let k=0;k<LANES;k++){const v=state.playerBoard[k];if(v&&!(state.enemyBoard[k]&&state.enemyBoard[k].sig==='grip')){const vp=effPow(v,false);if(vp>bp){bp=vp;best=k;}}}
+      if(side==='enemy'&&!state.playerBoard[lane]){let best=-1,bp=-1;for(let k=0;k<LANES;k++){const v=state.playerBoard[k];if(v&&!(state.enemyBoard[k]&&hasSig(state.enemyBoard[k],'grip'))){const vp=effPow(v,false);if(vp>bp){bp=vp;best=k;}}}
         if(best>=0){const v=state.playerBoard[best];state.playerBoard[best]=null;state.playerBoard[lane]=v;say('<b>The Siren</b> sings, and your '+v.name+' crosses the table to her.',3000);}}
       break;
     }
@@ -1828,42 +1829,42 @@ async function combat(side){
     const a=board[i];if(!a)continue;
     if(side==='enemy'&&state.charmed[a.uid])continue;
     // Enthral (Lust): a player attacker facing a living Enthral card is besotted and cannot strike.
-    if(side==='player'&&state.enemyBoard[i]&&state.enemyBoard[i].sig==='enthrall'){continue;}
+    if(side==='player'&&state.enemyBoard[i]&&hasSig(state.enemyBoard[i],'enthrall')){continue;}
     // Rapture (Lust): a creature seduced by something it slew skips this one attack, then recovers.
     if(side==='player'&&a._besotted){a._besotted=false;continue;}
     if(side==='player'&&state.charmed[a.uid])continue;
     if(side==='player'&&a._seduced){a._seduced=false;const nb=[i-1,i+1].filter(k=>k>=0&&k<LANES&&board[k]);const sp=effPow(a,false);
       if(nb.length&&sp>0){const k=pick(nb);strike(rowId,k);dmg(board[k],sp,board,rowId);say('<b>Seduced,</b> your '+a.name+' turns on your '+board[k].name+'.',2600);renderReckoning();await wait(560);cleanup();}else say('<b>Seduced,</b> your '+a.name+' only sighs this turn.',2200);continue;}
-    let p=effPow(a,side==='enemy');if(p<=0)continue;if(a.sig==='charge'&&!a._charged){p*=2;a._charged=true;}
+    let p=effPow(a,side==='enemy');if(p<=0)continue;if(hasSig(a,'charge')&&!a._charged){p*=2;a._charged=true;}
     // Zeal (Wrath): each player attack inflames every Holy Zealot, up to +2 per turn.
-    if(side==='player'){for(const z of state.enemyBoard){if(z&&z.sig==='zeal'){z._zt=z._zt||0;if(z._zt<2){z.pow++;z._zt++;}}}}
+    if(side==='player'){for(const z of state.enemyBoard){if(z&&hasSig(z,'zeal')){z._zt=z._zt||0;if(z._zt<2){z.pow++;z._zt++;}}}}
     let targets=[];
-    if(a.sig==='cleave'){if(i-1>=0)targets.push(i-1);if(i+1<LANES)targets.push(i+1);}else targets=[i];
-    if(a.sig==='challenge'){let d=foe.findIndex(x=>x&&x.uid===a._duel);if(d<0){let bp=-1;for(let k=0;k<LANES;k++){const v=foe[k];if(v){const vp=effPow(v,side==='player');if(vp>bp){bp=vp;d=k;}}}if(d>=0)a._duel=foe[d].uid;}if(d>=0)targets=[d];}
+    if(hasSig(a,'cleave')){if(i-1>=0)targets.push(i-1);if(i+1<LANES)targets.push(i+1);}else targets=[i];
+    if(hasSig(a,'challenge')){let d=foe.findIndex(x=>x&&x.uid===a._duel);if(d<0){let bp=-1;for(let k=0;k<LANES;k++){const v=foe[k];if(v){const vp=effPow(v,side==='player');if(vp>bp){bp=vp;d=k;}}}if(d>=0)a._duel=foe[d].uid;}if(d>=0)targets=[d];}
     for(let t of targets){
-      let blk=foe[t];if(side==='player'&&!blk){const pc=[t-1,t+1].find(k=>k>=0&&k<LANES&&foe[k]&&foe[k].sig==='display'&&foe[k].curHp>0);if(pc!==undefined){t=pc;blk=foe[pc];}}const airborne=a.sig==='arrow';const canBlockAir=blk&&blk.sig==='leap';
+      let blk=foe[t];if(side==='player'&&!blk){const pc=[t-1,t+1].find(k=>k>=0&&k<LANES&&foe[k]&&hasSig(foe[k],'display')&&foe[k].curHp>0);if(pc!==undefined){t=pc;blk=foe[pc];}}const airborne=hasSig(a,'arrow');const canBlockAir=blk&&hasSig(blk,'leap');
       const willHitBlocker=!!(blk&&!(airborne&&!canBlockAir));
       const hitsAdversary=(side==='player'&&!willHitBlocker);
       strikeCast(rowId,i,foeRow,t,side,a,hitsAdversary);   // card holds still; a bolt flies to lane t (or the adversary)
       await wait(BOLT_TRAVEL);                // let the bolt reach the point of impact
       if(willHitBlocker)strike(foeRow,t);     // spark on the struck defender
-      if(blk&&!(airborne&&!canBlockAir)){const lethal=a.sig==='reap'?9999:p;dmg(blk,lethal,foe,foeRow);if(blk.sig==='rot'&&a.sig!=='gorge')dmg(a,1,board,rowId);if(side==='player'&&blk.sig==='rapture'&&blk.curHp<=0)a._besotted=true;}
-      else{const face=(a.sig==='arrow')?Math.max(1,p-2):p;if(side==='player'){state.soulsYou+=face;if(a.sig==='coin')state.coin++;adversaryHit();}else{state.soulsFoe+=face;}pulseGlass(side);floatDamage(side==='player'?$('#fill-top'):$('#fill-bot'),'+'+face);}
-      if(a.sig==='drain')a.curHp=Math.min(a.hp,a.curHp+p);   // Drain (the Leech)
+      if(blk&&!(airborne&&!canBlockAir)){const lethal=hasSig(a,'reap')?9999:p;dmg(blk,lethal,foe,foeRow);if(hasSig(blk,'rot')&&!hasSig(a,'gorge'))dmg(a,1,board,rowId);if(side==='player'&&hasSig(blk,'rapture')&&blk.curHp<=0)a._besotted=true;}
+      else{const face=(hasSig(a,'arrow'))?Math.max(1,p-2):p;if(side==='player'){state.soulsYou+=face;if(hasSig(a,'coin'))state.coin++;adversaryHit();}else{state.soulsFoe+=face;}pulseGlass(side);floatDamage(side==='player'?$('#fill-top'):$('#fill-bot'),'+'+face);}
+      if(hasSig(a,'drain'))a.curHp=Math.min(a.hp,a.curHp+p);   // Drain (the Leech)
       // Cull: after the primary strike, deal p to the foe's weakest OTHER living creature (not lane t).
-      if(a.sig==='cull'){let wi=-1,wl=Infinity;for(let k=0;k<LANES;k++){if(k===t)continue;const v=foe[k];if(v&&v.curHp>0&&v.curHp<wl){wl=v.curHp;wi=k;}}if(wi>=0){strike(foeRow,wi);dmg(foe[wi],p,foe,foeRow);}}
+      if(hasSig(a,'cull')){let wi=-1,wl=Infinity;for(let k=0;k<LANES;k++){if(k===t)continue;const v=foe[k];if(v&&v.curHp>0&&v.curHp<wl){wl=v.curHp;wi=k;}}if(wi>=0){strike(foeRow,wi);dmg(foe[wi],p,foe,foeRow);}}
       renderReckoning();await wait(560);cleanup();   // hold so you can read the outcome
       if(state.soulsYou>=SCALE_WIN||state.soulsFoe>=SCALE_WIN){if(!state.over)finished();return;} // race decided mid-combat
     }
   }
-  if(side==='player'){state.charmed={};state.enemyBoard.forEach(z=>{if(z&&z.sig==='zeal')z._zt=0;});}
+  if(side==='player'){state.charmed={};state.enemyBoard.forEach(z=>{if(z&&hasSig(z,'zeal'))z._zt=0;});}
   renderAll();
 }
 function dmg(c,amount,board,rowId){
   const before=c.curHp;
   // Bulwark: soak 1 off every ordinary strike (min 1 gets through). Reaper (9999) ignores it.
   // Ward: an ally adjacent to a living Ward on the same board gets the same soak.
-  if(amount<9999){const idx0=board.indexOf(c);if(c.sig==='bulwark'||(idx0>=0&&wardedAt(board,idx0)))amount=Math.max(1,amount-1);}
+  if(amount<9999){const idx0=board.indexOf(c);if(hasSig(c,'bulwark')||(idx0>=0&&wardedAt(board,idx0)))amount=Math.max(1,amount-1);}
   c.curHp-=amount;
   const idx=board.indexOf(c);
   const node=document.querySelector(`#${rowId} .slot[data-lane="${idx}"] .card`);
@@ -1891,7 +1892,7 @@ function floatDamage(node, text){
 function cleanup(){
   ['player','enemy'].forEach(side=>{const board=side==='player'?state.playerBoard:state.enemyBoard;const rowId=side==='player'?'player-row':'enemy-row';
     // Stillness caps how many of YOUR OWN dead are tallied toward the slaughter each turn.
-    const stilled=state.playerBoard.some(c=>c&&c.sig==='still');
+    const stilled=state.playerBoard.some(c=>c&&hasSig(c,'still'));
     board.forEach((c,i)=>{if(c&&c.curHp<=0){
       countDeath(side,c);                        // tally toward deathsThisTurn (Still-capped, Carrion-doubled)
       deathTriggers(c,side,i);animateDeath(rowId,i);board[i]=null;if(side==='enemy'){state.coin++;state.marrowE++;}else{state.marrowP++;state.graveyard.push(c.key);}onAnyDeath(side,i);}});
@@ -1901,8 +1902,8 @@ function cleanup(){
 // Tally a death toward state.deathsThisTurn. Stillness caps the player's own contribution to 1/turn.
 // Carrion counts twice. _stillCount tracks player deaths already tallied this turn.
 function countDeath(side,c){
-  const stilled=state.playerBoard.some(x=>x&&x.sig==='still');
-  const add=(c.sig==='carrion')?2:1;
+  const stilled=state.playerBoard.some(x=>x&&hasSig(x,'still'));
+  const add=(hasSig(c,'carrion'))?2:1;
   if(side==='player'&&stilled){
     state._stillCount=(state._stillCount||0);
     if(state._stillCount>=1)return;              // already counted one of your dead this turn
@@ -1913,25 +1914,25 @@ function countDeath(side,c){
 }
 function deathTriggers(c,side,lane){const board=side==='player'?state.playerBoard:state.enemyBoard;
   if(side==='enemy'){
-    if(c.sig==='mirror'){const v=state.playerBoard[lane];if(v&&v._mirrorBy===c.uid){v.hp=Math.max(1,v.hp-v._mirrorAdd);v.curHp=Math.max(1,Math.min(v.curHp,v.hp));v._mirrorBy=null;v._mirrorAdd=0;}}
-    if(c.sig==='kindle'){let hit=false;for(const k of [lane-1,lane,lane+1]){const v=state.playerBoard[k];if(v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');hit=true;}}if(hit){say('<b>The Moth</b> goes up in flame, and singes what stood near it.',2600);setTimeout(()=>{cleanup();renderAll();},120);}}
-    if(c.sig==='jewel'){state.coin+=2;say('<b>The Toad</b> bursts, and a jewel rolls out. +2 coin.',2400);}
-    if(c.sig==='pilfer'&&c._stolen){if(state.hand.length<10){state.hand.push(c._stolen);say('<b>The Magpie</b> drops what it stole: your '+c._stolen.name+' is back in hand.',2800);}else{state.deck.push(c._stolen);say('<b>The Magpie</b> drops your '+c._stolen.name+'. Your hand is full, so it goes on top of your deck.',3000);}c._stolen=null;}
-    for(const x of board){if(!x||x===c||x.curHp<=0)continue;if(x.sig==='vengeance')x.pow++;if(c.sig==='grudge'&&x.key===c.key)x.pow+=2;}
-  }if(c.sig==='raise'){if(c.key==='death_boss'){state.pendingResurrect=true;}else{setTimeout(()=>{if(!board[lane]){board[lane]=makeCard('wraith');renderAll();}},260);}}if(c.sig==='dread'){if(side==='player')state.soulsYou+=1;else state.soulsFoe+=1;}
+    if(hasSig(c,'mirror')){const v=state.playerBoard[lane];if(v&&v._mirrorBy===c.uid){v.hp=Math.max(1,v.hp-v._mirrorAdd);v.curHp=Math.max(1,Math.min(v.curHp,v.hp));v._mirrorBy=null;v._mirrorAdd=0;}}
+    if(hasSig(c,'kindle')){let hit=false;for(const k of [lane-1,lane,lane+1]){const v=state.playerBoard[k];if(v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');hit=true;}}if(hit){say('<b>The Moth</b> goes up in flame, and singes what stood near it.',2600);setTimeout(()=>{cleanup();renderAll();},120);}}
+    if(hasSig(c,'jewel')){state.coin+=2;say('<b>The Toad</b> bursts, and a jewel rolls out. +2 coin.',2400);}
+    if(hasSig(c,'pilfer')&&c._stolen){if(state.hand.length<10){state.hand.push(c._stolen);say('<b>The Magpie</b> drops what it stole: your '+c._stolen.name+' is back in hand.',2800);}else{state.deck.push(c._stolen);say('<b>The Magpie</b> drops your '+c._stolen.name+'. Your hand is full, so it goes on top of your deck.',3000);}c._stolen=null;}
+    for(const x of board){if(!x||x===c||x.curHp<=0)continue;if(hasSig(x,'vengeance'))x.pow++;if(hasSig(c,'grudge')&&x.key===c.key)x.pow+=2;}
+  }if(hasSig(c,'raise')){if(c.key==='death_boss'){state.pendingResurrect=true;}else{setTimeout(()=>{if(!board[lane]){board[lane]=makeCard('wraith');renderAll();}},260);}}if(hasSig(c,'dread')){if(side==='player')state.soulsYou+=1;else state.soulsFoe+=1;}
   // Harvest: this card's death draws you one (player side only — the enemy has no hand).
-  if(c.sig==='harvest'&&side==='player'&&state.hand.length<10&&state.deck.length){state.hand.push(state.deck.pop());}
+  if(hasSig(c,'harvest')&&side==='player'&&state.hand.length<10&&state.deck.length){state.hand.push(state.deck.pop());}
   // Anchor: the +1 max-hp gift it gave neighbours evaporates when it falls.
-  if(c.sig==='anchor'){for(const n of [lane-1,lane+1]){const a=board[n];if(a&&a._anchoredBy===c.uid){a.hp=Math.max(1,a.hp-1);a.curHp=Math.min(a.curHp,a.hp);a._anchoredBy=null;}}}
+  if(hasSig(c,'anchor')){for(const n of [lane-1,lane+1]){const a=board[n];if(a&&a._anchoredBy===c.uid){a.hp=Math.max(1,a.hp-1);a.curHp=Math.min(a.curHp,a.hp);a._anchoredBy=null;}}}
 }
 function onAnyDeath(side,lane){
-  [...state.playerBoard,...state.enemyBoard].forEach(c=>{if(c&&c.sig==='rally')c.pow++;});
+  [...state.playerBoard,...state.enemyBoard].forEach(c=>{if(c&&hasSig(c,'rally'))c.pow++;});
   // Devour (Gluttony): a card feeds when a creature dies in a lane adjacent to it, on the same board.
   if(side!==undefined&&lane!==undefined){
     const board=side==='player'?state.playerBoard:state.enemyBoard;
     for(const n of [lane-1,lane+1]){
       const g=board[n];
-      if(g&&g.sig==='devour'){g.pow++;g.curHp=Math.min(g.hp,g.curHp+1);}
+      if(g&&hasSig(g,'devour')){g.pow++;g.curHp=Math.min(g.hp,g.curHp+1);}
     }
   }
 }
@@ -1939,7 +1940,7 @@ function onAnyDeath(side,lane){
 function holyRadiance(){
   const b=state.enemyBoard;
   for(let i=0;i<LANES;i++){
-    if(b[i]&&b[i].sig==='radiant'){
+    if(b[i]&&hasSig(b[i],'radiant')){
       for(const n of [i-1,i+1]){
         const ally=b[n];
         if(ally&&ally.faction==='holy'&&ally.curHp<ally.hp){ally.curHp=Math.min(ally.hp,ally.curHp+1);}
@@ -1950,19 +1951,19 @@ function holyRadiance(){
 function playerSins(){
   // Largesse (Paymaster): spends 2 coin at turn's end to grow. Runs before the Tithe so it can keep you under 3.
   let paid=0;
-  for(const c of state.playerBoard){ if(c&&c.sig==='largesse'&&state.coin>=2){state.coin-=2;c.pow++;paid++;} }
+  for(const c of state.playerBoard){ if(c&&hasSig(c,'largesse')&&state.coin>=2){state.coin-=2;c.pow++;paid++;} }
   if(paid){say('<b>Largesse:</b> '+paid+' paid out - '+(2*paid)+' coin spent.',2200);}
 }
 function holySins(){
   // Tithe (Greed): each Tithe card taxes 1 of your coin if you hold 3+, and grows.
   let taxed=0;
   for(const c of state.enemyBoard){
-    if(c&&c.sig==='tithe'&&state.coin>=3){state.coin--;c.pow++;taxed++;}
+    if(c&&hasSig(c,'tithe')&&state.coin>=3){state.coin--;c.pow++;taxed++;}
   }
   // The Vow (the Bride): left waiting, she grows.
-  for(let i=0;i<LANES;i++){const w=state.enemyBoard[i];if(w&&w.sig==='vow'&&!state.playerBoard[i]&&w.pow<6)w.pow++;}
+  for(let i=0;i<LANES;i++){const w=state.enemyBoard[i];if(w&&hasSig(w,'vow')&&!state.playerBoard[i]&&w.pow<6)w.pow++;}
   // Parasite (the Tapeworm): the creature facing it loses 1 health, and the worm grows by 1.
-  let fed=false;for(let i=0;i<LANES;i++){const w=state.enemyBoard[i],v=state.playerBoard[i];if(w&&w.sig==='parasite'&&v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');w.hp++;w.curHp++;fed=true;}}
+  let fed=false;for(let i=0;i<LANES;i++){const w=state.enemyBoard[i],v=state.playerBoard[i];if(w&&hasSig(w,'parasite')&&v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');w.hp++;w.curHp++;fed=true;}}
   if(fed)cleanup();
   if(taxed){say('<b>The Tithe:</b> the Church takes its due — '+taxed+' coin levied.',2200);}
 }
@@ -1976,15 +1977,15 @@ async function enemyPlan(){
     holy_assessor:['holy_magpie','holy_toad','holy_leech','holy_bastion','holy_magpie','holy_reeve','holy_almoner'],
     holy_tithemaster:['holy_magpie','holy_toad','holy_leech','holy_warden','holy_leech','holy_wolf','holy_assessor','holy_reeve','holy_almoner'],
     holy_greed:['holy_magpie','holy_toad','holy_leech','holy_wolf','holy_hand','holy_bastion','holy_warden','holy_assessor','holy_reeve','holy_almoner','holy_tithemaster'],
-    holy_maw:['holy_glutton','holy_maw','holy_ossuary','holy_tapeworm','holy_ossuary'],
-    holy_glutton:['holy_ossuary','holy_brewer','holy_glutton','holy_maw','holy_chanter','holy_tapeworm'],
-    holy_devourer:['holy_glutton','holy_maw','holy_ossuary','holy_tapeworm','holy_brewer','holy_chanter','holy_devourer'],
-    holy_zealot:['holy_acolyte','holy_verger','holy_acolyte','holy_shield','holy_flagellant','holy_bull','holy_verger'],
-    holy_inquisitor:['holy_acolyte','holy_verger','holy_shield','holy_zealot','holy_flagellant','holy_widow','holy_bull'],
-    holy_wrathboss:['holy_acolyte','holy_verger','holy_shield','holy_brother','holy_duel','holy_marshal','holy_widow','holy_zealot','holy_inquisitor','holy_flagellant'],
+    holy_maw:['holy_glutton','holy_maw','holy_ossuary','holy_tapeworm','holy_ossuary','leper'],
+    holy_glutton:['holy_ossuary','holy_brewer','holy_glutton','holy_maw','holy_chanter','holy_tapeworm','leper','horror','leperlord'],
+    holy_devourer:['holy_glutton','holy_maw','holy_ossuary','holy_tapeworm','holy_brewer','holy_chanter','holy_devourer','leperlord','horror','bighorror','boss_leper'],
+    holy_zealot:['holy_acolyte','holy_verger','holy_acolyte','holy_shield','holy_flagellant','holy_bull','holy_verger','knight'],
+    holy_inquisitor:['holy_acolyte','holy_verger','holy_shield','holy_zealot','holy_flagellant','holy_widow','holy_bull','knight','knightcap'],
+    holy_wrathboss:['holy_acolyte','holy_verger','holy_shield','holy_brother','holy_duel','holy_marshal','holy_widow','holy_zealot','holy_inquisitor','holy_flagellant','knightcap','boss_knight'],
     holy_penitent:['holy_beheld','holy_suitor','holy_veiled','holy_moth','holy_peacock','holy_martyr','holy_penitent'],
-    holy_martyr:['holy_martyr','holy_favoured','holy_beheld','holy_veiled','holy_suitor','holy_penitent','holy_moth','holy_courtesan','holy_bride','holy_peacock'],
-    holy_lustboss:['holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled','holy_siren','holy_courtesan','holy_peacock','holy_moth','holy_bride']};
+    holy_martyr:['holy_martyr','holy_favoured','holy_beheld','holy_veiled','holy_suitor','holy_penitent','holy_moth','holy_courtesan','holy_bride','holy_peacock','boss_death'],
+    holy_lustboss:['holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled','holy_siren','holy_courtesan','holy_peacock','holy_moth','holy_bride','boss_death']};
   const pool=pools[b.key]||['knight'];
   if(b.key==='boss_death'){const attackers=state.playerBoard.map((c,i)=>c?{c,i}:null).filter(Boolean);if(attackers.length&&Math.random()<0.35){const t=pick(attackers);state.charmed[t.c.uid]=true;say("<b>Lady Death:</b> Stay a moment. Sit with me. "+pick(["You've earned a rest.","The others can wait."]),3500);}}
   const liveN=state.enemyBoard.filter(Boolean).length;const budget=liveN>=4?0:Math.min(2,Math.floor((state.turnNum||1)/2)+1);
@@ -2516,7 +2517,7 @@ let previewAnchor=null;
 function showPreview(c, useCurrentHp, isEnemy, note){
   const hp = useCurrentHp && c.curHp!=null ? c.curHp : c.hp;
   const art = artFor(c);
-  const sigHtml = c.sig&&SIG[c.sig] ? `<div class="pv-sigil"><span class="pv-sigil-i">${SIG[c.sig].i}</span><span class="pv-sigil-n">${SIG[c.sig].n}</span><span class="pv-sigil-d">${SIG[c.sig].d}</span></div>` : '';
+  const sigHtml = c.sig&&SIG[c.sig] ? `<div class="pv-sigil"><span class="pv-sigil-i">${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''}</span><span class="pv-sigil-n">${SIG[c.sig].n}</span><span class="pv-sigil-d">${SIG[c.sig].d}</span></div>`+(c.sig2&&SIG[c.sig2]?`<div class="pv-sigil"><span class="pv-sigil-i">${SIG[c.sig2].i}</span><span class="pv-sigil-n">${SIG[c.sig2].n}</span><span class="pv-sigil-d">${SIG[c.sig2].d}</span></div>`:'') : '';
   // The preview already repeats everything the old floating tooltip said (name, pow/hp, sigil),
   // so showing both meant a cursor-anchored box landing on top of a card-anchored one — see the
   // "solve tooltips covering card text" fix. `note` carries the one piece the preview didn't
@@ -2592,7 +2593,7 @@ function openArtbook(){
       const art=img?`<img src="${img}" alt="${c.name}">`:c.art;
       const meta=c.relic?`<span>✦</span><span>once</span>`
                         :`<span>${c.pow}</span><span>♥${c.hp}</span>`;
-      const sig=c.relic?(c.rd||''):(c.sig?`${SIG[c.sig].i} ${SIG[c.sig].n}`:'&nbsp;');
+      const sig=c.relic?(c.rd||''):(c.sig?`${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''} ${SIG[c.sig].n}`:'&nbsp;');
       html+=`<div class="ab-card${img?'':' noart'}">
         <div class="ab-art">${art}</div>
         <div class="ab-name">${c.name}</div>
@@ -5457,13 +5458,13 @@ addEventListener('resize',()=>{
   /* ---- Stillness (Fast-Keeper) reworked: while it lives, the first of your creatures to die each turn returns 1 extra Marrow ---- */
   { try{ if(typeof SIG!=='undefined'&&SIG.still) SIG.still.d='While this lives, the first of your creatures to die each turn returns 1 extra Marrow.';
       if(typeof countDeath==='function'){ window.countDeath=function(side,c){
-        const add=(c&&c.sig==='carrion')?2:1;
-        if(side==='player'&&state.playerBoard.some(x=>x&&x.sig==='still')&&!(state._stillCount>0)){
+        const add=(c&&hasSig(c,'carrion'))?2:1;
+        if(side==='player'&&state.playerBoard.some(x=>x&&hasSig(x,'still'))&&!(state._stillCount>0)){
           state._stillCount=1; state.marrowP=(state.marrowP||0)+1;
           try{ say('<b>Stillness:</b> the Fast-Keeper gathers what falls. +1 Marrow.',1800); }catch(e){} }
         state.deathsThisTurn+=add;
         /* Pledge (the Pawnbroker): each of your dead is pawned for 1 coin, per living Pawnbroker */
-        if(side==='player'){ const n=state.playerBoard.filter(x=>x&&x!==c&&x.curHp>0&&x.sig==='pledge').length;
+        if(side==='player'){ const n=state.playerBoard.filter(x=>x&&x!==c&&x.curHp>0&&hasSig(x,'pledge')).length;
           if(n){ state.coin+=n; try{ say('<b>Pledge:</b> the Pawnbroker takes what is left. +'+n+' coin.',1800); }catch(e){} } } }; } }catch(e){} }
   /* ---- a click on blank space while choosing a sacrifice cancels it (the recant button still works too) ---- */
   addEventListener('click',e=>{ try{ if(!state||!(state.awaitingSac>0)) return;
@@ -5479,7 +5480,7 @@ addEventListener('resize',()=>{
   { try{ SIG.pledge={i:'\u{1F4B0}',n:'Pledge',d:'Whenever one of your creatures dies, gain 1 coin.'};
       SIG.even={i:'\u2696\uFE0F',n:'Even the Scales',d:'At the end of each turn, if the Adversary has more souls than you, move 1 soul from their side of the scale to yours.'};
       if(typeof playerSins==='function'){ const ps=playerSins; window.playerSins=function(...a){ const r=ps.apply(this,a);
-        try{ const n=state.playerBoard.filter(x=>x&&x.curHp>0&&x.sig==='even').length;
+        try{ const n=state.playerBoard.filter(x=>x&&x.curHp>0&&hasSig(x,'even')).length;
           for(let k=0;k<n;k++){ if((state.soulsFoe||0)>(state.soulsYou||0)){ state.soulsFoe--; state.soulsYou++; } }
           if(n&&typeof renderReckoning==='function'){ renderReckoning(); } }catch(e){} return r; }; } }catch(e){} }
   /* ---- War / Wrath: a placeholder wooden pail by the hearth. Later: bleed into it with the fleam, then throw it on the fire. ---- */
@@ -5787,7 +5788,7 @@ addEventListener('resize',()=>{
     let atk=null;
     if(typeof strikeCast==='function'){ const sc=strikeCast; window.strikeCast=function(...a){ atk=a[5]||null; return sc.apply(this,a); }; }
     if(typeof dmg==='function'){ const d0=dmg; window.dmg=function(c,amount,board,rowId){ const was=c&&c.curHp>0; const r=d0.apply(this,arguments);
-      try{ if(was&&c.curHp<=0&&atk&&atk!==c&&atk.sig==='thirst'&&atk.curHp>0){ atk.pow++; } }catch(e){} return r; }; }
+      try{ if(was&&c.curHp<=0&&atk&&atk!==c&&hasSig(atk,'thirst')&&atk.curHp>0){ atk.pow++; } }catch(e){} return r; }; }
     if(typeof onSlotClick==='function'){ const os=onSlotClick; window.onSlotClick=function(lane,isEnemy){
       try{ if(!isEnemy&&state.turn==='player'&&!state.over&&!(state.awaitingSac>0)&&!state.readyCard){
           const v=state.playerBoard[lane], selU=state._thirstSel;
@@ -5795,7 +5796,7 @@ addEventListener('resize',()=>{
             if(sel&&v&&v!==sel&&Math.abs(lane-si)===1){ v.curHp=0; cleanup(); sel.pow++; sel._thirstTurn=state.turnNum;
               say('<b>'+sel.name+'</b> cuts down the '+v.name+' beside it, and is stronger for it.',2600); renderAll(); return; }
             say('',10); renderAll(); if(v===sel) return; }
-          else if(v&&v.sig==='thirst'&&v._thirstTurn!==state.turnNum&&(state.playerBoard[lane-1]||state.playerBoard[lane+1])){
+          else if(v&&hasSig(v,'thirst')&&v._thirstTurn!==state.turnNum&&(state.playerBoard[lane-1]||state.playerBoard[lane+1])){
             state._thirstSel=v.uid; say('<b>'+v.name+'</b> hungers. Click a <b>neighbouring ally</b> to feed it, or anywhere else to stay its hand.',4000); renderAll(); return; } } }catch(e){}
       return os.apply(this,arguments); }; }
     if(typeof renderAll==='function'){ const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a);
@@ -5896,8 +5897,8 @@ addEventListener('resize',()=>{
     fireTicks.push(()=>{ bg.visible=GREED.includes(bossKey)&&!BR.done; });
     /* the oak door: the key opens the way to the Forge */
     for(const m of doorHot){ const u=m.userData; m.userData={...u, body:()=>{
-      if(BR.unlocked) return 'The lock turns freely now. Beyond the door: the Forge. (To come.)';
-      if(PACK.has('forgekey')){ BR.unlocked=true; bsave(); return 'The iron key fits. The lock grinds over, and heat breathes through the gap: the Forge lies beyond. (To come.)'; }
+      if(BR.unlocked){ setTimeout(()=>window.__openForge&&window.__openForge(),60); return null; }
+      if(PACK.has('forgekey')){ BR.unlocked=true; bsave(); setTimeout(()=>window.__openForge&&window.__openForge(),2600); return 'The iron key fits. The lock grinds over, and heat breathes through the gap: the Forge lies beyond.'; }
       return 'Heavy oak, iron-strapped, and locked. Through the little barred window: only dark.'; }}; }
     /* in the Tithe-Master's match you always start each hand with a Gilt Herald, so the hint can come */
     const ensureHerald=()=>{ try{ if(bossKey!=='holy_tithemaster'||BR.done||!state||!state.ladder||!state.hand) return;
@@ -5946,10 +5947,10 @@ addEventListener('resize',()=>{
     if(FACTIONS.conquest&&!FACTIONS.conquest.deck.includes('spy')) FACTIONS.conquest.deck.push('spy');
     const spyCancel=()=>{ __cardPromptClose(); if(state&&state._spySel){ state._spySel=null; renderAll(); } };
     const op=window.onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
-      try{ if(side==='player'&&c&&c.sig==='swap'){ const any=state.playerBoard.some(x=>x&&x!==c)||state.enemyBoard.some(x=>x&&!x.isBoss);
+      try{ if(side==='player'&&c&&hasSig(c,'swap')){ const any=state.playerBoard.some(x=>x&&x!==c)||state.enemyBoard.some(x=>x&&!x.isBoss);
           if(any){ state._spySel=c.uid; setTimeout(()=>{ __cardPrompt('The Spy','The Spy slips into the crowd.<br><b>Click a glowing card</b> to trade places with it.<br><i>An enemy you choose will cross over and fight for you.</i>','Keep the Spy where it is',spyCancel); renderAll(); },50); } } }catch(e){} return r; };
     const os=window.onSlotClick; window.onSlotClick=function(lane,isEnemy){
-      try{ if(state._spySel&&state.turn==='player'&&!state.over){ const _g=l=>state.enemyBoard[l]&&state.enemyBoard[l].sig==='grip', _si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel); if(_g(_si)||(!isEnemy&&_g(lane))){ say('<b>The Gilded Hand</b> has hold of that one. It will not move.',2600); return; } __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
+      try{ if(state._spySel&&state.turn==='player'&&!state.over){ const _g=l=>state.enemyBoard[l]&&hasSig(state.enemyBoard[l],'grip'), _si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel); if(_g(_si)||(!isEnemy&&_g(lane))){ say('<b>The Gilded Hand</b> has hold of that one. It will not move.',2600); return; } __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
           if(spy){ if(!isEnemy){ const t=state.playerBoard[lane]; if(t&&t!==spy){ state.playerBoard[lane]=spy; state.playerBoard[si]=t; say('<b>The Spy</b> trades places with the '+t.name+'.',2600); } else say('',10); }
             else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); if(t._stolen){ const s0=t._stolen; t._stolen=null; if(state.hand.length<10) state.hand.push(s0); else state.deck.push(s0); setTimeout(()=>say('<b>The Magpie</b> drops your '+s0.name+' as it crosses over.',2800),3500); } say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Holy, and the '+t.name+' crosses over to fight for you.',3400); }
               else if(t&&t.isBoss) say('<b>The Spy</b> will not get close enough to that one.',2200); } }
@@ -6153,6 +6154,27 @@ addEventListener('resize',()=>{
                      {to:'foe:starve',t:'You won’t be needing this meal.',re:'I wasn’t getting it anyway.'}],
       holy_brewer:[{t:'First round’s on the Church!'},
                    {to:'foe:fastkeeper',t:'Go on. One sip. For the soul.',re:'Get thee behind me.'}],
+      /* old cards folded back in: Wrath */
+      knight:[{t:'Another round! Then another war!'},
+              {to:'foe:footsoldier',t:'You, lad. Buy me a drink and I’ll spare you.',re:'I’ve no coin. Nobody pays us.'}],
+      knightcap:[{t:'Form up! The tavern’s empty and the field is full.'},
+                 {to:'foe:berserk',t:'Steady, brute. Discipline beats rage.',re:'Rage beats you.'}],
+      boss_knight:[{t:'I swore an oath once. Look how that turned out.'},
+                   {to:'foe:redrider',t:'You ride for War. I rode for God. We’re both liars.',re:'Only one of us admits it.'}],
+      /* Gluttony */
+      leper:[{t:'*a bell rings* Unclean. Unclean.'},
+             {to:'foe:scavenger',t:'Want my leftovers? Go on.',re:'…I’ll pass.'}],
+      leperlord:[{t:'My court rots more richly than yours.'},
+                 {to:'foe:ratking',t:'Your majesty. Your plague is very… small.',re:'We spread. You merely drip.'}],
+      boss_leper:[{t:'Come, children. Mother’s made supper.'},
+                  {to:'foe:blight',t:'Ah, a fellow gardener of rot.',re:'Your garden smells worse.'}],
+      horror:[{t:'*gibbers* …hungry hungry hungry…'},
+              {to:'foe:starve',t:'*gibbers* …thin one. Thin one.',re:'Even you won’t eat me?'}],
+      bighorror:[{t:'*opens wider than it should*'},
+                 {to:'foe:gorger',t:'You eat. I eat. Let’s see who stops first.',re:'Neither of us. That’s the problem.'}],
+      /* Lust */
+      boss_death:[{t:'Stay a moment. Sit with me.'},
+                  {to:'foe:palerdr',t:'My pale one. You’ve kept me waiting.',re:'I always come back to you.'}],
       /* Lust's own cards: they speak first, at your cards. foe:* = whichever of your cards is on the table, {n} = its name */
       holy_penitent:[{t:'Forgive me. I have been very, very bad.'},
                      {to:'foe:gravekn',t:'A knight all in black. Ruin me, sir.',re:'Madam, I am a skeleton.'},
@@ -6212,10 +6234,70 @@ addEventListener('resize',()=>{
     const syncMirror=()=>{ const P=state.playerBoard, E=state.enemyBoard;
       for(let i=0;i<LANES;i++){ const v=P[i]; if(!v) continue; const m=E[i];
         if(v._mirrorBy&&!(m&&m.uid===v._mirrorBy&&m.curHp>0)){ v.hp=Math.max(1,v.hp-(v._mirrorAdd||0)); v.curHp=Math.max(1,Math.min(v.curHp,v.hp)); v._mirrorBy=null; v._mirrorAdd=0; }
-        if(!v._mirrorBy&&m&&m.sig==='mirror'&&m.curHp>0&&v.curHp>0){ const add=Math.max(0,m.curHp-v.hp); if(add){ v.hp+=add; v.curHp+=add; v._mirrorBy=m.uid; v._mirrorAdd=add; } } } };
-    const markHeld=()=>{ document.querySelectorAll('#player-row .slot').forEach((el,i)=>{ const h=state.enemyBoard[i]; if(!(h&&h.sig==='grip'&&state.playerBoard[i])) return;
+        if(!v._mirrorBy&&m&&hasSig(m,'mirror')&&m.curHp>0&&v.curHp>0){ const add=Math.max(0,m.curHp-v.hp); if(add){ v.hp+=add; v.curHp+=add; v._mirrorBy=m.uid; v._mirrorAdd=add; } } } };
+    const markHeld=()=>{ document.querySelectorAll('#player-row .slot').forEach((el,i)=>{ const h=state.enemyBoard[i]; if(!(h&&hasSig(h,'grip')&&state.playerBoard[i])) return;
         el.classList.remove('sac-target','spy-target'); const card=el.querySelector('.card'); if(card&&!card.querySelector('.rk-held')){ const d=document.createElement('div'); d.className='rk-held'; d.textContent='\u270B'; d.title='Held by the Gilded Hand. It cannot be sacrificed or moved.'; if(getComputedStyle(card).position==='static') card.style.position='relative'; card.appendChild(d); } }); };
     const ra=window.renderAll; window.renderAll=function(){ try{ if(state) syncMirror(); }catch(e){} const r=ra.apply(this,arguments); try{ if(state) markHeld(); }catch(e){} return r; };
+  }
+  /* ---- the Forge: once per seat at the table, fuse two of your cards into one amalgamation for the rest of the run ---- */
+  { const BAN=['warpig','berserk','redrider'];
+    const ok=k=>{ const c=CARDS[k]; return c&&!c.boss&&!c.relic&&!c.amalgam&&c.faction!=='holy'&&!BAN.includes(k)&&!k.startsWith('boss_')&&k!=='death_boss'; };
+    const cv=c=>!c||c.type==='free'?0:c.type==='coin'?c.n:c.type==='blood'?c.n*2.5:c.type==='marrow'?c.n*2:0;
+    const short=n=>n.replace(/^The /,'');
+    function define(a,b){ const key='amal_'+a+'__'+b; if(CARDS[key]) return key; const A=CARDS[a], B=CARDS[b];
+      const s1=A.sig||B.sig||null, s2=(A.sig&&B.sig&&A.sig!==B.sig)?B.sig:null;
+      CARDS[key]={name:short(A.name)+'-'+short(B.name),art:A.art+B.art,pow:Math.ceil((A.pow+B.pow)/2),hp:Math.ceil((A.hp+B.hp)/2),
+        cost:structuredClone(cv(A.cost)>=cv(B.cost)?A.cost:B.cost),faction:A.faction||B.faction||'',atk:(A.pow>=B.pow?A.atk:B.atk)||A.atk||B.atk,amalgam:true,parts:[a,b]};
+      if(s1) CARDS[key].sig=s1; if(s2) CARDS[key].sig2=s2; if(!CARDS[key].atk) delete CARDS[key].atk;
+      if(ART[a]&&ART[b]){ const ia=new Image(), ib=new Image(); let n=0; const done=()=>{ if(++n<2) return; try{ const w=ia.naturalWidth||300,h=ia.naturalHeight||450, cv2=document.createElement('canvas'); cv2.width=w; cv2.height=h; const g=cv2.getContext('2d');
+          g.drawImage(ia,0,0,w/2,h,0,0,w/2,h); g.drawImage(ib,(ib.naturalWidth||w)/2,0,(ib.naturalWidth||w)/2,ib.naturalHeight||h,w/2,0,w/2,h);
+          g.fillStyle='rgba(255,170,60,.9)'; g.fillRect(w/2-2,0,4,h); ART[key]=cv2.toDataURL('image/jpeg',.88); renderAll(); }catch(e){} };
+        ia.onload=ib.onload=done; ia.onerror=ib.onerror=()=>{}; ia.src=ART[a]; ib.src=ART[b]; }
+      return key; }
+    /* fusions are permanent: kept in the browser across every run */
+    const FK='reckoning_forged'; let FORGED=[]; try{ FORGED=JSON.parse(localStorage.getItem(FK))||[]; }catch(e){}
+    FORGED=FORGED.filter(z=>z&&CARDS[z.a]&&CARDS[z.b]); FORGED.forEach(z=>{ z.key=define(z.a,z.b); });
+    const fsave=()=>{ try{ localStorage.setItem(FK,JSON.stringify(FORGED)); }catch(e){} };
+    /* the deck you are dealt from now carries your amalgamations in place of their parts */
+    const fd=window.factionDeck; window.factionDeck=function(f){ let d=fd.apply(this,arguments).slice();
+      for(const z of FORGED){ if(!CARDS[z.key]||CARDS[z.key].faction!==f) continue; const i=d.indexOf(z.a); if(i<0) continue; d.splice(i,1); const j=d.indexOf(z.b); if(j<0){ d.push(z.a); continue; } d.splice(j,1); d.push(z.key); }
+      return d; };
+    const st=document.createElement('style'); st.textContent=`#rk-forge{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(8,4,2,.78);}
+      #rk-forge.on{display:flex} #rk-forge .fg{width:min(860px,94vw);max-height:90vh;overflow:auto;padding:20px 22px;border-radius:10px;background:linear-gradient(#1c120b,#120b07);border:1px solid rgba(255,150,60,.5);box-shadow:0 0 40px rgba(255,110,30,.25),0 10px 40px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
+      #rk-forge h3{margin:0 0 4px;font-size:26px;color:#ffb35c;letter-spacing:.04em} #rk-forge .sub{font-style:italic;opacity:.8;margin-bottom:14px}
+      #rk-forge .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+      #rk-forge .fc{position:relative;padding:8px;border-radius:8px;border:1px solid rgba(255,200,120,.25);background:#24170e;cursor:pointer;text-align:center;font-size:13px}
+      #rk-forge .fc img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;display:block;margin-bottom:5px} #rk-forge .fc .em{font-size:42px;line-height:1.6}
+      #rk-forge .fc.sel{border-color:#ffb35c;box-shadow:0 0 14px rgba(255,150,50,.8)} #rk-forge .fc .ct{position:absolute;top:4px;left:6px;font-size:12px;color:#ffb35c}
+      #rk-forge .res{margin:16px 0 10px;padding:12px 14px;border-radius:8px;background:#2a1a0e;border:1px dashed rgba(255,170,80,.5);min-height:22px;line-height:1.5}
+      #rk-forge button{font-family:inherit;font-size:16px;padding:8px 16px;margin-right:8px;border-radius:6px;cursor:pointer;border:1px solid #c98a3a;background:#3a230f;color:#ffd9a0}
+      #rk-forge button:disabled{opacity:.4;cursor:default}`; document.head.appendChild(st);
+    const root=document.createElement('div'); root.id='rk-forge'; root.innerHTML='<div class="fg"></div>'; document.body.appendChild(root);
+    const box=root.querySelector('.fg'); const close=()=>root.classList.remove('on'); root.onclick=e=>{ if(e.target===root) close(); };
+    const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
+    window.__openForge=function(){
+      const run=state&&state.ladder&&state.faction&&!state.over, bk=window.__bossKey||'';
+      if(!run){ box.innerHTML='<h3>The Forge</h3><div class="sub">The coals are hot, but you have no hand to temper. Come back when you sit at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); return; }
+      state.forgeUsed=state.forgeUsed||{};
+      if(state.forgeUsed[bk]){ box.innerHTML='<h3>The Forge</h3><div class="sub">The fire is banked. It will take another fusion once you face the next one at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); return; }
+      const deck=window.factionDeck(state.faction).filter(ok), counts={}; deck.forEach(k=>counts[k]=(counts[k]||0)+1);
+      const keys=Object.keys(counts).sort((x,y)=>CARDS[x].name.localeCompare(CARDS[y].name)); let pick=[];
+      const draw=()=>{
+        box.innerHTML='<h3>The Forge</h3><div class="sub">Lay two of your cards on the anvil. They will be beaten into one: their strength and health together, halved, and both their gifts kept. Once for each foe at the table.</div><div class="grid"></div><div class="res"></div><button id="fg-go" disabled>Fuse them</button><button id="fg-x">Leave</button>';
+        const g=box.querySelector('.grid');
+        keys.forEach(k=>{ const c=CARDS[k], n=pick.filter(x=>x===k).length, d=document.createElement('div'); d.className='fc'+(n?' sel':'');
+          d.innerHTML=(counts[k]>1?'<span class="ct">×'+counts[k]+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥<br><small>'+sigTxt(k)+'</small>';
+          d.onclick=()=>{ const n=pick.filter(x=>x===k).length; if(pick.length<2&&n<counts[k]) pick.push(k); else if(n) pick.splice(pick.indexOf(k),1); draw(); };
+          g.appendChild(d); });
+        const res=box.querySelector('.res'), go=box.querySelector('#fg-go');
+        if(pick.length===2){ const key=define(pick[0],pick[1]), c=CARDS[key]; res.innerHTML='<b>'+c.name+'</b>: '+c.pow+'⚔ / '+c.hp+'♥, '+sigTxt(key)+'. Costs '+costLabel(c.cost)+'. It replaces both cards in your deck for good, in every run to come.'; go.disabled=false;
+          go.onclick=()=>{ FORGED.push({a:pick[0],b:pick[1],key}); fsave(); state.forgeUsed[bk]=true;
+            for(const k of pick){ let i=state.deck.findIndex(x=>x.key===k); if(i>=0){ state.deck.splice(i,1); continue; } i=state.hand.findIndex(x=>x.key===k); if(i>=0) state.hand.splice(i,1); }
+            const nc=makeCard(key); if(state.hand.length<10) state.hand.push(nc); else state.deck.push(nc);
+            box.innerHTML='<h3>The Forge</h3><div class="sub">The hammer falls, and falls again. What comes out of the quench is one thing now: <b>'+c.name+'</b>. It waits in your hand.</div><button>Leave</button>'; box.querySelector('button').onclick=close; renderAll(); }; }
+        else res.textContent=pick.length? 'Choose one more.' : 'Choose two cards.';
+        box.querySelector('#fg-x').onclick=close; };
+      draw(); root.classList.add('on'); };
   }
   renderPack();
 }
