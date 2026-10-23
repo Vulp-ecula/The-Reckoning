@@ -6400,7 +6400,7 @@ addEventListener('resize',()=>{
     const inner=window.factionDeck;    /* your Rider's standing deck (with any Forge fusions folded in) */
     const pool=f=>{ const ks=[...new Set(inner(f).concat(FACTIONS[f].deck))].filter(k=>CARDS[k]&&!CARDS[k].boss&&!CARDS[k].relic&&k!==bossKey(f));
       NEUTRAL.concat(window.__won?window.__won():[]).forEach(k=>{ if(CARDS[k]&&!ks.includes(k)) ks.push(k); });
-      (window.__forged||[]).forEach(z=>{ if(CARDS[z.key]&&CARDS[z.key].faction===f&&!ks.includes(z.key)) ks.push(z.key); });
+      (window.__forged||[]).forEach(z=>{ if(CARDS[z.key]&&!ks.includes(z.key)) ks.push(z.key); }   /* fused cards ride with every Rider */);
       return ks.sort((a,b)=>tierOf(a)-tierOf(b)||CARDS[a].name.localeCompare(CARDS[b].name)); };
     const cost=list=>list.reduce((s,k)=>s+PTS[tierOf(k)],0);
     const MUST={conquest:'herald'};   /* the Gilt Herald must ride with Conquest: the brandy puzzle needs him */
