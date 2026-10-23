@@ -6427,23 +6427,65 @@ addEventListener('resize',()=>{
       #rk-deck .ctl{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px} #rk-deck .ctl button{width:34px;height:30px;padding:0;font-size:20px}
       #rk-deck .ctl b{min-width:26px;font-size:18px} #rk-deck .bar{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:14px;padding:12px 16px;border-radius:8px;background:rgba(42,26,14,.9);border:1px solid rgba(255,190,110,.3);font-size:18px}
       #rk-deck .bar .bad{color:#ff8a7a} #rk-deck .bar .sp{flex:1}
-      #rk-deck button{font-family:inherit;font-size:18px;padding:9px 20px;border-radius:6px;cursor:pointer;border:1px solid #b88a3a;background:#3a230f;color:#ffe0aa} #rk-deck button:disabled{opacity:.35;cursor:default}`;
+      #rk-deck button{font-family:inherit;font-size:18px;padding:9px 20px;border-radius:6px;cursor:pointer;border:1px solid #b88a3a;background:#3a230f;color:#ffe0aa} #rk-deck button:disabled{opacity:.35;cursor:default}
+      #rk-deck .dk-hd{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap} #rk-deck h3{font-size:40px!important} #rk-deck .dk-hd .sub{font-size:22px;margin:0;font-style:italic;opacity:.85}
+      #rk-deck .dk-rules{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 10px;font-size:19px} #rk-deck .dk-rules span{padding:6px 12px;border-radius:20px;background:rgba(60,38,18,.85);border:1px solid rgba(255,190,110,.25)}
+      #rk-deck .dk-guide{font-size:22px;padding:10px 16px;border-radius:8px;margin-bottom:12px;background:rgba(232,194,122,.12);border-left:4px solid #e8c27a} #rk-deck .dk-guide.bad{background:rgba(255,110,90,.12);border-left-color:#ff8a7a;color:#ffc4b8} #rk-deck .dk-guide.ok{background:rgba(120,200,120,.12);border-left-color:#8fd08f;color:#d6f2d0}
+      #rk-deck .dk-secs{flex:1;min-height:0;overflow:auto;padding-right:6px} #rk-deck .dk-sec{margin-bottom:18px}
+      #rk-deck .dk-sh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:4px 0 10px;font-size:20px} #rk-deck .dk-sh b{font-size:26px;color:#e8c27a} #rk-deck .dk-sh .dk-rule{opacity:.85} #rk-deck .dk-sh .dk-bl{font-style:italic;opacity:.65}
+      #rk-deck .dk-sh .tier{position:static;font-size:18px}
+      #rk-deck .dk-sec .grid{flex:none;overflow:visible;grid-template-columns:repeat(auto-fill,minmax(165px,1fr))}
+      #rk-deck .dc .dk-nm{font-size:19px;font-weight:bold;margin-top:2px} #rk-deck .dc .st{font-size:17px} #rk-deck .dc .dk-sg{font-size:16px;opacity:.85;min-height:20px}
+      #rk-deck .dc .dk-req{position:absolute;top:6px;left:6px;z-index:2;font-size:13px;padding:2px 8px;border-radius:8px;background:#7a4a12;color:#ffe0aa}
+      #rk-deck .ctl button{width:42px;height:36px;font-size:24px} #rk-deck .ctl b{font-size:22px}
+      #rk-deck .bar{font-size:21px} #rk-deck .dk-meter{min-width:260px} #rk-deck .dk-meter .dk-lbl{margin-bottom:4px} #rk-deck .dk-track{height:10px;border-radius:5px;background:rgba(0,0,0,.5);overflow:hidden}
+      #rk-deck .dk-fill{height:100%;background:linear-gradient(90deg,#c98a3a,#ffd27a)} #rk-deck .dk-fill.over{background:#ff6a5a} #rk-deck .dk-cnt small{opacity:.7} #rk-deck .dk-cnt.bad{color:#ff8a7a}
+      #rk-deck .bar button{font-size:19px} #rk-deck .bar button.go{background:#6a3e12;border-color:#ffcf7a;font-weight:bold}`;
     document.head.appendChild(st);
     const root=document.createElement('div'); root.id='rk-deck'; root.innerHTML='<div class="dk"></div>'; document.body.appendChild(root); const box=root.querySelector('.dk');
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
     window.__deckBuild=function(){ return new Promise(done=>{
-      const f=state.faction; const P=pool(f); let list=(DECKS[f]&&DECKS[f].length&&DECKS[f].every(k=>P.includes(k)))?DECKS[f].slice():starter(f);
-      const between=!!state.boss;
-      const draw=()=>{ const pts=cost(list), n=list.length, must=hasMust(f,list), ok=must&&n>=MINC&&n<=MAXC&&pts<=B(), tc={1:0,2:0,3:0}; list.forEach(k=>tc[tierOf(k)]++);
-        box.innerHTML='<h3>'+(between?'Muster your host':'Build your host')+'</h3><div class="sub">'+(between?'Before the next seat, you may change the cards you carry.':'Choose the cards that ride with '+FACTIONS[f].name+'.')+' Tier I costs 1 point, tier II costs 2, tier III costs 4. At most 3 of a tier I card, 2 of a tier II, 1 of a tier III. Your budget grows by 2 for every boss you beat.</div><div class="grid"></div>'+
-          '<div class="bar"><span class="'+(pts>B()?'bad':'')+'">Points <b>'+pts+'</b> / '+B()+'</span><span class="'+(n<MINC||n>MAXC?'bad':'')+'">Cards <b>'+n+'</b> ('+MINC+'–'+MAXC+')</span><span>I ×'+tc[1]+' · II ×'+tc[2]+' · III ×'+tc[3]+'</span>'+(must?'':'<span class="bad">Needs at least one '+CARDS[MUST[f]].name+'</span>')+'<span class="sp"></span><button id="dk-r">Starter deck</button><button id="dk-c">Clear</button><button id="dk-go"'+(ok?'':' disabled')+'>'+(between?'To the table':'Ride out')+'</button></div>';
-        const g=box.querySelector('.grid');
-        P.forEach(k=>{ const c=CARDS[k], t=tierOf(k), m=list.filter(x=>x===k).length, d=document.createElement('div'); d.className='dc'+(m?' in':'');
-          d.innerHTML='<span class="tier t'+t+'">'+['','I','II','III'][t]+' · '+PTS[t]+'pt</span>'+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'<br><small>'+sigTxt(k)+'</small><div class="ctl"><button class="m">−</button><b>'+m+'</b><button class="p">+</button></div>';
-          const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m||(MUST[f]===k&&m<=1); if(MUST[f]===k) d.title='Required: '+CARDS[k].name+' must ride with you.'; bp.disabled=!fits(list,k);
-          bm.onclick=()=>{ list.splice(list.indexOf(k),1); draw(); }; bp.onclick=()=>{ if(fits(list,k)){ list.push(k); draw(); } };
-          __magnify(d,k); g.appendChild(d); });
-        box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=(MUST[f]&&CARDS[MUST[f]])?[MUST[f]]:[]; draw(); };
+      const f=state.faction; const P=pool(f); const between=!!state.boss;
+      const base=()=>(MUST[f]&&CARDS[MUST[f]])?[MUST[f]]:[];
+      const saved=(DECKS[f]&&DECKS[f].length&&DECKS[f].every(k=>P.includes(k)))?DECKS[f].slice():null;
+      /* a new run starts from nothing (bar any required card); between fights you adjust the deck you rode in with */
+      let list=between&&saved?saved:base();
+      const SEC=[[3,'Champions','Tier III · 4 points each · 1 copy','Your hardest hitters. Most hosts carry one or two.'],
+                 [2,'Specialists','Tier II · 2 points each · up to 2 copies','Cards with a useful trick.'],
+                 [1,'Rank and file','Tier I · 1 point each · up to 3 copies','Cheap bodies that fill out your host.']];
+      const guide=(pts,n,tc,must)=>{ const left=B()-pts, need=Math.max(0,MINC-n);
+        if(!must) return ['bad','Your host needs at least one '+CARDS[MUST[f]].name+'.'];
+        if(pts>B()) return ['bad','You are '+(pts-B())+' point'+(pts-B()===1?'':'s')+' over budget. Remove a card.'];
+        if(need&&left<need) return ['bad','You still need '+need+' more card'+(need===1?'':'s')+' but only have '+left+' point'+(left===1?'':'s')+' left. Swap a Champion or Specialist for cheaper cards.'];
+        if(tc[3]===0&&left>=4) return ['','<b>Step 1.</b> Choose a Champion or two. They cost 4 points each.'];
+        if(need&&tc[2]===0&&left-2>=need-1) return ['','<b>Step 2.</b> Add a few Specialists. They cost 2 points each.'];
+        if(need) return ['','<b>Step 3.</b> Fill your ranks with cheap cards: '+need+' more to go, with '+left+' point'+(left===1?'':'s')+' left.'];
+        if(n<MAXC&&left>0) return ['ok','Your host is ready. You can add up to '+Math.min(MAXC-n,left)+' more, or ride out now.'];
+        return ['ok','Your host is ready. Ride out!']; };
+      const draw=()=>{ const sc=box.querySelector('.dk-secs'), y=sc?sc.scrollTop:0;
+        const pts=cost(list), n=list.length, must=hasMust(f,list), ok=must&&n>=MINC&&n<=MAXC&&pts<=B(), tc={1:0,2:0,3:0}; list.forEach(k=>tc[tierOf(k)]++);
+        const [gc,gt]=guide(pts,n,tc,must), pct=Math.min(100,Math.round(100*pts/B()));
+        box.innerHTML='<div class="dk-hd"><h3>'+(between?'Muster your host':'Build your host')+'</h3><div class="sub">'+(between?'Change the cards you carry before the next fight.':'Choose the cards that ride with '+FACTIONS[f].name+'.')+'</div></div>'+
+          '<div class="dk-rules"><span>💰 Budget: <b>'+B()+' points</b>'+(between?'':' (+2 for every boss you beat)')+'</span><span>🃏 Deck size: <b>'+MINC+' to '+MAXC+' cards</b></span><span>Click <b>+</b> to add a card, <b>−</b> to take it out</span></div>'+
+          '<div class="dk-guide '+gc+'">'+gt+'</div><div class="dk-secs"></div>'+
+          '<div class="bar"><div class="dk-meter"><div class="dk-lbl">Points <b>'+pts+'</b> / '+B()+'</div><div class="dk-track"><div class="dk-fill'+(pts>B()?' over':'')+'" style="width:'+pct+'%"></div></div></div>'+
+          '<div class="dk-cnt'+(n<MINC||n>MAXC?' bad':'')+'">Cards <b>'+n+'</b> <small>of '+MINC+'–'+MAXC+'</small></div><span class="sp"></span>'+
+          (saved?'<button id="dk-l">My last deck</button>':'')+'<button id="dk-r">Suggest a deck</button><button id="dk-c">Start over</button><button id="dk-go" class="go"'+(ok?'':' disabled')+'>'+(between?'To the table':'Ride out')+'</button></div>';
+        const S=box.querySelector('.dk-secs');
+        for(const [t,title,rule,blurb] of SEC){ const ks=P.filter(k=>tierOf(k)===t); if(!ks.length) continue;
+          const sec=document.createElement('div'); sec.className='dk-sec';
+          sec.innerHTML='<div class="dk-sh"><span class="tier t'+t+'">'+['','I','II','III'][t]+'</span><b>'+title+'</b><span class="dk-rule">'+rule+'</span><span class="dk-bl">'+blurb+'</span></div><div class="grid"></div>';
+          const g=sec.querySelector('.grid');
+          ks.forEach(k=>{ const c=CARDS[k], m=list.filter(x=>x===k).length, d=document.createElement('div'); d.className='dc'+(m?' in':'');
+            d.innerHTML=(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<div class="dk-nm">'+c.name+'</div><div class="st">'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'</div><div class="dk-sg">'+sigTxt(k)+'</div><div class="ctl"><button class="m">−</button><b>'+m+'</b><button class="p">+</button></div>';
+            const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m||(MUST[f]===k&&m<=1); bp.disabled=!fits(list,k);
+            if(MUST[f]===k){ d.title='Required: the '+c.name+' must ride with you.'; d.insertAdjacentHTML('afterbegin','<span class="dk-req">Required</span>'); }
+            bm.onclick=()=>{ list.splice(list.indexOf(k),1); draw(); }; bp.onclick=()=>{ if(fits(list,k)){ list.push(k); draw(); } };
+            __magnify(d,k); g.appendChild(d); });
+          S.appendChild(sec); }
+        S.scrollTop=y;
+        const L=box.querySelector('#dk-l'); if(L) L.onclick=()=>{ list=saved.slice(); draw(); };
+        box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=base(); draw(); };
         box.querySelector('#dk-go').onclick=()=>{ if(!ok) return; DECKS[f]=list.slice(); dsave(); root.classList.remove('on'); try{ hidePreview(); }catch(_){} window.__forgeOpen=false; done(); }; };
       draw(); root.classList.add('on'); window.__forgeOpen=true; }); };
   }
