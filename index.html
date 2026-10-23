@@ -874,6 +874,11 @@ const SIG={
   vengeance:{i:'🖤',n:'Vengeance',d:'Gains +1 power whenever another Holy creature dies.'},
   parasite:{i:'🪱',n:'Parasite',d:'At turn\'s end, the creature facing it loses 1 health, and this gains 1.'},
   drunk:{i:'🍺',n:'Strong Drink',d:'Your creatures facing it, or beside that lane, have -1 power while this lives.'},
+  lure:{i:'🧜',n:'Lure',d:'On arrival, if no one faces her, your strongest creature is drawn across the table into her lane.'},
+  seduce:{i:'💄',n:'Seduce',d:'On arrival, the creature facing her is seduced: its next attack strikes one of your own creatures beside it instead.'},
+  display:{i:'🦚',n:'Display',d:'Your attacks into an empty lane beside it strike it instead. It draws the eye.'},
+  kindle:{i:'🔥',n:'Drawn to the Flame',d:'When it dies, it burns: 1 damage to the creature facing it and to each of that creature\'s neighbours.'},
+  vow:{i:'💍',n:'The Vow',d:'At each turn\'s end that no one faces her, she gains +1 power, up to 6. Leave her waiting at your peril.'},
   cull:{i:'🎯',n:'Cull',d:'When it strikes, it also deals its power to the enemy\'s weakest other creature.'},
 };
 const CARDS={
@@ -989,6 +994,11 @@ const CARDS={
   holy_widow:{name:'The Vengeful Widow',art:'🖤',pow:1,hp:4,cost:{type:'blood',n:1},faction:'holy',sig:'vengeance'},
   holy_tapeworm:{name:'The Tapeworm',art:'🪱',pow:1,hp:2,cost:{type:'blood',n:1},faction:'holy',sig:'parasite'},
   holy_brewer:{name:'The Brewer',art:'🍺',pow:1,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'drunk'},
+  holy_siren:{name:'The Siren',art:'🧜‍♀️',pow:1,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'lure'},
+  holy_courtesan:{name:'The Courtesan',art:'💄',pow:2,hp:3,cost:{type:'blood',n:1},faction:'holy',sig:'seduce'},
+  holy_peacock:{name:'The Peacock',art:'🦚',pow:1,hp:5,cost:{},faction:'holy',sig:'display'},
+  holy_moth:{name:'The Moth',art:'🦋',pow:1,hp:1,cost:{},faction:'holy',sig:'kindle'},
+  holy_bride:{name:'The Bride',art:'👰',pow:1,hp:4,cost:{type:'blood',n:1},faction:'holy',sig:'vow'},
   holy_lustboss:{name:'Lust',art:'💋',pow:2,hp:10,cost:{},faction:'holy',sig:'enthrall',boss:true},
 };
 // ---- ART: full-card illustrations (Path 1). Key by card key. ----
@@ -1193,11 +1203,11 @@ const LUST_LADDER=[
    intro:"<b>The Penitent:</b> You came to end the Holy, rider — but look how prettily we kneel. Strike, and see which of us you cannot bring yourself to strike again.",
    defeat:"<b>The Penitent:</b> ...you looked away... after all... the others will not be so easy to leave.",
    quip:["Won't you stay your hand?","We only want to be seen.","Every blow is a caress."]},
-  {key:'holy_martyr',face:'🕯️',name:'The Willing Martyr',sub:'sweeter in the dying',host:['holy_penitent','holy_favoured','holy_beheld','holy_veiled'],
+  {key:'holy_martyr',face:'🕯️',name:'The Willing Martyr',sub:'sweeter in the dying',host:['holy_penitent','holy_courtesan','holy_beheld','holy_veiled'],
    intro:"<b>The Willing Martyr:</b> Cut me down, then. I have waited so long to be wanted enough to kill. You will find you cannot put me down and walk away clean.",
    defeat:"<b>The Willing Martyr:</b> ...thank you... for the ending... but she still sits behind me...",
    quip:["Be my undoing.","Killing me only binds you.","I die grateful."]},
-  {key:'holy_lustboss',face:'💋',name:'Lust',sub:'who has bedded every sin',host:['holy_favoured','holy_jilted','holy_veiled','holy_beheld'],
+  {key:'holy_lustboss',face:'💋',name:'Lust',sub:'who has bedded every sin',host:['holy_favoured','holy_siren','holy_bride'],
    intro:"<b>Lust:</b> Wrath, Greed, Gluttony — I took them all to my bed, rider, and they gave me their teeth. Four riders could not resist me. What makes you think you can?",
    defeat:"<b>Lust:</b> ...cold... at last... you wanted the ending more than you wanted me... ride on, then, unlovely one...",
    quip:["Come closer. Closer.","You already belong to me.","Every sin answers to my hand.","Strike me — you'll only fall harder."]},
@@ -1748,6 +1758,15 @@ function onPlay(c,side,lane){
   { const mine=side==='player'?c:state.playerBoard[lane], m=side==='player'?state.enemyBoard[lane]:c;
     if(mine&&m&&m.sig==='mirror'&&!mine._mirrorBy){ const add=Math.max(0,m.curHp-mine.hp); if(add){ mine.hp+=add; mine.curHp+=add; mine._mirrorBy=m.uid; mine._mirrorAdd=add; } } }
   switch(c.sig){
+    case 'lure':{
+      if(side==='enemy'&&!state.playerBoard[lane]){let best=-1,bp=-1;for(let k=0;k<LANES;k++){const v=state.playerBoard[k];if(v&&!(state.enemyBoard[k]&&state.enemyBoard[k].sig==='grip')){const vp=effPow(v,false);if(vp>bp){bp=vp;best=k;}}}
+        if(best>=0){const v=state.playerBoard[best];state.playerBoard[best]=null;state.playerBoard[lane]=v;say('<b>The Siren</b> sings, and your '+v.name+' crosses the table to her.',3000);}}
+      break;
+    }
+    case 'seduce':{
+      if(side==='enemy'&&state.playerBoard[lane]){state.playerBoard[lane]._seduced=true;say('<b>The Courtesan</b> catches the eye of your '+state.playerBoard[lane].name+'.',2800);}
+      break;
+    }
     case 'pilfer':{
       // The Magpie: snatches a random card from your hand; it drops it again when it dies. Never the Herald (the brandy hint needs him).
       if(side==='enemy'){const pool=state.hand.filter(x=>!x.relic&&x.key!=='herald');if(pool.length){const t=pick(pool);removeHand(t);c._stolen=t;say('<b>The Magpie</b> snatches your '+t.name+' from your hand. Kill it to get it back.',3200);}}
@@ -1813,14 +1832,16 @@ async function combat(side){
     // Rapture (Lust): a creature seduced by something it slew skips this one attack, then recovers.
     if(side==='player'&&a._besotted){a._besotted=false;continue;}
     if(side==='player'&&state.charmed[a.uid])continue;
+    if(side==='player'&&a._seduced){a._seduced=false;const nb=[i-1,i+1].filter(k=>k>=0&&k<LANES&&board[k]);const sp=effPow(a,false);
+      if(nb.length&&sp>0){const k=pick(nb);strike(rowId,k);dmg(board[k],sp,board,rowId);say('<b>Seduced,</b> your '+a.name+' turns on your '+board[k].name+'.',2600);renderReckoning();await wait(560);cleanup();}else say('<b>Seduced,</b> your '+a.name+' only sighs this turn.',2200);continue;}
     let p=effPow(a,side==='enemy');if(p<=0)continue;if(a.sig==='charge'&&!a._charged){p*=2;a._charged=true;}
     // Zeal (Wrath): each player attack inflames every Holy Zealot, up to +2 per turn.
     if(side==='player'){for(const z of state.enemyBoard){if(z&&z.sig==='zeal'){z._zt=z._zt||0;if(z._zt<2){z.pow++;z._zt++;}}}}
     let targets=[];
     if(a.sig==='cleave'){if(i-1>=0)targets.push(i-1);if(i+1<LANES)targets.push(i+1);}else targets=[i];
     if(a.sig==='challenge'){let d=foe.findIndex(x=>x&&x.uid===a._duel);if(d<0){let bp=-1;for(let k=0;k<LANES;k++){const v=foe[k];if(v){const vp=effPow(v,side==='player');if(vp>bp){bp=vp;d=k;}}}if(d>=0)a._duel=foe[d].uid;}if(d>=0)targets=[d];}
-    for(const t of targets){
-      const blk=foe[t];const airborne=a.sig==='arrow';const canBlockAir=blk&&blk.sig==='leap';
+    for(let t of targets){
+      let blk=foe[t];if(side==='player'&&!blk){const pc=[t-1,t+1].find(k=>k>=0&&k<LANES&&foe[k]&&foe[k].sig==='display'&&foe[k].curHp>0);if(pc!==undefined){t=pc;blk=foe[pc];}}const airborne=a.sig==='arrow';const canBlockAir=blk&&blk.sig==='leap';
       const willHitBlocker=!!(blk&&!(airborne&&!canBlockAir));
       const hitsAdversary=(side==='player'&&!willHitBlocker);
       strikeCast(rowId,i,foeRow,t,side,a,hitsAdversary);   // card holds still; a bolt flies to lane t (or the adversary)
@@ -1893,8 +1914,9 @@ function countDeath(side,c){
 function deathTriggers(c,side,lane){const board=side==='player'?state.playerBoard:state.enemyBoard;
   if(side==='enemy'){
     if(c.sig==='mirror'){const v=state.playerBoard[lane];if(v&&v._mirrorBy===c.uid){v.hp=Math.max(1,v.hp-v._mirrorAdd);v.curHp=Math.max(1,Math.min(v.curHp,v.hp));v._mirrorBy=null;v._mirrorAdd=0;}}
+    if(c.sig==='kindle'){let hit=false;for(const k of [lane-1,lane,lane+1]){const v=state.playerBoard[k];if(v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');hit=true;}}if(hit){say('<b>The Moth</b> goes up in flame, and singes what stood near it.',2600);setTimeout(()=>{cleanup();renderAll();},120);}}
     if(c.sig==='jewel'){state.coin+=2;say('<b>The Toad</b> bursts, and a jewel rolls out. +2 coin.',2400);}
-    if(c.sig==='pilfer'&&c._stolen){if(state.hand.length<10){state.hand.push(c._stolen);say('<b>The Magpie</b> drops what it stole: your '+c._stolen.name+' is back in hand.',2800);}c._stolen=null;}
+    if(c.sig==='pilfer'&&c._stolen){if(state.hand.length<10){state.hand.push(c._stolen);say('<b>The Magpie</b> drops what it stole: your '+c._stolen.name+' is back in hand.',2800);}else{state.deck.push(c._stolen);say('<b>The Magpie</b> drops your '+c._stolen.name+'. Your hand is full, so it goes on top of your deck.',3000);}c._stolen=null;}
     for(const x of board){if(!x||x===c||x.curHp<=0)continue;if(x.sig==='vengeance')x.pow++;if(c.sig==='grudge'&&x.key===c.key)x.pow+=2;}
   }if(c.sig==='raise'){if(c.key==='death_boss'){state.pendingResurrect=true;}else{setTimeout(()=>{if(!board[lane]){board[lane]=makeCard('wraith');renderAll();}},260);}}if(c.sig==='dread'){if(side==='player')state.soulsYou+=1;else state.soulsFoe+=1;}
   // Harvest: this card's death draws you one (player side only — the enemy has no hand).
@@ -1937,6 +1959,8 @@ function holySins(){
   for(const c of state.enemyBoard){
     if(c&&c.sig==='tithe'&&state.coin>=3){state.coin--;c.pow++;taxed++;}
   }
+  // The Vow (the Bride): left waiting, she grows.
+  for(let i=0;i<LANES;i++){const w=state.enemyBoard[i];if(w&&w.sig==='vow'&&!state.playerBoard[i]&&w.pow<6)w.pow++;}
   // Parasite (the Tapeworm): the creature facing it loses 1 health, and the worm grows by 1.
   let fed=false;for(let i=0;i<LANES;i++){const w=state.enemyBoard[i],v=state.playerBoard[i];if(w&&w.sig==='parasite'&&v&&v.curHp>0){dmg(v,1,state.playerBoard,'player-row');w.hp++;w.curHp++;fed=true;}}
   if(fed)cleanup();
@@ -1958,9 +1982,9 @@ async function enemyPlan(){
     holy_zealot:['holy_acolyte','holy_verger','holy_acolyte','holy_shield','holy_flagellant','holy_bull','holy_verger'],
     holy_inquisitor:['holy_acolyte','holy_verger','holy_shield','holy_zealot','holy_flagellant','holy_widow','holy_bull'],
     holy_wrathboss:['holy_acolyte','holy_verger','holy_shield','holy_brother','holy_duel','holy_marshal','holy_widow','holy_zealot','holy_inquisitor','holy_flagellant'],
-    holy_penitent:['holy_beheld','holy_suitor','holy_veiled','holy_martyr','holy_penitent'],
-    holy_martyr:['holy_martyr','holy_favoured','holy_beheld','holy_veiled','holy_suitor','holy_penitent'],
-    holy_lustboss:['holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled']};
+    holy_penitent:['holy_beheld','holy_suitor','holy_veiled','holy_moth','holy_peacock','holy_martyr','holy_penitent'],
+    holy_martyr:['holy_martyr','holy_favoured','holy_beheld','holy_veiled','holy_suitor','holy_penitent','holy_moth','holy_courtesan','holy_bride','holy_peacock'],
+    holy_lustboss:['holy_penitent','holy_martyr','holy_beheld','holy_suitor','holy_favoured','holy_jilted','holy_veiled','holy_siren','holy_courtesan','holy_peacock','holy_moth','holy_bride']};
   const pool=pools[b.key]||['knight'];
   if(b.key==='boss_death'){const attackers=state.playerBoard.map((c,i)=>c?{c,i}:null).filter(Boolean);if(attackers.length&&Math.random()<0.35){const t=pick(attackers);state.charmed[t.c.uid]=true;say("<b>Lady Death:</b> Stay a moment. Sit with me. "+pick(["You've earned a rest.","The others can wait."]),3500);}}
   const liveN=state.enemyBoard.filter(Boolean).length;const budget=liveN>=4?0:Math.min(2,Math.floor((state.turnNum||1)/2)+1);
@@ -5927,7 +5951,7 @@ addEventListener('resize',()=>{
     const os=window.onSlotClick; window.onSlotClick=function(lane,isEnemy){
       try{ if(state._spySel&&state.turn==='player'&&!state.over){ const _g=l=>state.enemyBoard[l]&&state.enemyBoard[l].sig==='grip', _si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel); if(_g(_si)||(!isEnemy&&_g(lane))){ say('<b>The Gilded Hand</b> has hold of that one. It will not move.',2600); return; } __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
           if(spy){ if(!isEnemy){ const t=state.playerBoard[lane]; if(t&&t!==spy){ state.playerBoard[lane]=spy; state.playerBoard[si]=t; say('<b>The Spy</b> trades places with the '+t.name+'.',2600); } else say('',10); }
-            else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Holy, and the '+t.name+' crosses over to fight for you.',3400); }
+            else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); if(t._stolen){ const s0=t._stolen; t._stolen=null; if(state.hand.length<10) state.hand.push(s0); else state.deck.push(s0); setTimeout(()=>say('<b>The Magpie</b> drops your '+s0.name+' as it crosses over.',2800),3500); } say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Holy, and the '+t.name+' crosses over to fight for you.',3400); }
               else if(t&&t.isBoss) say('<b>The Spy</b> will not get close enough to that one.',2200); } }
           renderAll(); return; } }catch(e){}
       return os.apply(this,arguments); };
@@ -6146,6 +6170,16 @@ addEventListener('resize',()=>{
                    {to:'foe:shade',t:'Dark. Mysterious. Barely there. Exactly my type.',re:'I am a draught.'}],
       holy_martyr:[{t:'Take me. All of me. I insist.'},
                    {to:'foe:fleshtithe',t:'Give yourself to me and I’ll give myself right back.',re:'That is not how a tithe works.'}],
+      holy_siren:[{t:'Come closer. The water’s warm.'},
+                  {to:'foe:*',t:'{n}… can you hear me? Come to me.'}],
+      holy_courtesan:[{t:'First night’s free. After that, we’ll talk terms.'},
+                      {to:'foe:palerdr',t:'I’ve had riders before. Never a pale one.',re:'You’ll have me eventually.'}],
+      holy_peacock:[{t:'*fans its tail* Look at me. Only at me.'},
+                    {to:'foe:culler',t:'Aim here, archer. I’m the prettiest target in the room.',re:'That is rather the idea.'}],
+      holy_moth:[{t:'The light. Oh, the light.'},
+                 {to:'foe:lantern',t:'Your lantern… it’s so beautiful.',re:'Don’t come any closer. Please.'}],
+      holy_bride:[{t:'He said he’d come. He’ll come.'},
+                  {to:'foe:gravedigger',t:'Dig me a little room for two.',re:'One coffin’s all I’ve got, love.'}],
       holy_lustboss:[{to:'foe:palerdr',t:'Death himself, at my table. Stay the night.',re:'I stay with everyone. Forever.'},
                      {t:'Don’t fight it, darling. Nobody ever really wants to.'}],
       peasant:[{t:'I was promised bread for this.'},
@@ -6171,6 +6205,17 @@ addEventListener('resize',()=>{
             if(i>=0) __cardSay((foe!==me)?'enemy':'player',i,row[i].name,'“'+q.re+'”',5200); },5600); }
         },500);
       }catch(e){} return r; };
+  }
+  /* the Gilded Hand's hold is shown on the held card; the Beheld's health swap is rechecked after every change */
+  { const st=document.createElement('style'); st.textContent=`.rk-held{position:absolute;top:-8px;right:-8px;z-index:5;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      background:radial-gradient(circle at 35% 30%,#ffe9a8,#c8962e 60%,#6b4a12);box-shadow:0 0 10px rgba(255,200,90,.8),0 2px 4px #000;font-size:15px;pointer-events:auto;cursor:help;}`; document.head.appendChild(st);
+    const syncMirror=()=>{ const P=state.playerBoard, E=state.enemyBoard;
+      for(let i=0;i<LANES;i++){ const v=P[i]; if(!v) continue; const m=E[i];
+        if(v._mirrorBy&&!(m&&m.uid===v._mirrorBy&&m.curHp>0)){ v.hp=Math.max(1,v.hp-(v._mirrorAdd||0)); v.curHp=Math.max(1,Math.min(v.curHp,v.hp)); v._mirrorBy=null; v._mirrorAdd=0; }
+        if(!v._mirrorBy&&m&&m.sig==='mirror'&&m.curHp>0&&v.curHp>0){ const add=Math.max(0,m.curHp-v.hp); if(add){ v.hp+=add; v.curHp+=add; v._mirrorBy=m.uid; v._mirrorAdd=add; } } } };
+    const markHeld=()=>{ document.querySelectorAll('#player-row .slot').forEach((el,i)=>{ const h=state.enemyBoard[i]; if(!(h&&h.sig==='grip'&&state.playerBoard[i])) return;
+        el.classList.remove('sac-target','spy-target'); const card=el.querySelector('.card'); if(card&&!card.querySelector('.rk-held')){ const d=document.createElement('div'); d.className='rk-held'; d.textContent='\u270B'; d.title='Held by the Gilded Hand. It cannot be sacrificed or moved.'; if(getComputedStyle(card).position==='static') card.style.position='relative'; card.appendChild(d); } }); };
+    const ra=window.renderAll; window.renderAll=function(){ try{ if(state) syncMirror(); }catch(e){} const r=ra.apply(this,arguments); try{ if(state) markHeld(); }catch(e){} return r; };
   }
   renderPack();
 }
