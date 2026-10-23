@@ -4168,7 +4168,8 @@ const NODES={
   seat:     {pos:new THREE.Vector3(-.82,1.18,FRONT+.62), yaw:-0.55, pitch:-0.06, label:'The window seat'},
   crossbow: {pos:new THREE.Vector3(1.1,1.8,FRONT-2.6), yaw:Math.PI+.33, pitch:0.08, label:'The crossbow'},
   painting: {pos:new THREE.Vector3(3.35,1.7,FRONT-1.9), yaw:Math.PI, pitch:0.0, label:'The painting'},
-  antlers:  {pos:new THREE.Vector3(-3.25,1.75,FRONT-2.2), yaw:Math.PI, pitch:0.26, label:'The antlers'},
+  antlers:  {pos:new THREE.Vector3(-R/2+2.4,1.75,NZC), yaw:Math.PI/2, pitch:0.3, label:'The antlers'},
+  frontdoor:{pos:new THREE.Vector3(-3.45,1.45,FRONT-2.4), yaw:Math.PI, pitch:0.04, label:'The front door'},
   tapestry: {pos:new THREE.Vector3(2.7,1.7,FRONT-2.05), yaw:-Math.PI/2, pitch:0.08, label:'The tapestry'},
 };
 let node='table', tPos=NODES.table.pos.clone(), tYaw=0, tPitch=NODES.table.pitch;
@@ -4514,14 +4515,36 @@ window.__pz={state:()=>PZ, pick:pzPick, place:pzPlace, select:k=>{PZsel=k;pzRefr
   hotspot(plinth,{go:'armour', title:'A suit of armour', body:'Placeholder — wire to lore.'});
 })();
 
+/* ---------- the tavern's front door: front wall, beside the knight. Barred from inside. ---------- */
+{
+  const T_fd=TL.load('assets/3f5087446f5e.jpg'); T_fd.colorSpace=THREE.SRGBColorSpace;
+  const DH=2.3, DW=DH*560/1087, DX=-3.45, DZ=FRONT;
+  const M_fd=new THREE.MeshStandardMaterial({map:T_fd,roughness:.85,color:0xc9c0b2});
+  const leaf=new THREE.Mesh(new THREE.BoxGeometry(DW,DH,.07),[M_beam,M_beam,M_beam,M_beam,M_beam,M_fd]);
+  leaf.position.set(DX,DH/2,DZ-.035); leaf.castShadow=leaf.receiveShadow=true; scene.add(leaf);
+  const step=new THREE.Mesh(new THREE.BoxGeometry(DW+.1,.05,.2),M_dark); step.position.set(DX,.025,DZ-.1); step.receiveShadow=true; scene.add(step);
+  /* the bar: a heavy beam across the door, resting in two iron brackets */
+  const BY=1.12, BW=DW+.46;
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(BW,.16,.14),M_beam); bar.position.set(DX,BY,DZ-.16); bar.castShadow=true; scene.add(bar);
+  const parts=[leaf,step,bar];
+  for(const sx of [-1,1]){
+    const bx=DX+sx*(DW/2+.13);
+    const back=new THREE.Mesh(new THREE.BoxGeometry(.07,.30,.02),M_iron); back.position.set(bx,BY,DZ-.01); scene.add(back);
+    const lip=new THREE.Mesh(new THREE.BoxGeometry(.07,.04,.26),M_iron); lip.position.set(bx,BY-.10,DZ-.13); scene.add(lip);
+    const hook=new THREE.Mesh(new THREE.BoxGeometry(.07,.22,.04),M_iron); hook.position.set(bx,BY-.01,DZ-.25); scene.add(hook);
+    parts.push(back,lip,hook); }
+  const fdl=new THREE.PointLight(0xffb98a,5,3.4,1.8); fdl.position.set(DX+.2,1.7,DZ-1.1); scene.add(fdl);   /* a little warmth on the planks */
+  for(const m of parts) hotspot(m,{go:'frontdoor', title:'The front door', body:'The tavern\u2019s front door, barred from the inside with a beam as thick as a man\u2019s leg. It does not move.'});
+}
+
 /* ---------- deer antlers on a small oak plaque, right wall, left of the lantern ---------- */
 {
   const T_ant=TL.load('assets/a37b9fd736f1.webp'); T_ant.colorSpace=THREE.SRGBColorSpace;
-  const AW=.95, AH=AW*190/401, AX=-3.25, FZ=FRONT, AY=2.35;   /* front wall, right of the knight */
+  const AW=.95, AH=AW*190/401, WXA=-R/2, AZ=NZC, AY=2.95;   /* left wall, above the woodpile niche (and its lantern) */
   const ant=new THREE.Mesh(new THREE.PlaneGeometry(AW,AH),new THREE.MeshStandardMaterial({map:T_ant,transparent:true,alphaTest:.4,roughness:.7,side:THREE.DoubleSide,color:0xd8d0c4}));
-  ant.rotation.y=Math.PI; ant.position.set(AX,AY,FZ-.09); ant.castShadow=true; scene.add(ant);
-  const plaque=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.04,24),M_dark); plaque.rotation.x=Math.PI/2; plaque.scale.set(.8,1,1);
-  plaque.position.set(AX,AY-AH*.38,FZ-.02); plaque.castShadow=true; scene.add(plaque);
+  ant.rotation.y=Math.PI/2; ant.position.set(WXA+.09,AY,AZ); ant.castShadow=true; scene.add(ant);
+  const plaque=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.04,24),M_dark); plaque.rotation.z=Math.PI/2; plaque.scale.set(1,1,.8);
+  plaque.position.set(WXA+.02,AY-AH*.38,AZ); plaque.castShadow=true; scene.add(plaque);
   const skullcap=new THREE.Mesh(new THREE.SphereGeometry(.07,16,10),new THREE.MeshStandardMaterial({color:0xcfc2a4,roughness:.7})); skullcap.scale.set(.6,.8,1);
   for(const m of [ant,plaque]) hotspot(m,{go:'antlers', title:'Antlers', body:'Placeholder — wire to lore.'});
 }
