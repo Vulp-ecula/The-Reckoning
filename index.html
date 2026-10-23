@@ -6357,24 +6357,58 @@ addEventListener('resize',()=>{
       draw(); root.classList.add('on'); window.__forgeOpen=true; };
   }
   /* ---- deck building: before a run and between boss fights, build your host from your Rider's cards on a point budget ---- */
-  { const DK='reckoning_decks', BUDGET=20, MINC=12, MAXC=16, PTS={1:1,2:2,3:4}, CAP={1:3,2:2,3:1};
+  /* ---- spoils: beat a boss and claim one of its table's cards for your pool, for good ---- */
+  { const WK='reckoning_won'; let WON=[]; try{ WON=JSON.parse(localStorage.getItem(WK))||[]; }catch(e){}
+    const OK_SIG=[undefined,'cleave','drain','charge','challenge','leap','bulwark','rot','terror','wither','reap','devour','gorge','dread','ward','choir','rally','coin','arrow'];
+    const usable=k=>{ const c=CARDS[k]; return c&&!c.boss&&!c.once&&!c.relic&&OK_SIG.includes(c.sig)&&(!c.sig2||OK_SIG.includes(c.sig2)); };
+    const pcost=c=>{ if(c.cost&&c.cost.type) return structuredClone(c.cost); const v=c.pow+c.hp; return v<=4?{type:'free'}:v<=7?{type:'blood',n:1}:{type:'blood',n:2}; };
+    function defineWon(k){ const key='won_'+k; if(CARDS[key]) return key; const c=CARDS[k]; CARDS[key]=Object.assign(structuredClone(c),{faction:'',cost:pcost(c),won:true,from:k}); delete CARDS[key].once; if(ART[k]) ART[key]=ART[k]; return key; }
+    WON=WON.filter(k=>CARDS[k]); WON.forEach(defineWon);
+    window.__won=()=>WON.map(k=>'won_'+k);
+    const op=window.onPlay; window.onPlay=function(c,side){ const r=op.apply(this,arguments); try{ if(side==='enemy'&&c&&state){ state._seenFoes=state._seenFoes||{}; state._seenFoes[c.key]=1; } }catch(e){} return r; };
+    const bd=window.bossDown; window.bossDown=function(){ try{ state._beaten=(state._beaten||0)+1; }catch(e){} const r=bd.apply(this,arguments);
+      try{ const b=state.boss, cand=[...new Set(Object.keys(state._seenFoes||{}).concat(b.host||[]))].filter(k=>usable(k)&&!WON.includes(k));
+        for(let i=cand.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [cand[i],cand[j]]=[cand[j],cand[i]]; }
+        const offer=cand.slice(0,3); state._seenFoes={};
+        if(offer.length){ const ov=document.getElementById('overlay'), wrap=document.createElement('div'); wrap.className='rk-spoils';
+          wrap.innerHTML='<p style="color:var(--gilt);margin:14px 0 8px">Spoils of the table. Claim one of their host to ride with you, for good:</p><div class="sp-row"></div>';
+          const row=wrap.querySelector('.sp-row');
+          offer.forEach(k=>{ const key=defineWon(k), c=CARDS[key], d=document.createElement('button'); d.className='sp-card';
+            d.innerHTML=(ART[key]?'<img src="'+ART[key]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><small>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'</small>';
+            if(window.__magnify) __magnify(d,key);
+            d.onclick=()=>{ if(!WON.includes(k)){ WON.push(k); try{ localStorage.setItem(WK,JSON.stringify(WON)); }catch(e){} } try{ hidePreview(); }catch(_){}
+              wrap.innerHTML='<p style="color:var(--gilt);margin:14px 0 8px"><b>'+c.name+'</b> crosses the table. It is yours to muster from now on.</p>'; };
+            row.appendChild(d); });
+          const firstBtn=ov.querySelector('button'); ov.insertBefore(wrap,firstBtn||null); } }catch(e){ console.error(e); }
+      return r; };
+    const st=document.createElement('style'); st.textContent=`.rk-spoils .sp-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+      .rk-spoils .sp-card{width:130px;padding:6px;border-radius:8px;border:1px solid rgba(255,200,120,.35);background:rgba(36,23,14,.9);color:#f0e2c2;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px}
+      .rk-spoils .sp-card:hover{border-color:#e8c27a;box-shadow:0 0 12px rgba(232,194,122,.6)} .rk-spoils .sp-card img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px}
+      .rk-spoils .sp-card .em{font-size:44px;line-height:1.8} .rk-spoils .sp-card small{opacity:.85}`; document.head.appendChild(st);
+  }
+  { const DK='reckoning_decks', BASE=20, MINC=12, MAXC=16, PTS={1:1,2:2,3:4}, CAP={1:3,2:2,3:1};
+    const B=()=>BASE+2*((state&&state._beaten)||0);   /* +2 points for every boss beaten this run */
     let DECKS={}; try{ DECKS=JSON.parse(localStorage.getItem(DK))||{}; }catch(e){}
     const dsave=()=>{ try{ localStorage.setItem(DK,JSON.stringify(DECKS)); }catch(e){} };
     const tierOf=k=>{ const c=CARDS[k]; if(!c) return 1; if(c.amalgam&&c.parts) return Math.max(...c.parts.map(tierOf));
       const t=c.cost&&c.cost.type, n=(c.cost&&c.cost.n)||0;
       if((t==='marrow'&&n>=2&&c.pow>=3)||(t==='blood'&&n>=2)||(t==='coin'&&n>=3)||(t==='marrow'&&n>=3)) return 3;
-      if((t==='marrow'&&n===2)||(t==='coin'&&n===2)||(t==='blood'&&c.pow+c.hp>=5)) return 2; return 1; };
+      if((t==='marrow'&&n===2)||(t==='coin'&&n===2)||(t==='blood'&&c.pow+c.hp>=5)||((t==='free'||!t)&&c.pow+c.hp>=5)) return 2; return 1; };
     window.__tierOf=tierOf;
+    const NEUTRAL=['cutpurse','sellsword','oathkeeper','rookseer','hedgewitch','revenant','almsman'];   /* anyone may take these */
     const bossKey=f=>(FACTIONS[f]&&FACTIONS[f].boss)||null;
     const inner=window.factionDeck;    /* your Rider's standing deck (with any Forge fusions folded in) */
     const pool=f=>{ const ks=[...new Set(inner(f).concat(FACTIONS[f].deck))].filter(k=>CARDS[k]&&!CARDS[k].boss&&!CARDS[k].relic&&k!==bossKey(f));
+      NEUTRAL.concat(window.__won?window.__won():[]).forEach(k=>{ if(CARDS[k]&&!ks.includes(k)) ks.push(k); });
       (window.__forged||[]).forEach(z=>{ if(CARDS[z.key]&&CARDS[z.key].faction===f&&!ks.includes(z.key)) ks.push(z.key); });
       return ks.sort((a,b)=>tierOf(a)-tierOf(b)||CARDS[a].name.localeCompare(CARDS[b].name)); };
     const cost=list=>list.reduce((s,k)=>s+PTS[tierOf(k)],0);
-    const fits=(list,k)=>list.filter(x=>x===k).length<CAP[tierOf(k)]&&list.length<MAXC&&cost(list)+PTS[tierOf(k)]<=BUDGET;
-    const valid=(f,list)=>{ const P=pool(f); return list.length>=MINC&&list.length<=MAXC&&cost(list)<=BUDGET&&list.every(k=>P.includes(k))&&P.every(k=>list.filter(x=>x===k).length<=CAP[tierOf(k)]); };
+    const MUST={conquest:'herald'};   /* the Gilt Herald must ride with Conquest: the brandy puzzle needs him */
+    const hasMust=(f,list)=>!MUST[f]||!CARDS[MUST[f]]||list.includes(MUST[f]);
+    const fits=(list,k)=>list.filter(x=>x===k).length<CAP[tierOf(k)]&&list.length<MAXC&&cost(list)+PTS[tierOf(k)]<=B();
+    const valid=(f,list)=>{ const P=pool(f); return hasMust(f,list)&&list.length>=MINC&&list.length<=MAXC&&cost(list)<=B()&&list.every(k=>P.includes(k))&&P.every(k=>list.filter(x=>x===k).length<=CAP[tierOf(k)]); };
     const starter=f=>{ const src=inner(f).filter(k=>CARDS[k]&&!CARDS[k].boss&&k!==bossKey(f)), P=pool(f);
-      for(let t3=2;t3>=0;t3--){ const out=[];
+      for(let t3=2;t3>=0;t3--){ const out=(MUST[f]&&CARDS[MUST[f]])?[MUST[f]]:[];
         for(const k of src.concat(P)){ if(tierOf(k)===3&&out.filter(x=>tierOf(x)===3).length<t3&&fits(out,k)) out.push(k); }
         for(const k of src.concat(P,P,P)){ if(tierOf(k)<3&&fits(out,k)) out.push(k); }
         if(out.length>=MINC) return out; }
@@ -6398,18 +6432,18 @@ addEventListener('resize',()=>{
     const root=document.createElement('div'); root.id='rk-deck'; root.innerHTML='<div class="dk"></div>'; document.body.appendChild(root); const box=root.querySelector('.dk');
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
     window.__deckBuild=function(){ return new Promise(done=>{
-      const f=state.faction; const P=pool(f); let list=(DECKS[f]&&valid(f,DECKS[f]))?DECKS[f].slice():starter(f);
+      const f=state.faction; const P=pool(f); let list=(DECKS[f]&&DECKS[f].length&&DECKS[f].every(k=>P.includes(k)))?DECKS[f].slice():starter(f);
       const between=!!state.boss;
-      const draw=()=>{ const pts=cost(list), n=list.length, ok=n>=MINC&&n<=MAXC&&pts<=BUDGET, tc={1:0,2:0,3:0}; list.forEach(k=>tc[tierOf(k)]++);
-        box.innerHTML='<h3>'+(between?'Muster your host':'Build your host')+'</h3><div class="sub">'+(between?'Before the next seat, you may change the cards you carry.':'Choose the cards that ride with '+FACTIONS[f].name+'.')+' Tier I costs 1 point, tier II costs 2, tier III costs 4. At most 3 of a tier I card, 2 of a tier II, 1 of a tier III.</div><div class="grid"></div>'+
-          '<div class="bar"><span class="'+(pts>BUDGET?'bad':'')+'">Points <b>'+pts+'</b> / '+BUDGET+'</span><span class="'+(n<MINC||n>MAXC?'bad':'')+'">Cards <b>'+n+'</b> ('+MINC+'–'+MAXC+')</span><span>I ×'+tc[1]+' · II ×'+tc[2]+' · III ×'+tc[3]+'</span><span class="sp"></span><button id="dk-r">Starter deck</button><button id="dk-c">Clear</button><button id="dk-go"'+(ok?'':' disabled')+'>'+(between?'To the table':'Ride out')+'</button></div>';
+      const draw=()=>{ const pts=cost(list), n=list.length, must=hasMust(f,list), ok=must&&n>=MINC&&n<=MAXC&&pts<=B(), tc={1:0,2:0,3:0}; list.forEach(k=>tc[tierOf(k)]++);
+        box.innerHTML='<h3>'+(between?'Muster your host':'Build your host')+'</h3><div class="sub">'+(between?'Before the next seat, you may change the cards you carry.':'Choose the cards that ride with '+FACTIONS[f].name+'.')+' Tier I costs 1 point, tier II costs 2, tier III costs 4. At most 3 of a tier I card, 2 of a tier II, 1 of a tier III. Your budget grows by 2 for every boss you beat.</div><div class="grid"></div>'+
+          '<div class="bar"><span class="'+(pts>B()?'bad':'')+'">Points <b>'+pts+'</b> / '+B()+'</span><span class="'+(n<MINC||n>MAXC?'bad':'')+'">Cards <b>'+n+'</b> ('+MINC+'–'+MAXC+')</span><span>I ×'+tc[1]+' · II ×'+tc[2]+' · III ×'+tc[3]+'</span>'+(must?'':'<span class="bad">Needs at least one '+CARDS[MUST[f]].name+'</span>')+'<span class="sp"></span><button id="dk-r">Starter deck</button><button id="dk-c">Clear</button><button id="dk-go"'+(ok?'':' disabled')+'>'+(between?'To the table':'Ride out')+'</button></div>';
         const g=box.querySelector('.grid');
         P.forEach(k=>{ const c=CARDS[k], t=tierOf(k), m=list.filter(x=>x===k).length, d=document.createElement('div'); d.className='dc'+(m?' in':'');
           d.innerHTML='<span class="tier t'+t+'">'+['','I','II','III'][t]+' · '+PTS[t]+'pt</span>'+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'<br><small>'+sigTxt(k)+'</small><div class="ctl"><button class="m">−</button><b>'+m+'</b><button class="p">+</button></div>';
-          const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m; bp.disabled=!fits(list,k);
+          const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m||(MUST[f]===k&&m<=1); if(MUST[f]===k) d.title='Required: '+CARDS[k].name+' must ride with you.'; bp.disabled=!fits(list,k);
           bm.onclick=()=>{ list.splice(list.indexOf(k),1); draw(); }; bp.onclick=()=>{ if(fits(list,k)){ list.push(k); draw(); } };
           __magnify(d,k); g.appendChild(d); });
-        box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=[]; draw(); };
+        box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=(MUST[f]&&CARDS[MUST[f]])?[MUST[f]]:[]; draw(); };
         box.querySelector('#dk-go').onclick=()=>{ if(!ok) return; DECKS[f]=list.slice(); dsave(); root.classList.remove('on'); try{ hidePreview(); }catch(_){} window.__forgeOpen=false; done(); }; };
       draw(); root.classList.add('on'); window.__forgeOpen=true; }); };
   }
