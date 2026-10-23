@@ -498,7 +498,7 @@
   #dock{bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:14px 16px;pointer-events:none;}
   #resources{display:flex;gap:20px;font-family:'Pirata One';font-size:1.4rem;background:rgba(8,5,3,.55);padding:10px 18px;border-radius:10px;}
   .res{text-align:center;}.res small{display:block;font-family:'Cormorant Garamond';font-style:italic;color:var(--parch-dim);font-size:.9rem;}
-  #blood-pips{color:var(--blood-br);}#coin-count{color:var(--gilt);}
+  #blood-pips{color:var(--blood-br);}#coin-count{color:var(--gilt);}#marrow-count,#coin-count,#deck-count{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;font-size:1.7rem;line-height:1.05;}
   #controls{display:flex;gap:10px;pointer-events:auto;}
   button.act{font-family:'Pirata One';font-size:1.2rem;background:linear-gradient(180deg,var(--wood-lit),#241a10);color:var(--parch);border:1px solid #6b5838;padding:14px 28px;border-radius:5px;cursor:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2034%2034%22%3E%3Cg%20transform%3D%22rotate%28-45%2017%2017%29%22%3E%3Cpolygon%20points%3D%2217%2C1.5%2020.2%2C6.5%2020.2%2C19.5%2013.8%2C19.5%2013.8%2C6.5%22%20fill%3D%22%23e8dcc0%22%20stroke%3D%22%23241a12%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%2F%3E%3Cline%20x1%3D%2217%22%20y1%3D%225.5%22%20x2%3D%2217%22%20y2%3D%2218.5%22%20stroke%3D%22%23241a12%22%20stroke-width%3D%22.9%22%20opacity%3D%22.45%22%2F%3E%3Crect%20x%3D%228.4%22%20y%3D%2219.4%22%20width%3D%2217.2%22%20height%3D%223.4%22%20rx%3D%221.3%22%20fill%3D%22%23c8a24a%22%20stroke%3D%22%23241a12%22%20stroke-width%3D%221.15%22%2F%3E%3Crect%20x%3D%2215.3%22%20y%3D%2222.6%22%20width%3D%223.4%22%20height%3D%226.6%22%20rx%3D%221.3%22%20fill%3D%22%235a3d22%22%20stroke%3D%22%23241a12%22%20stroke-width%3D%221%22%2F%3E%3Ccircle%20cx%3D%2217%22%20cy%3D%2230.2%22%20r%3D%222.3%22%20fill%3D%22%23c8a24a%22%20stroke%3D%22%23241a12%22%20stroke-width%3D%221.15%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") 5 5, auto;letter-spacing:.05em;box-shadow:0 3px 0 #0a0704,inset 0 1px 0 rgba(255,220,160,.15);transition:transform .1s,filter .1s;}
   button.act:hover:not(:disabled){filter:brightness(1.25);}button.act:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #0a0704;}
@@ -1412,7 +1412,7 @@ function chooseFaction(){
   ov.appendChild(dev);
   ov.classList.add('show');
 }
-async function startRun(faction){state=newState(faction);state.ladder=ladderFor(faction);renderAll();await boonPhase();loadBoss(0);renderAll();}
+async function startRun(faction){state=newState(faction);state.ladder=ladderFor(faction);renderAll();if(window.__deckBuild){await window.__deckBuild();state=newState(faction);state.ladder=ladderFor(faction);renderAll();}await boonPhase();loadBoss(0);renderAll();}
 function loadBoss(i){
   const ladder=state.ladder||BOSSES;
   const b=ladder[i];state.boss=b;state.bossIndex=i;
@@ -2178,7 +2178,7 @@ function bossDown(){
     ov.innerHTML=`<h2>The Host is broken</h2><p>${b.defeat}</p>${openedLine}`;
     const pick=el('button','act');pick.style.marginTop='8px';pick.textContent='Take up another Rider';pick.onclick=()=>{ov.classList.remove('show');chooseFaction();};ov.appendChild(pick);
     const alt=el('button','act');alt.style.marginTop='8px';alt.textContent='Ride on (end the run)';alt.onclick=()=>location.reload();ov.appendChild(alt);}
-  else{ov.innerHTML=`<h2>${b.name} falls</h2><p>${b.defeat}</p>`;btn.textContent='To the next seat →';btn.onclick=async()=>{ov.classList.remove('show');state.playerBoard=Array(LANES).fill(null);state.enemyBoard=Array(LANES).fill(null);state.charmed={};const nextBoss=ladder[state.bossIndex+1];dealFreshHand(nextBoss&&nextBoss.key==='holy_lustboss');renderAll();await boonPhase();loadBoss(state.bossIndex+1);renderAll();};ov.appendChild(btn);}
+  else{ov.innerHTML=`<h2>${b.name} falls</h2><p>${b.defeat}</p>`;btn.textContent='To the next seat →';btn.onclick=async()=>{ov.classList.remove('show');state.playerBoard=Array(LANES).fill(null);state.enemyBoard=Array(LANES).fill(null);state.charmed={};const nextBoss=ladder[state.bossIndex+1];if(window.__deckBuild)await window.__deckBuild();dealFreshHand(nextBoss&&nextBoss.key==='holy_lustboss');renderAll();await boonPhase();loadBoss(state.bossIndex+1);renderAll();};ov.appendChild(btn);}
   ov.classList.add('show');
 }
 function lose(){state.over=true;const ov=$('#overlay');ov.innerHTML=`<h2>The bell falls silent</h2><p>Your host lies still across the long table. ${state.boss.name} gathers the cards, unhurried, and shuffles for the next fool to sit down.</p>`;const btn=el('button','act');btn.textContent='Sit down again';btn.onclick=()=>location.reload();ov.appendChild(btn);ov.classList.add('show');}
@@ -4685,7 +4685,7 @@ function goTo(id){
 /* away from the table the card game's rows still sit over the canvas and swallow clicks,
    so room clicks are also taken from the window there (real buttons and links excluded) */
 addEventListener('click',e=>{ if(node==='table'||e.target===renderer.domElement) return;
-  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge')) return; roomClick(); });
+  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge,#rk-deck')) return; roomClick(); });
 renderer.domElement.addEventListener('click',()=>roomClick());
 function roomClick(){
   if(!hover) { elRead.classList.remove('on'); return; }
@@ -6292,7 +6292,7 @@ addEventListener('resize',()=>{
     /* fusions are permanent: kept in the browser across every run */
     const FK='reckoning_forged'; let FORGED=[]; try{ FORGED=JSON.parse(localStorage.getItem(FK))||[]; }catch(e){}
     FORGED=FORGED.filter(z=>z&&CARDS[z.a]&&CARDS[z.b]); FORGED.forEach(z=>{ z.key=define(z.a,z.b); });
-    const fsave=()=>{ try{ localStorage.setItem(FK,JSON.stringify(FORGED)); }catch(e){} };
+    const fsave=()=>{ try{ localStorage.setItem(FK,JSON.stringify(FORGED)); }catch(e){} }; window.__forged=FORGED;
     /* the deck you are dealt from now carries your amalgamations in place of their parts */
     const fd=window.factionDeck; window.factionDeck=function(f){ let d=fd.apply(this,arguments).slice();
       for(const z of FORGED){ if(!CARDS[z.key]||CARDS[z.key].faction!==f) continue; const i=d.indexOf(z.a); if(i<0) continue; d.splice(i,1); const j=d.indexOf(z.b); if(j<0){ d.push(z.a); continue; } d.splice(j,1); d.push(z.key); }
@@ -6326,13 +6326,70 @@ addEventListener('resize',()=>{
           g.appendChild(d); });
         const res=box.querySelector('.res'), go=box.querySelector('#fg-go');
         if(pick.length===2){ const key=define(pick[0],pick[1]), c=CARDS[key]; res.innerHTML='<b>'+c.name+'</b>: '+c.pow+'⚔ / '+c.hp+'♥, '+sigTxt(key)+'. Costs '+costLabel(c.cost)+'. It replaces both cards in your deck for good, in every run to come.'; go.disabled=false;
-          go.onclick=()=>{ FORGED.push({a:pick[0],b:pick[1],key}); fsave(); state.forgeUsed[bk]=true;
+          go.onclick=()=>{ FORGED.push({a:pick[0],b:pick[1],key}); fsave(); if(window.__deckFuse) window.__deckFuse(state.faction,pick[0],pick[1],key); state.forgeUsed[bk]=true;
             for(const k of pick){ let i=state.deck.findIndex(x=>x.key===k); if(i>=0){ state.deck.splice(i,1); continue; } i=state.hand.findIndex(x=>x.key===k); if(i>=0) state.hand.splice(i,1); }
             const nc=makeCard(key); if(state.hand.length<10) state.hand.push(nc); else state.deck.push(nc);
             box.innerHTML='<h3>The Forge</h3><div class="sub">The hammer falls, and falls again. What comes out of the quench is one thing now: <b>'+c.name+'</b>. It waits in your hand.</div><button>Leave</button>'; box.querySelector('button').onclick=close; renderAll(); }; }
         else res.textContent=pick.length? 'Choose one more.' : 'Choose two cards.';
         box.querySelector('#fg-x').onclick=close; };
       draw(); root.classList.add('on'); window.__forgeOpen=true; };
+  }
+  /* ---- deck building: before a run and between boss fights, build your host from your Rider's cards on a point budget ---- */
+  { const DK='reckoning_decks', BUDGET=20, MINC=12, MAXC=16, PTS={1:1,2:2,3:4}, CAP={1:3,2:2,3:1};
+    let DECKS={}; try{ DECKS=JSON.parse(localStorage.getItem(DK))||{}; }catch(e){}
+    const dsave=()=>{ try{ localStorage.setItem(DK,JSON.stringify(DECKS)); }catch(e){} };
+    const tierOf=k=>{ const c=CARDS[k]; if(!c) return 1; if(c.amalgam&&c.parts) return Math.max(...c.parts.map(tierOf));
+      const t=c.cost&&c.cost.type, n=(c.cost&&c.cost.n)||0;
+      if((t==='marrow'&&n>=2&&c.pow>=3)||(t==='blood'&&n>=2)||(t==='coin'&&n>=3)||(t==='marrow'&&n>=3)) return 3;
+      if((t==='marrow'&&n===2)||(t==='coin'&&n===2)||(t==='blood'&&c.pow+c.hp>=5)) return 2; return 1; };
+    window.__tierOf=tierOf;
+    const bossKey=f=>(FACTIONS[f]&&FACTIONS[f].boss)||null;
+    const inner=window.factionDeck;    /* your Rider's standing deck (with any Forge fusions folded in) */
+    const pool=f=>{ const ks=[...new Set(inner(f).concat(FACTIONS[f].deck))].filter(k=>CARDS[k]&&!CARDS[k].boss&&!CARDS[k].relic&&k!==bossKey(f));
+      (window.__forged||[]).forEach(z=>{ if(CARDS[z.key]&&CARDS[z.key].faction===f&&!ks.includes(z.key)) ks.push(z.key); });
+      return ks.sort((a,b)=>tierOf(a)-tierOf(b)||CARDS[a].name.localeCompare(CARDS[b].name)); };
+    const cost=list=>list.reduce((s,k)=>s+PTS[tierOf(k)],0);
+    const fits=(list,k)=>list.filter(x=>x===k).length<CAP[tierOf(k)]&&list.length<MAXC&&cost(list)+PTS[tierOf(k)]<=BUDGET;
+    const valid=(f,list)=>{ const P=pool(f); return list.length>=MINC&&list.length<=MAXC&&cost(list)<=BUDGET&&list.every(k=>P.includes(k))&&P.every(k=>list.filter(x=>x===k).length<=CAP[tierOf(k)]); };
+    const starter=f=>{ const src=inner(f).filter(k=>CARDS[k]&&!CARDS[k].boss&&k!==bossKey(f)), P=pool(f);
+      for(let t3=2;t3>=0;t3--){ const out=[];
+        for(const k of src.concat(P)){ if(tierOf(k)===3&&out.filter(x=>tierOf(x)===3).length<t3&&fits(out,k)) out.push(k); }
+        for(const k of src.concat(P,P,P)){ if(tierOf(k)<3&&fits(out,k)) out.push(k); }
+        if(out.length>=MINC) return out; }
+      return src.filter((k,i)=>i<MINC); };
+    /* the deck you are dealt from is the one you built */
+    window.factionDeck=function(f){ const d=DECKS[f]; if(d&&d.length&&valid(f,d)) return d.concat(bossKey(f)?[bossKey(f)]:[]); return inner.apply(this,arguments); };
+    /* a fusion at the Forge rewrites your saved deck too */
+    window.__deckFuse=(f,a,b,key)=>{ const d=DECKS[f]; if(!d) return; const i=d.indexOf(a); if(i<0) return; d.splice(i,1); const j=d.indexOf(b); if(j>=0) d.splice(j,1); d.push(key); dsave(); };
+    const st=document.createElement('style'); st.textContent=`#rk-deck{position:fixed;inset:0;z-index:85;display:none;align-items:center;justify-content:center;background:rgba(6,3,2,.86)}
+      #rk-deck.on{display:flex} #rk-deck .dk{width:96vw;height:94vh;box-sizing:border-box;display:flex;flex-direction:column;padding:22px 28px;border-radius:12px;background:linear-gradient(rgba(18,11,7,.55),rgba(18,11,7,.8)),url('assets/deck-bg.jpg') center/cover no-repeat,linear-gradient(#1c120b,#100906);border:1px solid rgba(255,190,110,.45);box-shadow:0 10px 50px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
+      #rk-deck h3{margin:0;font-size:34px;color:#e8c27a} #rk-deck .sub{font-style:italic;opacity:.85;margin:4px 0 14px;font-size:17px}
+      #rk-deck .grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start;padding:4px}
+      #rk-deck .dc{position:relative;padding:8px;border-radius:8px;border:1px solid rgba(255,200,120,.22);background:rgba(36,23,14,.85);text-align:center;font-size:15px}
+      #rk-deck .dc.in{border-color:#e8c27a;box-shadow:0 0 12px rgba(232,194,122,.55)} #rk-deck .dc img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;display:block;margin-bottom:5px} #rk-deck .dc .em{font-size:42px;line-height:1.7}
+      #rk-deck .tier{position:absolute;top:4px;right:6px;z-index:2;font-size:13px;font-weight:bold;padding:1px 7px;border-radius:8px;background:rgba(0,0,0,.75)} #rk-deck .t1{color:#cfc4a8} #rk-deck .t2{color:#8fc3ff} #rk-deck .t3{color:#ffb35c}
+      #rk-deck .ctl{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px} #rk-deck .ctl button{width:34px;height:30px;padding:0;font-size:20px}
+      #rk-deck .ctl b{min-width:26px;font-size:18px} #rk-deck .bar{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:14px;padding:12px 16px;border-radius:8px;background:rgba(42,26,14,.9);border:1px solid rgba(255,190,110,.3);font-size:18px}
+      #rk-deck .bar .bad{color:#ff8a7a} #rk-deck .bar .sp{flex:1}
+      #rk-deck button{font-family:inherit;font-size:18px;padding:9px 20px;border-radius:6px;cursor:pointer;border:1px solid #b88a3a;background:#3a230f;color:#ffe0aa} #rk-deck button:disabled{opacity:.35;cursor:default}`;
+    document.head.appendChild(st);
+    const root=document.createElement('div'); root.id='rk-deck'; root.innerHTML='<div class="dk"></div>'; document.body.appendChild(root); const box=root.querySelector('.dk');
+    const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
+    window.__deckBuild=function(){ return new Promise(done=>{
+      const f=state.faction; const P=pool(f); let list=(DECKS[f]&&valid(f,DECKS[f]))?DECKS[f].slice():starter(f);
+      const between=!!state.boss;
+      const draw=()=>{ const pts=cost(list), n=list.length, ok=n>=MINC&&n<=MAXC&&pts<=BUDGET, tc={1:0,2:0,3:0}; list.forEach(k=>tc[tierOf(k)]++);
+        box.innerHTML='<h3>'+(between?'Muster your host':'Build your host')+'</h3><div class="sub">'+(between?'Before the next seat, you may change the cards you carry.':'Choose the cards that ride with '+FACTIONS[f].name+'.')+' Tier I costs 1 point, tier II costs 2, tier III costs 4. At most 3 of a tier I card, 2 of a tier II, 1 of a tier III.</div><div class="grid"></div>'+
+          '<div class="bar"><span class="'+(pts>BUDGET?'bad':'')+'">Points <b>'+pts+'</b> / '+BUDGET+'</span><span class="'+(n<MINC||n>MAXC?'bad':'')+'">Cards <b>'+n+'</b> ('+MINC+'–'+MAXC+')</span><span>I ×'+tc[1]+' · II ×'+tc[2]+' · III ×'+tc[3]+'</span><span class="sp"></span><button id="dk-r">Starter deck</button><button id="dk-c">Clear</button><button id="dk-go"'+(ok?'':' disabled')+'>'+(between?'To the table':'Ride out')+'</button></div>';
+        const g=box.querySelector('.grid');
+        P.forEach(k=>{ const c=CARDS[k], t=tierOf(k), m=list.filter(x=>x===k).length, d=document.createElement('div'); d.className='dc'+(m?' in':'');
+          d.innerHTML='<span class="tier t'+t+'">'+['','I','II','III'][t]+' · '+PTS[t]+'pt</span>'+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'<br><small>'+sigTxt(k)+'</small><div class="ctl"><button class="m">−</button><b>'+m+'</b><button class="p">+</button></div>';
+          const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m; bp.disabled=!fits(list,k);
+          bm.onclick=()=>{ list.splice(list.indexOf(k),1); draw(); }; bp.onclick=()=>{ if(fits(list,k)){ list.push(k); draw(); } };
+          g.appendChild(d); });
+        box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=[]; draw(); };
+        box.querySelector('#dk-go').onclick=()=>{ if(!ok) return; DECKS[f]=list.slice(); dsave(); root.classList.remove('on'); window.__forgeOpen=false; done(); }; };
+      draw(); root.classList.add('on'); window.__forgeOpen=true; }); };
   }
   renderPack();
 }
