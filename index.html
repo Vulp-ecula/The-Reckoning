@@ -6033,8 +6033,10 @@ addEventListener('resize',()=>{
   { const vq=new URLSearchParams(location.search).get('view'); if(vq&&NODES[vq]) setTimeout(()=>goTo(vq),3000); }   /* ?view=bshelf lands you in that room view (testing) */
   setTimeout(hlRebuild,1500);   /* after the rest of the room has registered its hotspots */
   /* ---- card quips: Conquest cards speak once in a while, each line only ever once ---- */
-  { const QK='reckoning_quips_used'; let used={}; try{ used=JSON.parse(localStorage.getItem(QK))||{}; }catch(e){}
-    const mark=id=>{ used[id]=1; try{ localStorage.setItem(QK,JSON.stringify(used)); }catch(e){} };
+  { /* each line is spoken at most once per run: the record lives on the run's state, so a new run starts fresh */
+    const U=()=>{ if(!state) return {}; return state._quipsUsed||(state._quipsUsed={}); };
+    try{ localStorage.removeItem('reckoning_quips_used'); }catch(e){}
+    const mark=id=>{ U()[id]=1; };
     /* to: 'ally:key' | 'foe:key' | 'boss:key' | omitted = says it to no one in particular. re = the target answers. */
     const Q={
       bowman:[{t:'Two arrows left and a whole Church to spend them on.'},
@@ -6308,8 +6310,8 @@ addEventListener('resize',()=>{
         if(!L||state.over||state._spySel) return r;
         const mine=me?state.enemyBoard:state.playerBoard, theirs=me?state.playerBoard:state.enemyBoard;
         if(c.key==='herald'&&bk==='holy_assessor'&&(state.roundNum||1)>=2) return r;          /* the Herald's brandy line owns that round */
-        if(performance.now()-last<20000||Math.random()>(me?.6:c.amalgam?.7:.45)) return r;
-        const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
+        if(performance.now()-last<12000||Math.random()>(me?.6:c.amalgam?.7:.6)) return r;
+        const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(U()[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
           const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
         if(!ok.length) return r;
         const pick=(c.amalgam||L.length>4)?ok[Math.floor(Math.random()*ok.length)]:ok.find(o=>o.q.to&&!o.q.to.endsWith('*'))||ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
