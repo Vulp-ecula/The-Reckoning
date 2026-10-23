@@ -6334,7 +6334,7 @@ addEventListener('resize',()=>{
       try{ const L=c&&(Q[c.key]||(c.amalgam?AQ:null)); const pre=c&&c.amalgam&&!Q[c.key]?'amal':(c&&c.key); const bk=window.__bossKey||''; const me=side==='enemy';
         if(!L||state.over||state._spySel) return r;
         const mine=me?state.enemyBoard:state.playerBoard, theirs=me?state.playerBoard:state.enemyBoard;
-        if(c.key==='herald'&&bk==='holy_assessor'&&(state.roundNum||1)>=2) return r;          /* the Herald's brandy line owns that round */
+        if(c.key==='herald'&&bk==='holy_assessor'&&(state.roundNum||1)>=2) return r; if(c.key==='plunderer'&&bk==='holy_tithemaster'&&!PZ.solved&&PZ.found.length<3) return r;   /* nor the Plunderer's, while his hint stands */          /* the Herald's brandy line owns that round */
         if(performance.now()-last<12000||Math.random()>(me?.6:c.amalgam?.7:.6)) return r;
         const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(U()[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
           const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
@@ -6488,6 +6488,85 @@ addEventListener('resize',()=>{
   if(new URLSearchParams(location.search).get('demo')==='herald'){ const go=()=>{ try{ if(!state||!state.boss){ setTimeout(go,500); return; }
       document.getElementById('overlay').classList.remove('show'); if(!state.playerBoard[1]){ const c=makeCard('herald'); c.curHp=c.hp; state.playerBoard[1]=c; renderAll(); }
       setTimeout(()=>__cardSpeak('player',1,'The Gilt Herald',['You deserve a drink, friend.','Try the magpie’s brandy, that’ll fortify you.']),900); }catch(e){} }; setTimeout(go,2500); }
+  /* ---- the roundel hint: the first Plunderer you play in the Tithe-Master's match speaks of where coins go to hide.
+         Only while any roundel is still to be found. From that match on, he is always in your opening hand. ---- */
+  { let saidP=false; addEventListener('reckoning:boss',()=>{ saidP=false; });
+    const need=()=>!PZ.solved&&PZ.found.length<3&&window.__bossKey==='holy_tithemaster';
+    const op=window.onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
+      try{ if(side==='player'&&c&&c.key==='plunderer'&&!saidP&&need()){ saidP=true;
+        setTimeout(()=>__cardSpeak('player',lane,'The Plunderer',['Three coins have gone missing from the count.','Funny thing about coins. They always end up somewhere.','Somewhere warm. Somewhere wet. Somewhere that watches you back.']),700); } }catch(e){} return r; };
+    const ensure=()=>{ try{ if(!need()||!state||!state.ladder||!state.hand||state.hand.some(c=>c.key==='plunderer')) return;
+      const i=(state.deck||[]).findIndex(c=>c.key==='plunderer'); const c=i>=0?state.deck.splice(i,1)[0]:makeCard('plunderer');
+      if(state.hand.length>=10){ const j=state.hand.findIndex(x=>x.key==='peasant'); if(j>=0) state.deck.push(state.hand.splice(j,1)[0]); }
+      state.hand.push(c); renderAll(); }catch(e){} };
+    const df=window.dealFreshHand; window.dealFreshHand=function(...a){ const r=df.apply(this,a); ensure(); return r; };
+    addEventListener('reckoning:boss',()=>{ setTimeout(ensure,300); setTimeout(ensure,1500); });
+    if(new URLSearchParams(location.search).get('demo')==='plunderer'){ const go=()=>{ try{ if(!state||!state.boss){ setTimeout(go,500); return; }
+        document.getElementById('overlay').classList.remove('show'); if(!state.playerBoard[2]){ const c=makeCard('plunderer'); c.curHp=c.hp; state.playerBoard[2]=c; renderAll(); }
+        setTimeout(()=>__cardSpeak('player',2,'The Plunderer',['Three coins have gone missing from the count.','Funny thing about coins. They always end up somewhere.','Somewhere warm. Somewhere wet. Somewhere that watches you back.']),900); }catch(e){} }; setTimeout(go,2500); }
+  }
+  /* ---- the first-match tutorial: a spotlight on what to click, a few plain words, and it waits until you have done it.
+         Runs once, on your very first match. Replay with ?tutorial=1 ---- */
+  { const TK='reckoning_tutorial_done'; let done=false; try{ done=localStorage.getItem(TK)==='1'; }catch(e){}
+    const force=new URLSearchParams(location.search).get('tutorial')==='1';
+    const st=document.createElement('style'); st.textContent=`
+      #rk-tut-spot{position:fixed;z-index:90;pointer-events:none;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.62),0 0 0 3px #ffd27a,0 0 26px 6px rgba(255,200,100,.55);transition:all .45s ease}
+      #rk-tut-spot.none{box-shadow:0 0 0 9999px rgba(0,0,0,.62)}
+      #rk-tut-box{position:fixed;z-index:92;width:min(460px,86vw);padding:16px 20px 14px;border-radius:12px;background:linear-gradient(#24170d,#170e08);border:1px solid rgba(255,200,120,.6);box-shadow:0 10px 40px #000;
+        color:#f0e2c2;font-family:"IM Fell English",Georgia,serif;font-size:20px;line-height:1.45;transition:left .45s,top .45s}
+      #rk-tut-box .tut-st{font-size:14px;letter-spacing:.2em;color:#e8c27a;margin-bottom:6px} #rk-tut-box b{color:#ffd9a0}
+      #rk-tut-box .tut-row{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+      #rk-tut-box button{font-family:inherit;font-size:17px;padding:7px 16px;border-radius:6px;cursor:pointer;border:1px solid #b88a3a;background:#3a230f;color:#ffe0aa}
+      #rk-tut-box button.skip{background:transparent;border-color:rgba(255,200,120,.3);color:rgba(240,226,194,.6)}
+      #rk-tut-box .tut-wait{font-style:italic;font-size:16px;color:rgba(232,194,122,.8);margin-right:auto;align-self:center}`; document.head.appendChild(st);
+    const $=s=>document.querySelector(s);
+    const handCard=k=>{ const i=state.hand.findIndex(c=>c.key===k); return i>=0?document.querySelectorAll('#hand .hcard')[i]:null; };
+    const boardSlot=k=>{ const i=state.playerBoard.findIndex(c=>c&&c.key===k); return i>=0?$('#player-row .slot[data-lane="'+i+'"]'):null; };
+    const freeLane=()=>{ for(const i of [1,2,0,3]) if(!state.playerBoard[i]) return i; return -1; };
+    const BLOODY={conquest:'bowman',war:'reaver',famine:'blight',death:'gravekn'};
+    let blood='bowman';
+    const S=[
+      {t:'Welcome to the table. Your <b>hand</b> is at the bottom: these are the cards you can play this turn.', el:()=>$('#hand'), next:true},
+      {t:'Across the table sit the <b>Holy</b>. Every card attacks the lane straight ahead of it.', el:()=>$('#enemy-row'), next:true},
+      {t:'A <b>Peasant</b> costs nothing. <b>Click the Peasant</b> in your hand.', el:()=>handCard('peasant'), wait:()=>state.readyCard&&state.readyCard.key==='peasant'},
+      {t:'Now <b>click the glowing lane</b> to put him on the table.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key==='peasant')},
+      {t:()=>'Stronger cards cost <b>blood</b> (the drop on the card). <b>Click the '+CARDS[blood].name+'</b>.', el:()=>handCard(blood), wait:()=>state.awaitingSac>0||(state.readyCard&&state.readyCard.key===blood)},
+      {t:'Blood is paid by sacrificing one of your own. <b>Click your Peasant on the table</b> to offer him.', el:()=>boardSlot('peasant'), wait:()=>state.awaitingSac===0&&state.readyCard&&state.readyCard.key===blood},
+      {t:()=>'The price is paid. <b>Click a lane</b> to place the '+CARDS[blood].name+'.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key===blood)},
+      {t:'Each sacrifice and each fallen card leaves <b>marrow</b>, and each kill earns <b>coin</b>. Some cards cost those instead of blood.', el:()=>$('#resources'), next:true},
+      {t:'An attack that meets no defender strikes the Holy directly and earns <b>souls</b>. The <b>hourglass</b> keeps the tally: the first to 35 souls takes the round.', el:()=>$('#reckoning'), next:true},
+      {t:'When you have played what you want, <b>ring the bell</b>. Your cards attack, then the Holy answer.', el:()=>$('#horn-btn'), wait:()=>state.turn==='combat'},
+      {t:'Watch the exchange…', el:()=>null, wait:()=>state.turn==='player'},
+      {t:'This is your <b>Rider</b>. A powerful card you can play once each round, whenever you choose.', el:()=>$('#rk-rider .rc')||$('#rk-rider'), next:true},
+      {t:'Click the <b>deck</b> count at any time to see which cards are still to come.', el:()=>$('#deck-count'), next:true},
+      {t:'And when you want to, <b>get up and look around</b>. The room hides more than furniture.', el:()=>$('#standbtn'), next:true},
+      {t:'That is all you need. Win two rounds of three to take the seat. Good luck.', el:()=>null, next:true,last:true}];
+    let i=0, spot=null, box=null, poll=null;
+    const end=()=>{ clearInterval(poll); spot&&spot.remove(); box&&box.remove(); window.__tutOn=false; try{ localStorage.setItem(TK,'1'); }catch(e){} };
+    const place=()=>{ const s=S[i]; if(!s) return; const el=s.el&&s.el();
+      if(el){ const r=el.getBoundingClientRect(), p=8; spot.className=''; Object.assign(spot.style,{left:(r.left-p)+'px',top:(r.top-p)+'px',width:(r.width+2*p)+'px',height:(r.height+2*p)+'px'});
+        const bw=box.offsetWidth||460, bh=box.offsetHeight||160; let x=r.left+r.width/2-bw/2, y=r.top-bh-24; if(y<12) y=r.bottom+24; if(y+bh>innerHeight-12) y=Math.max(12,(innerHeight-bh)/2);
+        x=Math.max(12,Math.min(innerWidth-bw-12,x)); box.style.left=x+'px'; box.style.top=y+'px'; }
+      else { spot.className='none'; Object.assign(spot.style,{left:'50%',top:'50%',width:'0px',height:'0px'}); box.style.left=((innerWidth-(box.offsetWidth||460))/2)+'px'; box.style.top=(innerHeight*.3)+'px'; } };
+    const show=()=>{ const s=S[i]; if(!s){ end(); return; }
+      box.innerHTML='<div class="tut-st">STEP '+(i+1)+' OF '+S.length+'</div><div>'+(typeof s.t==='function'?s.t():s.t)+'</div><div class="tut-row">'+(s.wait?'<span class="tut-wait">waiting for you…</span>':'')+(s.last?'':'<button class="skip">Skip the tutorial</button>')+(s.next?'<button class="nx">'+(s.last?'Begin':'Next')+'</button>':'')+'</div>';
+      const nx=box.querySelector('.nx'); if(nx) nx.onclick=()=>{ i++; show(); };
+      const sk=box.querySelector('.skip'); if(sk) sk.onclick=end;
+      place(); };
+    const start=()=>{ if(window.__tutOn) return; window.__tutOn=true; i=0;
+      blood=BLOODY[state.faction]||'bowman';
+      if(!state.hand.some(c=>c.key==='peasant')) state.hand.push(makeCard('peasant'));
+      if(!state.hand.some(c=>c.key===blood)) state.hand.push(makeCard(blood));
+      renderAll();
+      spot=document.createElement('div'); spot.id='rk-tut-spot'; document.body.appendChild(spot);
+      box=document.createElement('div'); box.id='rk-tut-box'; document.body.appendChild(box);
+      show(); poll=setInterval(()=>{ const s=S[i]; if(!s) return; if(s.wait&&s.wait()){ i++; show(); } else place(); },250); };
+    window.__tutorial=start; window.__tutTarget=()=>{ const s=S[i]; const el=s&&s.el&&s.el(); return el?el.getBoundingClientRect():null; };
+    /* your first match, once the first seat is dealt */
+    addEventListener('reckoning:boss',e=>{ if((done&&!force)||!(e.detail&&e.detail.index===0)) return; done=true;
+      const go=()=>{ if(!state||state.turn!=='player'||document.getElementById('overlay').classList.contains('show')||(document.getElementById('rk-deck')||{}).classList?.contains('on')){ setTimeout(go,600); return; } start(); };
+      setTimeout(go,1800); });
+  }
   /* ---- spoils: beat a boss and claim one of its table's cards for your pool, for good ---- */
   { const SPOILS_ON=false;   /* switched off for now (Oct 2026): set to true to bring the spoils screen back. Won cards are kept in storage either way */
     const WK='reckoning_won'; let WON=[]; try{ WON=JSON.parse(localStorage.getItem(WK))||[]; }catch(e){}
@@ -6536,15 +6615,16 @@ addEventListener('resize',()=>{
       (window.__forged||[]).forEach(z=>{ if(CARDS[z.key]&&!ks.includes(z.key)) ks.push(z.key); }   /* fused cards ride with every Rider */);
       return ks.sort((a,b)=>tierOf(a)-tierOf(b)||CARDS[a].name.localeCompare(CARDS[b].name)); };
     const cost=list=>list.reduce((s,k)=>s+PTS[tierOf(k)],0);
-    const MUST={conquest:'herald'};   /* the Gilt Herald must ride with Conquest: the brandy puzzle needs him */
-    const hasMust=(f,list)=>!MUST[f]||!CARDS[MUST[f]]||list.includes(MUST[f]);
+    const MUST={conquest:['herald','plunderer']};   /* Conquest must carry the Gilt Herald (the brandy hint) and the Plunderer (the roundel hint) */
+    const ML=f=>(MUST[f]||[]).filter(k=>CARDS[k]); const isMust=(f,k)=>ML(f).includes(k);
+    const hasMust=(f,list)=>ML(f).every(k=>list.includes(k));
     const fits=(list,k)=>list.filter(x=>x===k).length<CAP[tierOf(k)]&&list.length<MAXC&&cost(list)+PTS[tierOf(k)]<=B();
     const valid=(f,list)=>{ const P=pool(f); return hasMust(f,list)&&list.length>=MINC&&list.length<=MAXC&&cost(list)<=B()&&list.every(k=>P.includes(k))&&P.every(k=>list.filter(x=>x===k).length<=CAP[tierOf(k)]); };
     const starter=f=>{   /* a sensible suggestion: two Champions, a handful of Specialists, then the best cheap cards, spending the whole budget */
-      const P=pool(f), must=MUST[f]&&CARDS[MUST[f]]?MUST[f]:null, out=must?[must]:[];
+      const P=pool(f), out=ML(f).slice();
       const score=k=>{ const c=CARDS[k]; return c.pow*1.6+c.hp+(c.sig?1.5:0)+(c.sig2?1.5:0); };
       const left=()=>B()-cost(out), need=()=>Math.max(0,MINC-out.length);
-      const take=(t,maxN)=>{ for(const k of P.filter(k=>tierOf(k)===t&&k!==must).sort((a,b)=>score(b)-score(a))){
+      const take=(t,maxN)=>{ for(const k of P.filter(k=>tierOf(k)===t&&!isMust(f,k)).sort((a,b)=>score(b)-score(a))){
           while(out.filter(x=>tierOf(x)===t).length<maxN&&fits(out,k)&&left()-PTS[t]>=need()-1) out.push(k); } };
       take(3,2); take(2,5); take(1,99);
       return out; };
@@ -6581,7 +6661,7 @@ addEventListener('resize',()=>{
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
     window.__deckBuild=function(){ return new Promise(done=>{
       const f=state.faction; const P=pool(f); const between=!!state.boss;
-      const base=()=>(MUST[f]&&CARDS[MUST[f]])?[MUST[f]]:[];
+      const base=()=>ML(f).slice();
       const saved=(DECKS[f]&&DECKS[f].length&&DECKS[f].every(k=>P.includes(k)))?DECKS[f].slice():null;
       /* a new run starts from nothing (bar any required card); between fights you adjust the deck you rode in with */
       let list=between&&saved?saved:base();
@@ -6589,7 +6669,7 @@ addEventListener('resize',()=>{
                  [2,'Specialists','Tier II · 2 points each · up to 2 copies','Cards with a useful trick.'],
                  [1,'Rank and file','Tier I · 1 point each · up to 3 copies','Cheap bodies that fill out your host.']];
       const guide=(pts,n,tc,must)=>{ const left=B()-pts, need=Math.max(0,MINC-n);
-        if(!must) return ['bad','Your host needs at least one '+CARDS[MUST[f]].name+'.'];
+        if(!must) return ['bad','Your host needs at least one '+ML(f).filter(k=>!list.includes(k)).map(k=>CARDS[k].name).join(' and one ')+'.'];
         if(pts>B()) return ['bad','You are '+(pts-B())+' point'+(pts-B()===1?'':'s')+' over budget. Remove a card.'];
         if(need&&left<need) return ['bad','You still need '+need+' more card'+(need===1?'':'s')+' but only have '+left+' point'+(left===1?'':'s')+' left. Swap a Champion or Specialist for cheaper cards.'];
         if(tc[3]===0&&left>=4) return ['','<b>Step 1.</b> Choose a Champion or two. They cost 4 points each.'];
@@ -6613,8 +6693,8 @@ addEventListener('resize',()=>{
           const g=sec.querySelector('.grid');
           ks.forEach(k=>{ const c=CARDS[k], m=list.filter(x=>x===k).length, d=document.createElement('div'); d.className='dc'+(m?' in':'');
             d.innerHTML=(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<div class="dk-nm">'+c.name+'</div><div class="st">'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'</div><div class="dk-sg">'+sigTxt(k)+'</div><div class="ctl"><button class="m">−</button><b>'+m+'</b><button class="p">+</button></div>';
-            const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m||(MUST[f]===k&&m<=1); bp.disabled=!fits(list,k);
-            if(MUST[f]===k){ d.title='Required: the '+c.name+' must ride with you.'; d.insertAdjacentHTML('afterbegin','<span class="dk-req">Required</span>'); }
+            const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m||(isMust(f,k)&&m<=1); bp.disabled=!fits(list,k);
+            if(isMust(f,k)){ d.title='Required: the '+c.name+' must ride with you.'; d.insertAdjacentHTML('afterbegin','<span class="dk-req">Required</span>'); }
             bm.onclick=()=>{ list.splice(list.indexOf(k),1); draw(); }; bp.onclick=()=>{ if(fits(list,k)){ list.push(k); draw(); } };
             __magnify(d,k); g.appendChild(d); });
           S.appendChild(sec); }
