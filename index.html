@@ -4685,7 +4685,7 @@ function goTo(id){
 /* away from the table the card game's rows still sit over the canvas and swallow clicks,
    so room clicks are also taken from the window there (real buttons and links excluded) */
 addEventListener('click',e=>{ if(node==='table'||e.target===renderer.domElement) return;
-  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge,#rk-deck')) return; roomClick(); });
+  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge,#rk-deck,#rk-pile')) return; roomClick(); });
 renderer.domElement.addEventListener('click',()=>roomClick());
 function roomClick(){
   if(!hover) { elRead.classList.remove('on'); return; }
@@ -6358,7 +6358,7 @@ addEventListener('resize',()=>{
         if(out.length>=MINC) return out; }
       return src.filter((k,i)=>i<MINC); };
     /* the deck you are dealt from is the one you built */
-    window.factionDeck=function(f){ const d=DECKS[f]; if(d&&d.length&&valid(f,d)) return d.concat(bossKey(f)?[bossKey(f)]:[]); return inner.apply(this,arguments); };
+    window.factionDeck=function(f){ const d=DECKS[f]; if(d&&d.length&&valid(f,d)) return d.slice(); return inner.apply(this,arguments); };   /* the Rider is held apart (see the Rider block), never dealt */
     /* a fusion at the Forge rewrites your saved deck too */
     window.__deckFuse=(f,a,b,key)=>{ const d=DECKS[f]; if(!d) return; const i=d.indexOf(a); if(i<0) return; d.splice(i,1); const j=d.indexOf(b); if(j>=0) d.splice(j,1); d.push(key); dsave(); };
     const st=document.createElement('style'); st.textContent=`#rk-deck{position:fixed;inset:0;z-index:85;display:none;align-items:center;justify-content:center;background:rgba(6,3,2,.86)}
@@ -6390,6 +6390,32 @@ addEventListener('resize',()=>{
         box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=[]; draw(); };
         box.querySelector('#dk-go').onclick=()=>{ if(!ok) return; DECKS[f]=list.slice(); dsave(); root.classList.remove('on'); window.__forgeOpen=false; done(); }; };
       draw(); root.classList.add('on'); window.__forgeOpen=true; }); };
+  }
+  /* ---- your draw pile: click the deck counter to see what is still to come (grouped, never in order) ---- */
+  { const res=document.getElementById('deck-count'); const holder=res&&res.closest('.res');
+    const st=document.createElement('style'); st.textContent=`#dock{z-index:15} #resources .res.rk-deckbtn{pointer-events:auto;cursor:pointer;border-radius:6px;padding:0 6px;transition:background .15s} #resources .res.rk-deckbtn:hover{background:rgba(232,194,122,.16)}
+      #rk-pile{position:fixed;inset:0;z-index:84;display:none;align-items:center;justify-content:center;background:rgba(6,3,2,.7)} #rk-pile.on{display:flex}
+      #rk-pile .pl{width:min(1100px,92vw);max-height:84vh;box-sizing:border-box;display:flex;flex-direction:column;padding:20px 24px;border-radius:12px;background:linear-gradient(#1c120b,#100906);border:1px solid rgba(255,190,110,.45);box-shadow:0 10px 50px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
+      #rk-pile h3{margin:0;font-size:30px;color:#e8c27a} #rk-pile .sub{font-style:italic;opacity:.8;margin:4px 0 14px;font-size:16px}
+      #rk-pile .grid{overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;padding:4px}
+      #rk-pile .pc{position:relative;padding:7px;border-radius:8px;border:1px solid rgba(255,200,120,.22);background:rgba(36,23,14,.85);text-align:center;font-size:14px}
+      #rk-pile .pc img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;display:block;margin-bottom:4px} #rk-pile .pc .em{font-size:38px;line-height:1.6}
+      #rk-pile .n{position:absolute;top:4px;left:6px;z-index:2;font-size:15px;font-weight:bold;color:#ffb35c;background:rgba(0,0,0,.75);padding:1px 7px;border-radius:8px}
+      #rk-pile button{align-self:flex-start;margin-top:14px;font-family:inherit;font-size:17px;padding:8px 20px;border-radius:6px;cursor:pointer;border:1px solid #b88a3a;background:#3a230f;color:#ffe0aa}`;
+    document.head.appendChild(st);
+    const root=document.createElement('div'); root.id='rk-pile'; root.innerHTML='<div class="pl"></div>'; document.body.appendChild(root); const box=root.querySelector('.pl');
+    const close=()=>root.classList.remove('on'); root.onclick=e=>{ if(e.target===root) close(); }; addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+    const open=()=>{ if(!state||!state.deck) return; const cnt={}; state.deck.forEach(c=>{ cnt[c.key]=(cnt[c.key]||0)+1; });
+      const ks=Object.keys(cnt).sort((a,b)=>CARDS[a].name.localeCompare(CARDS[b].name));
+      box.innerHTML='<h3>Still in your deck</h3><div class="sub">'+state.deck.length+' card'+(state.deck.length===1?'':'s')+' left to draw, shown in no particular order.</div><div class="grid"></div><button>Back to the table</button>';
+      const g=box.querySelector('.grid');
+      if(!ks.length) g.innerHTML='<div style="opacity:.7;font-style:italic">Your deck is empty. Only Peasants will come now.</div>';
+      ks.forEach(k=>{ const c=CARDS[k], d=document.createElement('div'); d.className='pc';
+        d.innerHTML=(cnt[k]>1?'<span class="n">×'+cnt[k]+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost);
+        g.appendChild(d); });
+      box.querySelector('button').onclick=close; root.classList.add('on'); };
+    if(holder){ holder.classList.add('rk-deckbtn'); holder.title='See what is still in your deck'; holder.addEventListener('click',open); }
+    window.__openPile=open;
   }
   renderPack();
 }
