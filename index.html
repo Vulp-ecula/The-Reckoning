@@ -6207,23 +6207,57 @@ addEventListener('resize',()=>{
       peasant:[{t:'I was promised bread for this.'},
                {to:'ally:crown',t:'Is that the king?',re:'No. Keep walking.'}]
     };
+    /* forged amalgamations: the two halves bicker. {a} and {b} are the halves; each line is spoken once ever, across all amalgamations */
+    const AQ=[{to:'self',t:'Who’s steering?',re:'Not you, clearly.'},
+      {to:'self',t:'{b}, your elbow is in my ribs.',re:'Those are MY ribs now, {a}.'},
+      {to:'self',t:'I had plans, you know. A life.',re:'You had a Tuesday. Calm down.'},
+      {to:'self',t:'Left foot. LEFT foot.',re:'That is the left foot. It’s just mine.'},
+      {to:'self',t:'Nobody asked me if I wanted to be forged.',re:'Nobody asked me either. We’re even.'},
+      {to:'self',t:'I can hear you thinking.',re:'Then stop listening.'},
+      {to:'self',t:'Does this armour make us look fused?',re:'Everything makes us look fused.'},
+      {to:'self',t:'We fight as one!',re:'As one and a half, at best.'},
+      {to:'self',t:'Stop humming.',re:'That isn’t me. That’s the forge still cooling.'},
+      {to:'self',t:'When this is over, we’re getting separated.',re:'That’s not how hammers work.'},
+      {to:'self',t:'I want it noted that I was the good half.',re:'Noted. By me. The good half.'},
+      {to:'self',t:'Smile for the enemy.',re:'I am smiling. You’re frowning over it.'},
+      {to:'self',t:'Strength and health, halved. Like my patience.',re:'And your wit.'},
+      {to:'self',t:'Why do I smell of {b}?',re:'Why do I smell of {a}? Think about it.'},
+      {to:'self',t:'The blacksmith said this would be an improvement.',re:'The blacksmith said a lot of things.'},
+      {to:'self',t:'Back at it again, are we?',re:'Same fight, same body, same complaints.'},
+      /* new boss fights, and the company they keep */
+      {to:'boss:*',t:'New table, new {boss}. Same old us.',re:'Speak for yourself. I’m thrilled.'},
+      {to:'boss:*',t:'{boss}, we’ve met before. Well, half of us have.',re:'The other half is still sulking about it.'},
+      {to:'boss:*',t:'Don’t stare, {boss}. It’s rude. We’re two things.',re:'Three, if you count my grudge.'},
+      {to:'boss:*',t:'Another fight? We haven’t finished arguing about the last one.',re:'We never finish.'},
+      {to:'boss:*',t:'Right, {boss}. Which of us do you want to hit first?',re:'Him. Definitely him.'},
+      {to:'foe:*',t:'Oi, {n}. Ever seen two of us in one coat?',re:'Don’t encourage them.'},
+      {to:'foe:*',t:'{n} keeps looking at us funny.',re:'Everyone looks at us funny.'},
+      {to:'foe:*',t:'Steady, {n}. We bite twice.',re:'Once each. Fair’s fair.'},
+      {to:'ally:*',t:'{n}, tell {b} to stop hogging the sword arm.',re:'Don’t drag them into this.'},
+      {to:'ally:*',t:'Hello, {n}. Yes, it’s still us. Both of us.',re:'Mostly me, though.'},
+      {to:'ally:*',t:'Don’t mind us, {n}. We’re a bit much in the mornings.',re:'And the evenings.'}];
+    const half=(c,i)=>{ const k=c.parts&&c.parts[i]; return k&&CARDS[k]?CARDS[k].name:c.name; };
+    const hs=(c,i)=>half(c,i).replace(/^The /,'');
     let last=0;
     const find=(row,key,not)=>row.findIndex(x=>x&&x.key===key&&x!==not);
     const op=window.onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
-      try{ const L=c&&Q[c.key]; const bk=window.__bossKey||''; const me=side==='enemy';
+      try{ const L=c&&(Q[c.key]||(c.amalgam?AQ:null)); const pre=c&&c.amalgam&&!Q[c.key]?'amal':(c&&c.key); const bk=window.__bossKey||''; const me=side==='enemy';
         if(!L||state.over||state._spySel) return r;
         const mine=me?state.enemyBoard:state.playerBoard, theirs=me?state.playerBoard:state.enemyBoard;
         if(c.key==='herald'&&bk==='holy_tithemaster') return r;          /* the Herald's brandy line owns that match */
-        if(performance.now()-last<20000||Math.random()>(me?.6:.45)) return r;
-        const ok=L.map((q,i)=>({q,id:c.key+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to) return true;
+        if(performance.now()-last<20000||Math.random()>(me?.6:c.amalgam?.7:.45)) return r;
+        const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
           const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
         if(!ok.length) return r;
-        const pick=ok.find(o=>o.q.to&&!o.q.to.endsWith('*'))||ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
+        const pick=c.amalgam?ok[Math.floor(Math.random()*ok.length)]:ok.find(o=>o.q.to&&!o.q.to.endsWith('*'))||ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
         setTimeout(()=>{ if(document.querySelector('.rk-say')) return;
           const ln=mine.indexOf(c); if(ln<0) return; let t=q.t;
-          if(t.includes('{n}')){ const pool=theirs.filter(x=>x&&!x.isBoss); if(!pool.length) return; t=t.split('{n}').join(pool[Math.floor(Math.random()*pool.length)].name); }
-          __cardSay(me?'enemy':'player',ln,c.name,'“'+t+'”',5200);
-          if(q.re){ const [k,key]=q.to.split(':'); setTimeout(()=>{ const foe=k==='foe', row=foe?theirs:mine, i=find(row,key,c);
+          if(t.includes('{boss}')) t=t.split('{boss}').join(((state.boss&&state.boss.name)||'friend').replace(/^The /,''));
+          if(t.includes('{n}')){ const pool=(q.to==='ally:*'?mine.filter(x=>x&&x!==c):theirs).filter(x=>x&&!x.isBoss); if(!pool.length) return; t=t.split('{n}').join(pool[Math.floor(Math.random()*pool.length)].name); }
+          if(c.amalgam){ const ab=x=>x.split('{a}').join(hs(c,0)).split('{b}').join(hs(c,1)); t=ab(t); }
+          __cardSay(me?'enemy':'player',ln,c.amalgam?half(c,0):c.name,'“'+t+'”',5200);
+          if(q.re&&(q.to==='self'||c.amalgam)){ const re=c.amalgam?q.re.split('{a}').join(hs(c,0)).split('{b}').join(hs(c,1)):q.re; setTimeout(()=>{ const i=mine.indexOf(c); if(i>=0) __cardSay(me?'enemy':'player',i,c.amalgam?half(c,1):c.name,'“'+re+'”',5200); },5600); }
+          else if(q.re){ const [k,key]=q.to.split(':'); setTimeout(()=>{ const foe=k==='foe', row=foe?theirs:mine, i=find(row,key,c);
             if(i>=0) __cardSay((foe!==me)?'enemy':'player',i,row[i].name,'“'+q.re+'”',5200); },5600); }
         },500);
       }catch(e){} return r; };
