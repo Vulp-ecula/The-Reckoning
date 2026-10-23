@@ -6206,7 +6206,25 @@ addEventListener('resize',()=>{
       holy_lustboss:[{to:'foe:palerdr',t:'Death himself, at my table. Stay the night.',re:'I stay with everyone. Forever.'},
                      {t:'Don’t fight it, darling. Nobody ever really wants to.'}],
       peasant:[{t:'I was promised bread for this.'},
-               {to:'ally:crown',t:'Is that the king?',re:'No. Keep walking.'}]
+               {to:'ally:crown',t:'Is that the king?',re:'No. Keep walking.'},
+               {t:'I’ve a field to plough, you know. Somewhere.'},
+               {t:'Is this the bit where I die? It feels like the bit where I die.'},
+               {t:'My mother said there’d be days like this.'},
+               {t:'I don’t even know which side I’m on.'},
+               {t:'Do we get paid in coin, or in glory? Glory doesn’t feed the goat.'},
+               {t:'I brought a pitchfork. Was that wrong?'},
+               {t:'Nobody told me there’d be blood. I’d have worn the brown tunic.'},
+               {to:'boss:*',t:'Begging your pardon, {boss}. I’m only here to make up the numbers.'},
+               {to:'boss:*',t:'{boss}! I paid my tithe last year, I swear it!'},
+               {to:'foe:*',t:'Please don’t hit me, {n}. I bruise like a pear.'},
+               {to:'ally:*',t:'Psst, {n}. Swap places with me?'},
+               {to:'ally:squire',t:'Squire! Is it true you’ve got real boots?',re:'They’re my father’s. Still counts.'},
+               {to:'foe:holy_toad',t:'That’s a big toad.',re:'*croaks, menacingly*'},
+               {to:'foe:holy_magpie',t:'Oi! That bird’s got my spoon!',re:'*caws* Mine now.'},
+               {to:'foe:holy_brewer',t:'Is it free? Is the ale free?',re:'For you, friend, the first one is.'},
+               {to:'foe:holy_glutton',t:'Spare a crust, your worship?',re:'No.'},
+               {to:'foe:holy_widow',t:'Sorry for your loss, missus.',re:'You will be.'},
+               {to:'foe:holy_bull',t:'I’ve milked one of those. Didn’t go well.',re:'*snorts*'}]
     };
     /* forged amalgamations: the two halves bicker. {a} and {b} are the halves; each line is spoken once ever, across all amalgamations */
     const AQ=[{to:'self',t:'Who’s steering?',re:'Not you, clearly.'},
@@ -6250,7 +6268,7 @@ addEventListener('resize',()=>{
         const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(used[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
           const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
         if(!ok.length) return r;
-        const pick=c.amalgam?ok[Math.floor(Math.random()*ok.length)]:ok.find(o=>o.q.to&&!o.q.to.endsWith('*'))||ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
+        const pick=(c.amalgam||L.length>4)?ok[Math.floor(Math.random()*ok.length)]:ok.find(o=>o.q.to&&!o.q.to.endsWith('*'))||ok.find(o=>o.q.to)||ok[0]; const q=pick.q; last=performance.now(); mark(pick.id);
         setTimeout(()=>{ if(document.querySelector('.rk-say')) return;
           const ln=mine.indexOf(c); if(ln<0) return; let t=q.t;
           if(t.includes('{boss}')) t=t.split('{boss}').join(((state.boss&&state.boss.name)||'friend').replace(/^The /,''));
@@ -6274,6 +6292,10 @@ addEventListener('resize',()=>{
         el.classList.remove('sac-target','spy-target'); const card=el.querySelector('.card'); if(card&&!card.querySelector('.rk-held')){ const d=document.createElement('div'); d.className='rk-held'; d.textContent='\u270B'; d.title='Held by the Gilded Hand. It cannot be sacrificed or moved.'; if(getComputedStyle(card).position==='static') card.style.position='relative'; card.appendChild(d); } }); };
     const ra=window.renderAll; window.renderAll=function(){ try{ if(state) syncMirror(); }catch(e){} const r=ra.apply(this,arguments); try{ if(state) markHeld(); }catch(e){} return r; };
   }
+  /* hovering a card on the Forge, deck builder or draw-pile screens shows it magnified, as at the table */
+  window.__magnify=(el,k)=>{ el.onmouseenter=e=>{ try{ previewAnchor=el; showPreview(makeCard(k),false,false); positionPreview(e); }catch(_){} };
+    el.onmousemove=e=>{ try{ positionPreview(e); }catch(_){} }; el.onmouseleave=()=>{ try{ hidePreview(); }catch(_){} }; };
+  { const z=document.createElement('style'); z.textContent='#card-preview{z-index:200!important}'; document.head.appendChild(z); }
   /* ---- the Forge: once per seat at the table, fuse two of your cards into one amalgamation for the rest of the run ---- */
   { const BAN=['warpig','berserk','redrider'];
     const ok=k=>{ const c=CARDS[k]; return c&&!c.boss&&!c.relic&&!c.amalgam&&c.faction!=='holy'&&!BAN.includes(k)&&!k.startsWith('boss_')&&k!=='death_boss'; };
@@ -6308,7 +6330,7 @@ addEventListener('resize',()=>{
       #rk-forge button{font-family:inherit;font-size:16px;padding:8px 16px;margin-right:8px;border-radius:6px;cursor:pointer;border:1px solid #c98a3a;background:#3a230f;color:#ffd9a0}
       #rk-forge button:disabled{opacity:.4;cursor:default} #rk-forge .fg>button{align-self:flex-start} #rk-forge .btns{display:flex;gap:10px} #rk-forge button{font-size:18px;padding:10px 22px}`; document.head.appendChild(st);
     const root=document.createElement('div'); root.id='rk-forge'; root.innerHTML='<div class="fg"></div>'; document.body.appendChild(root);
-    const box=root.querySelector('.fg'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; }; root.onclick=e=>{ if(e.target===root) close(); };
+    const box=root.querySelector('.fg'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; try{ hidePreview(); }catch(_){} }; root.onclick=e=>{ if(e.target===root) close(); };
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
     window.__openForge=function(){
       const run=state&&state.ladder&&state.faction&&!state.over, bk=window.__bossKey||'';
@@ -6323,7 +6345,7 @@ addEventListener('resize',()=>{
         keys.forEach(k=>{ const c=CARDS[k], n=pick.filter(x=>x===k).length, d=document.createElement('div'); d.className='fc'+(n?' sel':'');
           d.innerHTML=(counts[k]>1?'<span class="ct">×'+counts[k]+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥<br><small>'+sigTxt(k)+'</small>';
           d.onclick=()=>{ const n=pick.filter(x=>x===k).length; if(pick.length<2&&n<counts[k]) pick.push(k); else if(n) pick.splice(pick.indexOf(k),1); draw(); };
-          g.appendChild(d); });
+          __magnify(d,k); g.appendChild(d); });
         const res=box.querySelector('.res'), go=box.querySelector('#fg-go');
         if(pick.length===2){ const key=define(pick[0],pick[1]), c=CARDS[key]; res.innerHTML='<b>'+c.name+'</b>: '+c.pow+'⚔ / '+c.hp+'♥, '+sigTxt(key)+'. Costs '+costLabel(c.cost)+'. It replaces both cards in your deck for good, in every run to come.'; go.disabled=false;
           go.onclick=()=>{ FORGED.push({a:pick[0],b:pick[1],key}); fsave(); if(window.__deckFuse) window.__deckFuse(state.faction,pick[0],pick[1],key); state.forgeUsed[bk]=true;
@@ -6386,25 +6408,25 @@ addEventListener('resize',()=>{
           d.innerHTML='<span class="tier t'+t+'">'+['','I','II','III'][t]+' · '+PTS[t]+'pt</span>'+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost)+'<br><small>'+sigTxt(k)+'</small><div class="ctl"><button class="m">−</button><b>'+m+'</b><button class="p">+</button></div>';
           const bm=d.querySelector('.m'), bp=d.querySelector('.p'); bm.disabled=!m; bp.disabled=!fits(list,k);
           bm.onclick=()=>{ list.splice(list.indexOf(k),1); draw(); }; bp.onclick=()=>{ if(fits(list,k)){ list.push(k); draw(); } };
-          g.appendChild(d); });
+          __magnify(d,k); g.appendChild(d); });
         box.querySelector('#dk-r').onclick=()=>{ list=starter(f); draw(); }; box.querySelector('#dk-c').onclick=()=>{ list=[]; draw(); };
-        box.querySelector('#dk-go').onclick=()=>{ if(!ok) return; DECKS[f]=list.slice(); dsave(); root.classList.remove('on'); window.__forgeOpen=false; done(); }; };
+        box.querySelector('#dk-go').onclick=()=>{ if(!ok) return; DECKS[f]=list.slice(); dsave(); root.classList.remove('on'); try{ hidePreview(); }catch(_){} window.__forgeOpen=false; done(); }; };
       draw(); root.classList.add('on'); window.__forgeOpen=true; }); };
   }
   /* ---- your draw pile: click the deck counter to see what is still to come (grouped, never in order) ---- */
   { const res=document.getElementById('deck-count'); const holder=res&&res.closest('.res');
     const st=document.createElement('style'); st.textContent=`#dock{z-index:15} #resources .res.rk-deckbtn{pointer-events:auto;cursor:pointer;border-radius:6px;padding:0 6px;transition:background .15s} #resources .res.rk-deckbtn:hover{background:rgba(232,194,122,.16)}
       #rk-pile{position:fixed;inset:0;z-index:84;display:none;align-items:center;justify-content:center;background:rgba(6,3,2,.7)} #rk-pile.on{display:flex}
-      #rk-pile .pl{width:min(1100px,92vw);max-height:84vh;box-sizing:border-box;display:flex;flex-direction:column;padding:20px 24px;border-radius:12px;background:linear-gradient(#1c120b,#100906);border:1px solid rgba(255,190,110,.45);box-shadow:0 10px 50px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
-      #rk-pile h3{margin:0;font-size:30px;color:#e8c27a} #rk-pile .sub{font-style:italic;opacity:.8;margin:4px 0 14px;font-size:16px}
-      #rk-pile .grid{overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;padding:4px}
-      #rk-pile .pc{position:relative;padding:7px;border-radius:8px;border:1px solid rgba(255,200,120,.22);background:rgba(36,23,14,.85);text-align:center;font-size:14px}
+      #rk-pile .pl{width:96vw;height:94vh;box-sizing:border-box;display:flex;flex-direction:column;padding:20px 24px;border-radius:12px;background:linear-gradient(#1c120b,#100906);border:1px solid rgba(255,190,110,.45);box-shadow:0 10px 50px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
+      #rk-pile h3{margin:0;font-size:36px;color:#e8c27a} #rk-pile .sub{font-style:italic;opacity:.8;margin:4px 0 16px;font-size:18px}
+      #rk-pile .grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;align-content:start;padding:4px}
+      #rk-pile .pc{position:relative;padding:7px;border-radius:8px;border:1px solid rgba(255,200,120,.22);background:rgba(36,23,14,.85);text-align:center;font-size:16px}
       #rk-pile .pc img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;display:block;margin-bottom:4px} #rk-pile .pc .em{font-size:38px;line-height:1.6}
       #rk-pile .n{position:absolute;top:4px;left:6px;z-index:2;font-size:15px;font-weight:bold;color:#ffb35c;background:rgba(0,0,0,.75);padding:1px 7px;border-radius:8px}
       #rk-pile button{align-self:flex-start;margin-top:14px;font-family:inherit;font-size:17px;padding:8px 20px;border-radius:6px;cursor:pointer;border:1px solid #b88a3a;background:#3a230f;color:#ffe0aa}`;
     document.head.appendChild(st);
     const root=document.createElement('div'); root.id='rk-pile'; root.innerHTML='<div class="pl"></div>'; document.body.appendChild(root); const box=root.querySelector('.pl');
-    const close=()=>root.classList.remove('on'); root.onclick=e=>{ if(e.target===root) close(); }; addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+    const close=()=>{ root.classList.remove('on'); try{ hidePreview(); }catch(_){} }; root.onclick=e=>{ if(e.target===root) close(); }; addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
     const open=()=>{ if(!state||!state.deck) return; const cnt={}; state.deck.forEach(c=>{ cnt[c.key]=(cnt[c.key]||0)+1; });
       const ks=Object.keys(cnt).sort((a,b)=>CARDS[a].name.localeCompare(CARDS[b].name));
       box.innerHTML='<h3>Still in your deck</h3><div class="sub">'+state.deck.length+' card'+(state.deck.length===1?'':'s')+' left to draw, shown in no particular order.</div><div class="grid"></div><button>Back to the table</button>';
@@ -6412,7 +6434,7 @@ addEventListener('resize',()=>{
       if(!ks.length) g.innerHTML='<div style="opacity:.7;font-style:italic">Your deck is empty. Only Peasants will come now.</div>';
       ks.forEach(k=>{ const c=CARDS[k], d=document.createElement('div'); d.className='pc';
         d.innerHTML=(cnt[k]>1?'<span class="n">×'+cnt[k]+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥ · '+costLabel(c.cost);
-        g.appendChild(d); });
+        __magnify(d,k); g.appendChild(d); });
       box.querySelector('button').onclick=close; root.classList.add('on'); };
     if(holder){ holder.classList.add('rk-deckbtn'); holder.title='See what is still in your deck'; holder.addEventListener('click',open); }
     window.__openPile=open;
