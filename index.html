@@ -6484,6 +6484,10 @@ addEventListener('resize',()=>{
       setTimeout(()=>tx.classList.add('on'),900); type(lines[0]);
     });
   }
+  /* ?demo=herald: once the table is dealt, the Herald takes a seat and speaks (for viewing only; your brandy puzzle is untouched) */
+  if(new URLSearchParams(location.search).get('demo')==='herald'){ const go=()=>{ try{ if(!state||!state.boss){ setTimeout(go,500); return; }
+      document.getElementById('overlay').classList.remove('show'); if(!state.playerBoard[1]){ const c=makeCard('herald'); c.curHp=c.hp; state.playerBoard[1]=c; renderAll(); }
+      setTimeout(()=>__cardSpeak('player',1,'The Gilt Herald',['You deserve a drink, friend.','Try the magpie’s brandy, that’ll fortify you.']),900); }catch(e){} }; setTimeout(go,2500); }
   /* ---- spoils: beat a boss and claim one of its table's cards for your pool, for good ---- */
   { const SPOILS_ON=false;   /* switched off for now (Oct 2026): set to true to bring the spoils screen back. Won cards are kept in storage either way */
     const WK='reckoning_won'; let WON=[]; try{ WON=JSON.parse(localStorage.getItem(WK))||[]; }catch(e){}
