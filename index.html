@@ -4669,6 +4669,7 @@ const elLabel=document.getElementById('label'), elBack=document.getElementById('
       elRB=document.getElementById('rb'), elWhere=document.getElementById('where');
 
 addEventListener('mousemove',e=>{
+  if(window.__forgeOpen) return;   /* the camera holds still while the Forge is open */
   mx=e.clientX/innerWidth-.5; my=e.clientY/innerHeight-.5;
   ndc.x=(e.clientX/innerWidth)*2-1; ndc.y=-(e.clientY/innerHeight)*2+1;
 });
@@ -4684,7 +4685,7 @@ function goTo(id){
 /* away from the table the card game's rows still sit over the canvas and swallow clicks,
    so room clicks are also taken from the window there (real buttons and links excluded) */
 addEventListener('click',e=>{ if(node==='table'||e.target===renderer.domElement) return;
-  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay')) return; roomClick(); });
+  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge')) return; roomClick(); });
 renderer.domElement.addEventListener('click',()=>roomClick());
 function roomClick(){
   if(!hover) { elRead.classList.remove('on'); return; }
@@ -6297,27 +6298,27 @@ addEventListener('resize',()=>{
       for(const z of FORGED){ if(!CARDS[z.key]||CARDS[z.key].faction!==f) continue; const i=d.indexOf(z.a); if(i<0) continue; d.splice(i,1); const j=d.indexOf(z.b); if(j<0){ d.push(z.a); continue; } d.splice(j,1); d.push(z.key); }
       return d; };
     const st=document.createElement('style'); st.textContent=`#rk-forge{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(8,4,2,.78);}
-      #rk-forge.on{display:flex} #rk-forge .fg{width:min(860px,94vw);max-height:90vh;overflow:auto;padding:20px 22px;border-radius:10px;background:linear-gradient(#1c120b,#120b07);border:1px solid rgba(255,150,60,.5);box-shadow:0 0 40px rgba(255,110,30,.25),0 10px 40px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
-      #rk-forge h3{margin:0 0 4px;font-size:26px;color:#ffb35c;letter-spacing:.04em} #rk-forge .sub{font-style:italic;opacity:.8;margin-bottom:14px}
-      #rk-forge .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
-      #rk-forge .fc{position:relative;padding:8px;border-radius:8px;border:1px solid rgba(255,200,120,.25);background:#24170e;cursor:pointer;text-align:center;font-size:13px}
+      #rk-forge.on{display:flex} #rk-forge .fg{width:96vw;height:94vh;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;padding:24px 30px;border-radius:12px;background:linear-gradient(rgba(18,11,7,.45),rgba(18,11,7,.7)),url('assets/forge-bg.jpg') center/cover no-repeat,linear-gradient(#1c120b,#120b07);border:1px solid rgba(255,150,60,.5);box-shadow:0 0 40px rgba(255,110,30,.25),0 10px 40px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
+      #rk-forge h3{margin:0 0 4px;font-size:34px;color:#ffb35c;letter-spacing:.04em} #rk-forge .sub{font-style:italic;opacity:.85;margin-bottom:16px;font-size:18px;max-width:1100px}
+      #rk-forge .grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start;padding:4px}
+      #rk-forge .fc{position:relative;padding:8px;border-radius:8px;border:1px solid rgba(255,200,120,.25);background:rgba(36,23,14,.82);cursor:pointer;text-align:center;font-size:15px}
       #rk-forge .fc img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;display:block;margin-bottom:5px} #rk-forge .fc .em{font-size:42px;line-height:1.6}
-      #rk-forge .fc.sel{border-color:#ffb35c;box-shadow:0 0 14px rgba(255,150,50,.8)} #rk-forge .fc .ct{position:absolute;top:4px;left:6px;font-size:12px;color:#ffb35c}
-      #rk-forge .res{margin:16px 0 10px;padding:12px 14px;border-radius:8px;background:#2a1a0e;border:1px dashed rgba(255,170,80,.5);min-height:22px;line-height:1.5}
+      #rk-forge .fc.sel{border-color:#ffb35c;box-shadow:0 0 14px rgba(255,150,50,.8)} #rk-forge .fc .ct{position:absolute;top:4px;left:6px;z-index:2;font-size:14px;font-weight:bold;color:#ffb35c;background:rgba(0,0,0,.7);padding:1px 6px;border-radius:8px}
+      #rk-forge .res{font-size:17px;background:rgba(42,26,14,.88)!important;margin:16px 0 10px;padding:12px 14px;border-radius:8px;background:#2a1a0e;border:1px dashed rgba(255,170,80,.5);min-height:22px;line-height:1.5}
       #rk-forge button{font-family:inherit;font-size:16px;padding:8px 16px;margin-right:8px;border-radius:6px;cursor:pointer;border:1px solid #c98a3a;background:#3a230f;color:#ffd9a0}
-      #rk-forge button:disabled{opacity:.4;cursor:default}`; document.head.appendChild(st);
+      #rk-forge button:disabled{opacity:.4;cursor:default} #rk-forge .fg>button{align-self:flex-start} #rk-forge .btns{display:flex;gap:10px} #rk-forge button{font-size:18px;padding:10px 22px}`; document.head.appendChild(st);
     const root=document.createElement('div'); root.id='rk-forge'; root.innerHTML='<div class="fg"></div>'; document.body.appendChild(root);
-    const box=root.querySelector('.fg'); const close=()=>root.classList.remove('on'); root.onclick=e=>{ if(e.target===root) close(); };
+    const box=root.querySelector('.fg'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; }; root.onclick=e=>{ if(e.target===root) close(); };
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
     window.__openForge=function(){
       const run=state&&state.ladder&&state.faction&&!state.over, bk=window.__bossKey||'';
-      if(!run){ box.innerHTML='<h3>The Forge</h3><div class="sub">The coals are hot, but you have no hand to temper. Come back when you sit at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); return; }
+      if(!run){ box.innerHTML='<h3>The Forge</h3><div class="sub">The coals are hot, but you have no hand to temper. Come back when you sit at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); window.__forgeOpen=true; return; }
       state.forgeUsed=state.forgeUsed||{};
-      if(state.forgeUsed[bk]){ box.innerHTML='<h3>The Forge</h3><div class="sub">The fire is banked. It will take another fusion once you face the next one at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); return; }
+      if(state.forgeUsed[bk]){ box.innerHTML='<h3>The Forge</h3><div class="sub">The fire is banked. It will take another fusion once you face the next one at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); window.__forgeOpen=true; return; }
       const deck=window.factionDeck(state.faction).filter(ok), counts={}; deck.forEach(k=>counts[k]=(counts[k]||0)+1);
       const keys=Object.keys(counts).sort((x,y)=>CARDS[x].name.localeCompare(CARDS[y].name)); let pick=[];
       const draw=()=>{
-        box.innerHTML='<h3>The Forge</h3><div class="sub">Lay two of your cards on the anvil. They will be beaten into one: their strength and health together, halved, and both their gifts kept. Once for each foe at the table.</div><div class="grid"></div><div class="res"></div><button id="fg-go" disabled>Fuse them</button><button id="fg-x">Leave</button>';
+        box.innerHTML='<h3>The Forge</h3><div class="sub">Lay two of your cards on the anvil. They will be beaten into one: their strength and health together, halved, and both their gifts kept. Once for each foe at the table.</div><div class="grid"></div><div class="res"></div><div class="btns"><button id="fg-go" disabled>Fuse them</button><button id="fg-x">Leave</button></div>';
         const g=box.querySelector('.grid');
         keys.forEach(k=>{ const c=CARDS[k], n=pick.filter(x=>x===k).length, d=document.createElement('div'); d.className='fc'+(n?' sel':'');
           d.innerHTML=(counts[k]>1?'<span class="ct">×'+counts[k]+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥<br><small>'+sigTxt(k)+'</small>';
@@ -6331,7 +6332,7 @@ addEventListener('resize',()=>{
             box.innerHTML='<h3>The Forge</h3><div class="sub">The hammer falls, and falls again. What comes out of the quench is one thing now: <b>'+c.name+'</b>. It waits in your hand.</div><button>Leave</button>'; box.querySelector('button').onclick=close; renderAll(); }; }
         else res.textContent=pick.length? 'Choose one more.' : 'Choose two cards.';
         box.querySelector('#fg-x').onclick=close; };
-      draw(); root.classList.add('on'); };
+      draw(); root.classList.add('on'); window.__forgeOpen=true; };
   }
   renderPack();
 }
