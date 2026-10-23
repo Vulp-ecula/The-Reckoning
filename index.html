@@ -2543,7 +2543,9 @@ let previewAnchor=null;
 function showPreview(c, useCurrentHp, isEnemy, note){
   const hp = useCurrentHp && c.curHp!=null ? c.curHp : c.hp;
   const art = artFor(c);
-  const sigHtml = c.sig&&SIG[c.sig] ? `<div class="pv-sigil"><span class="pv-sigil-i">${SIG[c.sig].i}${c.sig2&&SIG[c.sig2]?SIG[c.sig2].i:''}</span><span class="pv-sigil-n">${SIG[c.sig].n}</span><span class="pv-sigil-d">${SIG[c.sig].d}</span></div>`+(c.sig2&&SIG[c.sig2]?`<div class="pv-sigil"><span class="pv-sigil-i">${SIG[c.sig2].i}</span><span class="pv-sigil-n">${SIG[c.sig2].n}</span><span class="pv-sigil-d">${SIG[c.sig2].d}</span></div>`:'') : '';
+  /* one panel for the card's abilities: a fused card shows both, one under the other */
+  const sigOne=s=>`<span class="pv-sigil-i">${SIG[s].i}</span><span class="pv-sigil-n">${SIG[s].n}</span><span class="pv-sigil-d">${SIG[s].d}</span>`;
+  const sigHtml = c.sig&&SIG[c.sig] ? `<div class="pv-sigil">${sigOne(c.sig)}${c.sig2&&SIG[c.sig2]?'<span style="display:block;height:8px"></span>'+sigOne(c.sig2):''}</div>` : '';
   // The preview already repeats everything the old floating tooltip said (name, pow/hp, sigil),
   // so showing both meant a cursor-anchored box landing on top of a card-anchored one — see the
   // "solve tooltips covering card text" fix. `note` carries the one piece the preview didn't
@@ -5920,7 +5922,7 @@ addEventListener('resize',()=>{
     let said=false; addEventListener('reckoning:boss',()=>{ said=false; });
     if(typeof onPlay==='function'){ const op=onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
       try{ if(side==='player'&&c&&c.key==='herald'&&bossKey==='holy_assessor'&&(state.roundNum||1)>=2&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
-        setTimeout(()=>__cardSay('player',lane,'The Gilt Herald','“You deserve a drink, friend. Try the magpie’s brandy, that’ll fortify you.”',10000),450); } }catch(e){} return r; }; }
+        setTimeout(()=>__cardSpeak('player',lane,'The Gilt Herald',['You deserve a drink, friend.','Try the magpie’s brandy, that’ll fortify you.']),700); } }catch(e){} return r; }; }
     /* the bottle, beside the magpie */
     const MX=R/2-.26, MZ=-.86, SY=1.815+.035;
     const bg=new THREE.Group(); bg.position.set(MX-.02,SY,MZ+.2); scene.add(bg);
@@ -5981,7 +5983,7 @@ addEventListener('resize',()=>{
  .rk-say b{display:block;font-style:normal;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#e0b860;margin-bottom:3px;}
     .rk-say:after{content:'';position:absolute;left:22px;bottom:-9px;border:9px solid transparent;border-bottom:0;border-top-color:rgba(255,200,120,.55);}
     body.cabin-away .rk-say{display:none;}`; document.head.appendChild(st);
-    window.__cardSay=(side,lane,name,text,ms)=>{ const row=side==='enemy'?'enemy-row':'player-row';
+    window.__cardSay=(side,lane,name,text,ms)=>{ if(window.__speaking) return; const row=side==='enemy'?'enemy-row':'player-row';
       const el=document.querySelector('#'+row+' .slot[data-lane="'+lane+'"] .card')||document.querySelector('#'+row+' .slot[data-lane="'+lane+'"]'); if(!el) return;
       const r=el.getBoundingClientRect(), b=document.createElement('div'); b.className='rk-say'; b.innerHTML='<b>'+name+'</b><span></span>'; document.body.appendChild(b);
       const place=()=>{ const h=b.offsetHeight; b.style.left=Math.max(8,Math.min(innerWidth-350,r.left+r.width*.25))+'px'; b.style.top=Math.max(8,r.top-h-12)+'px'; };
@@ -6433,6 +6435,54 @@ addEventListener('resize',()=>{
     let bag=[], lastTurn=-1;
     window.__drunkSay=(lane,c)=>{ try{ if(!state||state.turnNum===lastTurn||document.querySelector('.rk-say')) return; lastTurn=state.turnNum;
       if(!bag.length) bag=DL.slice().sort(()=>Math.random()-.5); const t=bag.pop(); setTimeout(()=>{ if(state.playerBoard[lane]===c) __cardSay('player',lane,c.name,'“'+t+'”',3800); },60); }catch(e){} };
+  }
+  /* ---- a card that speaks to YOU: the table stills, the room greys and darkens, the card rises, and its words come slowly.
+         window.__cardSpeak(side, lane, name, [lines]) -> Promise; click to continue. Use sparingly, for scripted moments. ---- */
+  { const st=document.createElement('style'); st.textContent=`
+      #rk-speak{position:fixed;inset:0;z-index:95;opacity:0;cursor:pointer;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,.15) 0%,rgba(0,0,0,.55) 45%,rgba(0,0,0,.92) 100%);
+        backdrop-filter:grayscale(.92) brightness(.55) blur(.6px);-webkit-backdrop-filter:grayscale(.92) brightness(.55) blur(.6px);transition:opacity 1.3s ease}
+      #rk-speak.on{opacity:1}
+      .rk-speaker{position:fixed!important;z-index:96;margin:0!important;pointer-events:none;transition:transform 1.6s cubic-bezier(.2,.7,.2,1),box-shadow 1.6s;transform-origin:50% 60%}
+      .rk-speaker.up{transform:translateY(-26px) scale(1.2);box-shadow:0 0 34px 6px rgba(160,190,255,.32),0 18px 40px rgba(0,0,0,.9)}
+      .rk-speaker.up.breathe{animation:rkBreathe 4.2s ease-in-out infinite}
+      @keyframes rkBreathe{0%,100%{transform:translateY(-26px) scale(1.2)}50%{transform:translateY(-29px) scale(1.215)}}
+      #rk-sp-text{position:fixed;left:50%;transform:translateX(-50%);z-index:97;width:min(980px,82vw);text-align:center;pointer-events:none;opacity:0;transition:opacity 1s;padding:22px 40px 18px;border-radius:40px;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.78) 0%,rgba(0,0,0,.55) 55%,transparent 80%)}
+      #rk-sp-text.top{top:9%} #rk-sp-text.bot{bottom:9%}
+      #rk-sp-text.on{opacity:1}
+      #rk-sp-text .who{font-family:'IM Fell English SC','IM Fell English',Georgia,serif;font-size:18px;letter-spacing:.32em;color:rgba(190,205,235,.75);margin-bottom:14px}
+      #rk-sp-text .say{font-family:'IM Fell English',Georgia,serif;font-style:italic;font-size:40px;line-height:1.35;color:#e9e2d2;text-shadow:0 0 18px rgba(0,0,0,.95),0 0 3px #000;min-height:1.4em}
+      #rk-sp-text .say .g{color:#9fb6ff;opacity:.8}
+      #rk-sp-text .more{margin-top:16px;font-size:22px;color:rgba(200,210,235,.6);opacity:0;animation:rkBlink 1.6s ease-in-out infinite}
+      #rk-sp-text .more.on{opacity:1}
+      @keyframes rkBlink{0%,100%{opacity:.15}50%{opacity:.75}}`; document.head.appendChild(st);
+    const GL='#%&@§¶†‡ʘ∴';
+    window.__cardSpeak=(side,lane,name,lines)=>new Promise(done=>{
+      const src=document.querySelector('#'+(side==='enemy'?'enemy-row':'player-row')+' .slot[data-lane="'+lane+'"] .card');
+      if(!src||window.__speaking){ done(); return; }
+      window.__speaking=true; try{ hidePreview(); }catch(_){} document.querySelectorAll('.rk-say').forEach(e=>e.remove());
+      const r=src.getBoundingClientRect();
+      const ov=document.createElement('div'); ov.id='rk-speak'; document.body.appendChild(ov);
+      const cl=src.cloneNode(true); cl.classList.add('rk-speaker'); Object.assign(cl.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'}); document.body.appendChild(cl);
+      src.style.visibility='hidden';
+      const tx=document.createElement('div'); tx.id='rk-sp-text'; tx.className=(r.top+r.height/2>innerHeight*.45)?'top':'bot';   /* words sit away from the card that speaks */ tx.innerHTML='<div class="who">'+name.toUpperCase()+'</div><div class="say"></div><div class="more">▾</div>'; document.body.appendChild(tx);
+      const say=tx.querySelector('.say'), more=tx.querySelector('.more');
+      requestAnimationFrame(()=>{ ov.classList.add('on'); setTimeout(()=>cl.classList.add('up'),250); setTimeout(()=>cl.classList.add('breathe'),1900); });
+      let li=0, typing=null, full=false;
+      const type=line=>{ full=false; more.classList.remove('on'); say.textContent=''; let i=0;
+        const step=()=>{ if(i>=line.length){ full=true; more.classList.add('on'); return; }
+          const ch=line[i];
+          if(ch!==' '&&Math.random()<.04){ const g=document.createElement('span'); g.className='g'; g.textContent=GL[Math.floor(Math.random()*GL.length)]; say.appendChild(g);
+            typing=setTimeout(()=>{ g.remove(); say.appendChild(document.createTextNode(ch)); i++; typing=setTimeout(step,60); },80); return; }
+          say.appendChild(document.createTextNode(ch)); i++;
+          let d=48+Math.random()*40; if('.?!…'.includes(ch)) d+=520; else if(',;:—'.includes(ch)) d+=260; else if(Math.random()<.05) d+=300;
+          typing=setTimeout(step,d); };
+        typing=setTimeout(step,li===0?1500:350); };
+      const finish=()=>{ clearTimeout(typing); say.textContent=lines[li]; full=true; more.classList.add('on'); };
+      const close=()=>{ ov.onclick=null; tx.classList.remove('on'); cl.classList.remove('breathe','up'); ov.classList.remove('on');
+        setTimeout(()=>{ ov.remove(); tx.remove(); cl.remove(); src.style.visibility=''; window.__speaking=false; done(); },1400); };
+      ov.onclick=()=>{ if(!full){ finish(); return; } li++; if(li>=lines.length) close(); else type(lines[li]); };
+      setTimeout(()=>tx.classList.add('on'),900); type(lines[0]);
+    });
   }
   /* ---- spoils: beat a boss and claim one of its table's cards for your pool, for good ---- */
   { const SPOILS_ON=false;   /* switched off for now (Oct 2026): set to true to bring the spoils screen back. Won cards are kept in storage either way */
