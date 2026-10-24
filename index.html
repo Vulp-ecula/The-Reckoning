@@ -4736,6 +4736,7 @@ function goTo(id){
 /* away from the table the card game's rows still sit over the canvas and swallow clicks,
    so room clicks are also taken from the window there (real buttons and links excluded) */
 addEventListener('click',e=>{ if(node==='table'||e.target===renderer.domElement) return;
+  if(window.__forgeOpen||window.__speaking||['rk-pile','rk-deck','rk-forge'].some(i=>{ const q=document.getElementById(i); return q&&q.classList.contains('on'); })) return;   /* a panel is open: its clicks are its own (they may redraw the clicked element away before this runs) */
   if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge,#rk-deck,#rk-pile,.rk-turn,#rk-walls')) return; roomClick(); });
 renderer.domElement.addEventListener('click',()=>roomClick());
 function roomClick(){
