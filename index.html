@@ -5919,9 +5919,11 @@ addEventListener('resize',()=>{
     const GREED=['holy_assessor','holy_tithemaster','holy_greed'];
     ITEMS.forgekey={name:'An iron key',icon:'\u{1F5DD}️',keep:true};
     /* the hint: the first time you play a Gilt Herald in the second round of the Assessor's match */
+    /* the brandy hint can come at any table until the puzzle is solved; only the very first round of the run (the Assessor's round 1) is left alone */
+    const hintOn=()=>!!bossKey&&!!state&&!(bossKey==='holy_assessor'&&(state.roundNum||1)<2)&&!BR.done&&!BR.hinted;   /* said once; the bottle itself stays until solved */ window.__brandyHintOn=hintOn;
     let said=false; addEventListener('reckoning:boss',()=>{ said=false; });
     if(typeof onPlay==='function'){ const op=onPlay; window.onPlay=function(c,side,lane){ const r=op.apply(this,arguments);
-      try{ if(side==='player'&&c&&c.key==='herald'&&bossKey==='holy_assessor'&&(state.roundNum||1)>=2&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
+      try{ if(side==='player'&&c&&c.key==='herald'&&hintOn()&&!said&&!BR.done){ said=true; BR.hinted=true; bsave();
         setTimeout(()=>__cardSpeak('player',lane,'The Gilt Herald',['You deserve a drink, friend.','Try the magpie’s brandy, that’ll fortify you.']),700); } }catch(e){} return r; }; }
     /* the bottle, beside the magpie */
     const MX=R/2-.26, MZ=-.86, SY=1.815+.035;
@@ -5945,15 +5947,15 @@ addEventListener('resize',()=>{
         let hurt=false; try{ if(state&&state.ladder){ state.soulsFoe=(state.soulsFoe||0)+1; hurt=true; if(typeof renderReckoning==='function') renderReckoning(); } }catch(e){}
         note('Fortified','The brandy burns all the way down — and then something hard catches in your throat. You cough until your eyes stream, and spit an iron key into your palm.'+(hurt?' The sand runs one grain the Adversary’s way.':'')+' It goes into your rucksack.'); };
       dlg.classList.add('on'); }
-    hotspot(hit,{go:'shelvesR',title:'A bottle of brandy',body:()=>{ if(BR.done) return null; if(!BR.hinted) return 'Dark brandy in a squat bottle, set beside the magpie as if it were his.'; ask(); return null; }});
-    fireTicks.push(()=>{ bg.visible=GREED.includes(bossKey)&&!BR.done; });
+    hotspot(hit,{go:'shelvesR',title:'A bottle of brandy',body:()=>{ if(BR.done) return null; if(!BR.hinted) return 'Dark brandy in a squat bottle, set beside the magpie as if it were his.'; ask(); return null;   /* once the Herald has spoken, the bottle can be smashed or drunk at any table */ }});
+    fireTicks.push(()=>{ bg.visible=!BR.done; });   /* the bottle stays by the magpie, whatever the table, until the key is out of it */
     /* the oak door: the key opens the way to the Forge */
     for(const m of doorHot){ const u=m.userData; m.userData={...u, body:()=>{
       if(BR.unlocked){ setTimeout(()=>window.__openForge&&window.__openForge(),60); return null; }
       if(PACK.has('forgekey')){ BR.unlocked=true; bsave(); setTimeout(()=>window.__openForge&&window.__openForge(),2600); return 'The iron key fits. The lock grinds over, and heat breathes through the gap: the Forge lies beyond.'; }
       return 'Heavy oak, iron-strapped, and locked. Through the little barred window: only dark.'; }}; }
     /* from the second round of the Assessor's match you always start each hand with a Gilt Herald, so the hint can come */
-    const ensureHerald=()=>{ try{ if(bossKey!=='holy_assessor'||(state&&(state.roundNum||1)<2)||BR.done||!state||!state.ladder||!state.hand) return;
+    const ensureHerald=()=>{ try{ if(!hintOn()||BR.done||!state||!state.ladder||!state.hand) return;
       if(state.hand.some(c=>c.key==='herald')) return;
       const i=(state.deck||[]).findIndex(c=>c.key==='herald'); const c=i>=0?state.deck.splice(i,1)[0]:makeCard('herald');
       if(state.hand.length>=10){ const j=state.hand.findIndex(x=>x.key==='peasant'); if(j>=0) state.deck.push(state.hand.splice(j,1)[0]); }
@@ -6334,7 +6336,7 @@ addEventListener('resize',()=>{
       try{ const L=c&&(Q[c.key]||(c.amalgam?AQ:null)); const pre=c&&c.amalgam&&!Q[c.key]?'amal':(c&&c.key); const bk=window.__bossKey||''; const me=side==='enemy';
         if(!L||state.over||state._spySel) return r;
         const mine=me?state.enemyBoard:state.playerBoard, theirs=me?state.playerBoard:state.enemyBoard;
-        if(c.key==='herald'&&bk==='holy_assessor'&&(state.roundNum||1)>=2) return r; if(c.key==='plunderer'&&bk==='holy_tithemaster'&&!PZ.solved&&PZ.found.length<3) return r;   /* nor the Plunderer's, while his hint stands */          /* the Herald's brandy line owns that round */
+        if(c.key==='herald'&&window.__brandyHintOn&&window.__brandyHintOn()) return r; if(c.key==='plunderer'&&bk==='holy_tithemaster'&&!PZ.solved&&PZ.found.length<3) return r;   /* nor the Plunderer's, while his hint stands */          /* the Herald's brandy line owns that round */
         if(performance.now()-last<12000||Math.random()>(me?.6:c.amalgam?.7:.6)) return r;
         const ok=L.map((q,i)=>({q,id:pre+i})).filter(({q,id})=>{ if(U()[id]) return false; if(!q.to||q.to==='self') return true; if(q.to==='boss:*') return !!bk&&!!state.boss; if(q.to==='ally:*') return mine.some(x=>x&&x!==c&&!x.isBoss);
           const [k,key]=q.to.split(':'); if(k==='boss') return bk===key; if(k==='foe') return key==='*'?theirs.some(x=>x&&!x.isBoss):find(theirs,key)>=0; return find(mine,key,c)>=0; });
