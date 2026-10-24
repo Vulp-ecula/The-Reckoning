@@ -6457,12 +6457,14 @@ addEventListener('resize',()=>{
       @keyframes rkBlink{0%,100%{opacity:.15}50%{opacity:.75}}`; document.head.appendChild(st);
     const GL='#%&@§¶†‡ʘ∴';
     window.__cardSpeak=(side,lane,name,lines)=>new Promise(done=>{
-      const src=document.querySelector('#'+(side==='enemy'?'enemy-row':'player-row')+' .slot[data-lane="'+lane+'"] .card');
+      const src=(side&&side.nodeType)?side:document.querySelector('#'+(side==='enemy'?'enemy-row':'player-row')+' .slot[data-lane="'+lane+'"] .card');   /* or any element, e.g. the boss portrait */
       if(!src||window.__speaking){ done(); return; }
       window.__speaking=true; try{ hidePreview(); }catch(_){} document.querySelectorAll('.rk-say').forEach(e=>e.remove());
       const r=src.getBoundingClientRect();
       const ov=document.createElement('div'); ov.id='rk-speak'; document.body.appendChild(ov);
-      const cl=src.cloneNode(true); cl.classList.add('rk-speaker'); Object.assign(cl.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'}); document.body.appendChild(cl);
+      const cl=src.cloneNode(true); cl.removeAttribute('id'); cl.classList.add('rk-speaker'); Object.assign(cl.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',overflow:'hidden',borderRadius:getComputedStyle(src).borderRadius||'10px'});
+      cl.querySelectorAll('img').forEach(im=>Object.assign(im.style,{width:'100%',height:'100%',objectFit:'cover',display:'block'})); document.body.appendChild(cl);
+      if(r.right>innerWidth-80) cl.style.transformOrigin='100% 40%'; else if(r.left<80) cl.style.transformOrigin='0% 40%';   /* grow away from the screen edge */
       src.style.visibility='hidden';
       const tx=document.createElement('div'); tx.id='rk-sp-text'; tx.className=(r.top+r.height/2>innerHeight*.45)?'top':'bot';   /* words sit away from the card that speaks */ tx.innerHTML='<div class="who">'+name.toUpperCase()+'</div><div class="say"></div><div class="more">▾</div>'; document.body.appendChild(tx);
       const say=tx.querySelector('.say'), more=tx.querySelector('.more');
@@ -6504,6 +6506,21 @@ addEventListener('resize',()=>{
     if(new URLSearchParams(location.search).get('demo')==='plunderer'){ const go=()=>{ try{ if(!state||!state.boss){ setTimeout(go,500); return; }
         document.getElementById('overlay').classList.remove('show'); if(!state.playerBoard[2]){ const c=makeCard('plunderer'); c.curHp=c.hp; state.playerBoard[2]=c; renderAll(); }
         setTimeout(()=>__cardSpeak('player',2,'The Plunderer',['Three coins have gone missing from the count.','Funny thing about coins. They always end up somewhere.','Somewhere warm. Somewhere wet. Somewhere that watches you back.']),900); }catch(e){} }; setTimeout(go,2500); }
+  }
+  /* ---- first meetings: the first time you sit at a sin's own table, the sin speaks to you. Once ever (per browser). Demo: ?demo=meet-greed|meet-wrath|meet-gluttony|meet-lust ---- */
+  { const MK='reckoning_met'; let met={}; try{ met=JSON.parse(localStorage.getItem(MK))||{}; }catch(e){}
+    const MEET={
+      holy_greed:['Greed',['So. You have come to the counting-house.','Everything you carry has a price, rider. I have already written it down.','Sit. Let us see what you are worth.']],
+      holy_wrathboss:['Wrath',['You. I have been angry at you for a very long time.','Every blow you strike tonight, I will remember.','Come. Let us find out which of us burns longer.']],
+      holy_devourer:['The Devourer',['Ah. Another course.','You look thin, rider. Starved, even.','Do not worry. I will eat for both of us.']],
+      holy_lustboss:['Lust',['There you are. I wondered when you would look at me. After all, you know me so well.','Every sin you broke tonight was only ever me, in another dress.','Stay a while. No one leaves this table wanting less.']]};
+    const DEMO={'meet-greed':'holy_greed','meet-wrath':'holy_wrathboss','meet-gluttony':'holy_devourer','meet-lust':'holy_lustboss'};
+    const demo=DEMO[new URLSearchParams(location.search).get('demo')||''];
+    const busy=()=>!state||state.turn!=='player'||document.getElementById('overlay').classList.contains('show')||['rk-deck','rk-forge','rk-pile'].some(i=>{ const e=document.getElementById(i); return e&&e.classList.contains('on'); })||document.getElementById('rk-tut-box')||window.__speaking;
+    const speak=k=>{ const go=()=>{ if(window.__bossKey!==k) return; if(busy()){ setTimeout(go,700); return; } const el=document.querySelector('#rk-foe .rc')||document.getElementById('boss-face'); if(!el) return;   /* the boss card shown at the right */
+        __cardSpeak(el,0,MEET[k][0],MEET[k][1]); if(!demo){ met[k]=1; try{ localStorage.setItem(MK,JSON.stringify(met)); }catch(e){} } }; setTimeout(go,1600); };
+    addEventListener('reckoning:boss',e=>{ const k=e.detail&&e.detail.key; if(!MEET[k]) return; if(demo?demo===k:!met[k]) speak(k); });
+    if(demo&&window.__bossKey===demo) speak(demo);
   }
   /* ---- the first-match tutorial: a spotlight on what to click, a few plain words, and it waits until you have done it.
          Runs once, on your very first match. Replay with ?tutorial=1 ---- */
