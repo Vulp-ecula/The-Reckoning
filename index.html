@@ -5920,6 +5920,15 @@ addEventListener('resize',()=>{
     const GREED=['holy_assessor','holy_tithemaster','holy_greed'];
     ITEMS.forgekey={name:'An iron key',icon:'\u{1F5DD}️',keep:true};
     /* the hint: the first time you play a Gilt Herald in the second round of the Assessor's match */
+    /* a second voice, said in passing: if the bottle is still untouched a couple of matches on, a cheap card of your Rider's mentions it.
+       It also opens the bottle for the Riders who have no Herald. Once per run, until the brandy is done. */
+    { const BY={conquest:['squire','Found a key in a bottle once. Tasted awful.'],war:['follower','Never drink the last of a bottle. Sometimes there\u2019s a key in it.'],
+               famine:['scavenger','Always check the bottom of the bottle. Sometimes there\u2019s more than brandy.'],death:['gravedigger','Buried a man with a key in his gullet once. Choked on his brandy, poor soul.']};
+      addEventListener('reckoning:boss',()=>{ if(!BR.done){ BR.seen=(BR.seen||0)+1; bsave(); } });
+      const op2=window.onPlay; window.onPlay=function(c,side,lane){ const r=op2.apply(this,arguments);
+        try{ const b=state&&BY[state.faction]; if(side==='player'&&b&&c&&c.key===b[0]&&!BR.done&&(BR.seen||0)>=3&&!state._brandyAside&&!window.__speaking){ state._brandyAside=true; BR.hinted=true; bsave();
+          setTimeout(()=>{ document.querySelectorAll('.rk-say').forEach(e=>e.remove()); const ln=state.playerBoard.indexOf(c); if(ln>=0) __cardSay('player',ln,c.name,'\u201c'+b[1]+'\u201d',7000); },600); } }catch(e){} return r; };
+    }
     /* the brandy hint can come at any table until the puzzle is solved; only the very first round of the run (the Assessor's round 1) is left alone */
     const hintOn=()=>!!bossKey&&!!state&&!(bossKey==='holy_assessor'&&(state.roundNum||1)<2)&&!BR.done&&!BR.hinted;   /* said once; the bottle itself stays until solved */ window.__brandyHintOn=hintOn;
     let said=false; addEventListener('reckoning:boss',()=>{ said=false; });
@@ -6406,7 +6415,8 @@ addEventListener('resize',()=>{
     const root=document.createElement('div'); root.id='rk-forge'; root.innerHTML='<div class="fg"></div>'; document.body.appendChild(root);
     const box=root.querySelector('.fg'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; try{ hidePreview(); }catch(_){} }; root.onclick=e=>{ if(e.target===root) close(); };
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
-    window.__openForge=function(){
+    let openedAt=0; const fresh=()=>performance.now()-openedAt<450;   /* the click that opened the Forge must not also pick a card */
+    window.__openForge=function(){ openedAt=performance.now();
       const run=state&&state.ladder&&state.faction&&!state.over, bk=window.__bossKey||'';
       if(!run){ box.innerHTML='<h3>The Forge</h3><div class="sub">The coals are hot, but you have no hand to temper. Come back when you sit at the table.</div><button>Leave</button>'; box.querySelector('button').onclick=close; root.classList.add('on'); window.__forgeOpen=true; return; }
       state.forgeUsed=state.forgeUsed||{};
@@ -6418,16 +6428,16 @@ addEventListener('resize',()=>{
         const g=box.querySelector('.grid');
         keys.forEach(k=>{ const c=CARDS[k], n=pick.filter(x=>x===k).length, d=document.createElement('div'); d.className='fc'+(n?' sel':'');
           d.innerHTML=(counts[k]>1?'<span class="ct">×'+counts[k]+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><br>'+c.pow+'⚔ '+c.hp+'♥<br><small>'+sigTxt(k)+'</small>';
-          d.onclick=()=>{ const n=pick.filter(x=>x===k).length; if(pick.length<2&&n<counts[k]) pick.push(k); else if(n) pick.splice(pick.indexOf(k),1); draw(); };
+          d.onclick=()=>{ if(fresh()) return; const n=pick.filter(x=>x===k).length; if(pick.length<2&&n<counts[k]) pick.push(k); else if(n) pick.splice(pick.indexOf(k),1); draw(); };
           __magnify(d,k); g.appendChild(d); });
         const res=box.querySelector('.res'), go=box.querySelector('#fg-go');
         if(pick.length===2){ const key=define(pick[0],pick[1]), c=CARDS[key]; res.innerHTML='<b>'+c.name+'</b>: '+c.pow+'⚔ / '+c.hp+'♥, '+sigTxt(key)+'. Costs '+costLabel(c.cost)+'. It replaces both cards in your deck for good, in every run to come.'; go.disabled=false;
-          go.onclick=()=>{ FORGED.push({a:pick[0],b:pick[1],key}); fsave(); if(window.__deckFuse) window.__deckFuse(state.faction,pick[0],pick[1],key); state.forgeUsed[bk]=true;
+          go.onclick=()=>{ if(fresh()) return; FORGED.push({a:pick[0],b:pick[1],key}); fsave(); if(window.__deckFuse) window.__deckFuse(state.faction,pick[0],pick[1],key); state.forgeUsed[bk]=true;
             for(const k of pick){ let i=state.deck.findIndex(x=>x.key===k); if(i>=0){ state.deck.splice(i,1); continue; } i=state.hand.findIndex(x=>x.key===k); if(i>=0) state.hand.splice(i,1); }
             const nc=makeCard(key); if(state.hand.length<10) state.hand.push(nc); else state.deck.push(nc);
             box.innerHTML='<h3>The Forge</h3><div class="sub">The hammer falls, and falls again. What comes out of the quench is one thing now: <b>'+c.name+'</b>. It waits in your hand.</div><button>Leave</button>'; box.querySelector('button').onclick=close; renderAll(); }; }
         else res.textContent=pick.length? 'Choose one more.' : 'Choose two cards.';
-        box.querySelector('#fg-x').onclick=close; };
+        box.querySelector('#fg-x').onclick=()=>{ if(!fresh()) close(); }; };
       draw(); root.classList.add('on'); window.__forgeOpen=true; };
   }
   /* ---- deck building: before a run and between boss fights, build your host from your Rider's cards on a point budget ---- */
