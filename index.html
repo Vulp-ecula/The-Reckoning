@@ -4736,7 +4736,7 @@ function goTo(id){
 /* away from the table the card game's rows still sit over the canvas and swallow clicks,
    so room clicks are also taken from the window there (real buttons and links excluded) */
 addEventListener('click',e=>{ if(node==='table'||e.target===renderer.domElement) return;
-  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge,#rk-deck,#rk-pile')) return; roomClick(); });
+  if(e.target.closest&&e.target.closest('button,a,input,select,textarea,#read,#back,#standbtn,#overlay,#rk-forge,#rk-deck,#rk-pile,.rk-turn,#rk-walls')) return; roomClick(); });
 renderer.domElement.addEventListener('click',()=>roomClick());
 function roomClick(){
   if(!hover) { elRead.classList.remove('on'); return; }
@@ -6729,6 +6729,42 @@ addEventListener('resize',()=>{
       box.querySelector('button').onclick=close; root.classList.add('on'); };
     if(holder){ holder.classList.add('rk-deckbtn'); holder.title='See what is still in your deck'; holder.addEventListener('click',open); }
     window.__openPile=open;
+  }
+  /* ---- getting about the room: stand in the middle and turn between the four walls (← → or A D), click a thing to look
+         closer, and "Step back" goes up one level: thing -> wall -> table. Esc still drops you straight back into your seat. ---- */
+  { NODES.wallR={pos:new THREE.Vector3(-1.2,1.72,0.2), yaw:-Math.PI/2, pitch:0.02, label:'The shelves wall'};
+    NODES.wallF={pos:new THREE.Vector3(0,1.72,2.3), yaw:Math.PI, pitch:0.02, label:'The window wall'};
+    NODES.wallL={pos:new THREE.Vector3(1.2,1.72,0.2), yaw:Math.PI/2, pitch:0.02, label:'The hearth wall'};
+    NODES.stand.label='The far wall';
+    const RING=['stand','wallR','wallF','wallL'];      /* clockwise: turning right moves along the ring */
+    const isCrawl=id=>/^crawl/.test(id||'');
+    const ang=(a,b)=>{ let d=(a-b)%(2*Math.PI); if(d>Math.PI) d-=2*Math.PI; if(d<-Math.PI) d+=2*Math.PI; return Math.abs(d); };
+    const parentOf=id=>{ if(RING.includes(id)) return id; const n=NODES[id]; if(!n) return 'stand'; let best='stand',bd=9; for(const r of RING){ const d=ang(n.yaw,NODES[r].yaw); if(d<bd){ bd=d; best=r; } } return best; };
+    const modal=()=>['rk-forge','rk-deck','rk-pile','rk-speak','rk-tut-box'].some(i=>{ const e=document.getElementById(i); return e&&(i==='rk-speak'||i==='rk-tut-box'||e.classList.contains('on')); })||document.getElementById('overlay').classList.contains('show');
+    const turn=dir=>{ if(node==='table'||isCrawl(node)) return; const i=RING.indexOf(parentOf(node)); goTo(RING[(i+dir+RING.length)%RING.length]); };
+    const back=()=>{ if(node==='table'||isCrawl(node)) return; goTo(RING.includes(node)?'table':parentOf(node)); };
+    window.__turn=turn; window.__stepBack=back;
+    /* Back: one level at a time (runs before the old straight-to-table handler and stops it) */
+    elBack.addEventListener('click',e=>{ e.stopImmediatePropagation(); back(); },true);
+    addEventListener('keydown',e=>{ if(e.repeat||(e.target.closest&&e.target.closest('input,textarea'))||modal()) return;
+      const k=e.key; if(k==='ArrowLeft'||k==='a'||k==='A') turn(-1); else if(k==='ArrowRight'||k==='d'||k==='D') turn(1); else if(k==='ArrowDown'||k==='s'||k==='S'||k==='Backspace'){ if(node!=='table'){ e.preventDefault(); back(); } } });
+    /* turning arrows at the screen edges, and a small strip of the four walls */
+    const st=document.createElement('style'); st.textContent=`.rk-turn{position:fixed;top:50%;transform:translateY(-50%);z-index:24;width:56px;height:96px;display:none;align-items:center;justify-content:center;cursor:pointer;
+        font:44px Georgia,serif;color:rgba(240,220,180,.75);background:rgba(10,6,3,.35);border:1px solid rgba(255,200,130,.25);border-radius:10px;user-select:none;transition:background .2s,color .2s}
+      .rk-turn:hover{background:rgba(40,24,10,.65);color:#ffe0aa} .rk-turn.l{left:14px} .rk-turn.r{right:14px} .rk-turn.on{display:flex}
+      #rk-walls{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:24;display:none;gap:10px;align-items:center;pointer-events:auto}
+      #rk-walls.on{display:flex} #rk-walls i{width:11px;height:11px;border-radius:50%;background:rgba(240,220,180,.25);cursor:pointer;display:block}
+      #rk-walls i.at{background:#ffd27a;box-shadow:0 0 8px rgba(255,200,100,.8)}`; document.head.appendChild(st);
+    const L=document.createElement('div'); L.className='rk-turn l'; L.textContent='‹'; L.title='Turn left (← or A)';
+    const Rb=document.createElement('div'); Rb.className='rk-turn r'; Rb.textContent='›'; Rb.title='Turn right (→ or D)';
+    L.onclick=e=>{ e.stopPropagation(); turn(-1); }; Rb.onclick=e=>{ e.stopPropagation(); turn(1); };
+    const W=document.createElement('div'); W.id='rk-walls';
+    RING.forEach(id=>{ const d=document.createElement('i'); d.title=NODES[id].label; d.onclick=e=>{ e.stopPropagation(); goTo(id); }; W.appendChild(d); });
+    document.body.append(L,Rb,W);
+    let lastN=null; fireTicks.push(()=>{ if(node===lastN) return; lastN=node; const show=node!=='table'&&!isCrawl(node);
+      L.classList.toggle('on',show); Rb.classList.toggle('on',show); W.classList.toggle('on',show);
+      const p=parentOf(node); [...W.children].forEach((d,i)=>d.classList.toggle('at',RING[i]===p));
+      elBack.textContent=RING.includes(node)?'Back to the table':'Step back'; });
   }
   renderPack();
 }
