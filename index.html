@@ -1733,7 +1733,9 @@ function onSlotClick(lane,isEnemy){
       deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;state.graveyard.push(v.key);onAnyDeath();
       state.blood=Math.min(4,(state.blood||0)+1);
       const c=state.pendingCard, need=c?c.cost.n:0;
-      if(c&&state.blood>=need){state.awaitingSac=0;state.sacrifices=[];state.pendingCard=null;state.readyCard=c;say(`The price is paid. <b>Click an empty lane</b> to place the ${c.name}.`);}
+      if(c&&state.blood>=need){state.awaitingSac=0;state.sacrifices=[];state.pendingCard=null;
+        // ready it only once this click has finished, or the same click would drop the card straight into the emptied lane
+        setTimeout(()=>{state.readyCard=c;say(`The price is paid. <b>Click an empty lane</b> to place the ${c.name}.`);renderAll();},0);}
       else{state.awaitingSac=Math.max(0,need-state.blood);say(`Sacrifice ${state.awaitingSac} more...`);}
       renderAll();
     }
@@ -6563,7 +6565,7 @@ addEventListener('resize',()=>{
     const freeLane=()=>{ for(const i of [1,2,0,3]) if(!state.playerBoard[i]) return i; return -1; };
     const BLOODY={conquest:'bowman',war:'reaver',famine:'blight',death:'gravekn'};
     let blood='bowman';
-    const S=[
+    let S=[
       {t:'Welcome to the table. Your <b>hand</b> is at the bottom: these are the cards you can play this turn.', el:()=>$('#hand'), next:true},
       {t:'Across the table sit the <b>Holy</b>. Every card attacks the lane straight ahead of it.', el:()=>$('#enemy-row'), next:true},
       {t:'A <b>Peasant</b> costs nothing. <b>Click the Peasant</b> in your hand.', el:()=>handCard('peasant'), wait:()=>state.readyCard&&state.readyCard.key==='peasant'},
@@ -6578,17 +6580,45 @@ addEventListener('resize',()=>{
       {t:'This is your <b>Rider</b>. A powerful card you can play once each round, whenever you choose.', el:()=>$('#rk-rider .rc')||$('#rk-rider'), next:true},
       {t:'Click the <b>deck</b> count at any time to see which cards are still to come.', el:()=>$('#deck-count'), next:true},
       {t:'And when you want to, <b>get up and look around</b>. The room hides more than furniture.', el:()=>$('#standbtn'), next:true},
-      {t:'That is all you need. Win two rounds of three to take the seat. Good luck.', el:()=>null, next:true,last:true}];
-    let i=0, spot=null, box=null, poll=null;
+      {t:'That is the basics. Let us play the next few turns together, and I will point the way.', el:()=>null, next:true, toCoach:true}];
+    let i=0, spot=null, box=null, poll=null, coach=false, coachTurn=0; const COACH_LAST=6;
+    /* ---- coaching for turns 2 to 6: one suggested play each turn, with one new idea ---- */
+    const val=c=>(c.pow||0)*1.5+(c.hp||0)+(c.sig?1:0);
+    const gripped=l=>state.enemyBoard[l]&&hasSig(state.enemyBoard[l],'grip');
+    const suggest=()=>{ const real=state.hand.filter(c=>!c.relic&&canAfford(c)), pool=real.filter(c=>c.key!=='peasant'&&c.key!=='cutpurse');
+      const card=(pool.length?pool:real).sort((a,b)=>val(b)-val(a))[0]; if(!card) return null;
+      const free=[0,1,2,3].filter(l=>!state.playerBoard[l]);
+      const threat=free.filter(l=>state.enemyBoard[l]).sort((a,b)=>effPow(state.enemyBoard[b],true)-effPow(state.enemyBoard[a],true));
+      const open=free.filter(l=>!state.enemyBoard[l]&&!state.enemyQueue[l]);
+      const lane=threat.length?threat[0]:open.length?open[0]:free[0]; if(lane==null) return null;
+      return {card,lane,block:threat.length>0}; };
+    const costNote=c=>{ const t=c.cost&&c.cost.type; return t==='blood'?'It costs blood. Your pool may already hold enough; if not, you will sacrifice.':t==='marrow'?'It costs marrow, the bone you earn whenever a card dies.':t==='coin'?'It costs coin, which you earn from kills.':'It costs nothing at all.'; };
+    const playSteps=(intro)=>{ const P=suggest(); const st=[];
+      if(intro) st.push(intro);
+      if(!P){ st.push({t:'Nothing in your hand can be played right now. That happens.',el:()=>null,next:true}); }
+      else { const c=P.card, laneEl=()=>$('#player-row .slot[data-lane="'+P.lane+'"]');
+        st.push({t:()=>'Try the <b>'+c.name+'</b>. '+costNote(c)+' <b>Click it.</b>', el:()=>{ const i=state.hand.indexOf(c); return i>=0?document.querySelectorAll('#hand .hcard')[i]:null; }, wait:()=>state.readyCard===c||state.pendingCard===c, skipIf:()=>!state.hand.includes(c)});
+        st.push({t:'Choose a card of your own to <b>sacrifice</b>. Its blood goes into your pool.', el:()=>{ let b=-1,bv=1e9; for(let k=0;k<4;k++){ const v=state.playerBoard[k]; if(v&&!gripped(k)&&val(v)<bv){ bv=val(v); b=k; } } return b>=0?$('#player-row .slot[data-lane="'+b+'"]'):null; },
+          wait:()=>state.readyCard===c, skipIf:()=>state.readyCard===c||!(state.awaitingSac>0)});
+        st.push({t:()=>P.block?'Put it in <b>this lane</b>, in front of the enemy hitting hardest. A card in the way takes the blow instead of you.':'Put it in <b>this lane</b>. Nothing faces it, so its attack goes straight to the Holy for souls.', el:()=>state.playerBoard[P.lane]?$('#player-row .slot[data-lane="'+(state.playerBoard.indexOf(null)>=0?state.playerBoard.indexOf(null):P.lane)+'"]'):laneEl(), wait:()=>state.playerBoard.includes(c)}); }
+      st.push({t:'Play anything else you like, then <b>ring the bell</b>.', el:()=>$('#horn-btn'), wait:()=>state.turn==='combat'});
+      return st; };
+    const planTurn=n=>{
+      if(n===2) return playSteps({t:'A new turn. You drew a card from your deck, and a free body: you can hold one Peasant and one Cutpurse at a time.',el:()=>$('#hand'),next:true});
+      if(n===3) return playSteps({t:'Each card that falls leaves <b>marrow</b>, and each kill earns <b>coin</b>. Cards marked with bones or coins spend them.',el:()=>$('#resources'),next:true});
+      if(n===4){ const R=$('#rk-rider .rc'); const intro={t:'Your <b>Rider</b> is your strongest card. It costs marrow, and you may play it once each round, whenever you choose. When you can afford it, click it and choose a lane.',el:()=>R||$('#rk-rider'),next:true}; return playSteps(intro); }
+      if(n===5) return playSteps({t:'Cards waiting at the edge of the Holy row arrive next turn. Leave a defender in their lane if you can.',el:()=>$('#enemy-row'),next:true});
+      return playSteps({t:'Hover over any card to see it up close, with its ability written out. Reading the Holy cards tells you what they will do.',el:()=>$('#enemy-row'),next:true}); };
     const end=()=>{ clearInterval(poll); spot&&spot.remove(); box&&box.remove(); window.__tutOn=false; try{ localStorage.setItem(TK,'1'); }catch(e){} };
     const place=()=>{ const s=S[i]; if(!s) return; const el=s.el&&s.el();
       if(el){ const r=el.getBoundingClientRect(), p=8; spot.className=''; Object.assign(spot.style,{left:(r.left-p)+'px',top:(r.top-p)+'px',width:(r.width+2*p)+'px',height:(r.height+2*p)+'px'});
         const bw=box.offsetWidth||460, bh=box.offsetHeight||160; let x=r.left+r.width/2-bw/2, y=r.top-bh-24; if(y<12) y=r.bottom+24; if(y+bh>innerHeight-12) y=Math.max(12,(innerHeight-bh)/2);
         x=Math.max(12,Math.min(innerWidth-bw-12,x)); box.style.left=x+'px'; box.style.top=y+'px'; }
       else { spot.className='none'; Object.assign(spot.style,{left:'50%',top:'50%',width:'0px',height:'0px'}); box.style.left=((innerWidth-(box.offsetWidth||460))/2)+'px'; box.style.top=(innerHeight*.3)+'px'; } };
-    const show=()=>{ const s=S[i]; if(!s){ end(); return; }
-      box.innerHTML='<div class="tut-st">STEP '+(i+1)+' OF '+S.length+'</div><div>'+(typeof s.t==='function'?s.t():s.t)+'</div><div class="tut-row">'+(s.wait?'<span class="tut-wait">waiting for you…</span>':'')+(s.last?'':'<button class="skip">Skip the tutorial</button>')+(s.next?'<button class="nx">'+(s.last?'Begin':'Next')+'</button>':'')+'</div>';
-      const nx=box.querySelector('.nx'); if(nx) nx.onclick=()=>{ i++; show(); };
+    const show=()=>{ while(S[i]&&S[i].skipIf&&S[i].skipIf()) i++; const s=S[i]; if(!s){ if(coach){ box.style.display='none'; spot.style.display='none'; return; } end(); return; }
+      box.style.display=''; spot.style.display='';
+      box.innerHTML='<div class="tut-st">'+(coach?'TURN '+coachTurn+' · '+(i+1)+' OF '+S.length:'STEP '+(i+1)+' OF '+S.length)+'</div><div>'+(typeof s.t==='function'?s.t():s.t)+'</div><div class="tut-row">'+(s.wait?'<span class="tut-wait">waiting for you…</span>':'')+(s.last?'':'<button class="skip">Skip the tutorial</button>')+(s.next?'<button class="nx">'+(s.last?'Begin':'Next')+'</button>':'')+'</div>';
+      const nx=box.querySelector('.nx'); if(nx) nx.onclick=()=>{ if(s.toCoach){ coach=true; S=[]; i=0; show(); return; } if(s.last){ end(); return; } i++; show(); };
       const sk=box.querySelector('.skip'); if(sk) sk.onclick=end;
       place(); };
     const start=()=>{ if(window.__tutOn) return; window.__tutOn=true; i=0;
@@ -6598,7 +6628,13 @@ addEventListener('resize',()=>{
       renderAll();
       spot=document.createElement('div'); spot.id='rk-tut-spot'; document.body.appendChild(spot);
       box=document.createElement('div'); box.id='rk-tut-box'; document.body.appendChild(box);
-      show(); poll=setInterval(()=>{ const s=S[i]; if(!s) return; if(s.wait&&s.wait()){ i++; show(); } else place(); },250); };
+      show(); poll=setInterval(()=>{ const s=S[i];
+        if(!s){ if(!coach) return;   /* coaching: wait for the next of your turns, then lay out its plan */
+          if(state.over||(state.turnNum||1)>COACH_LAST){ coach=false; S=[{t:'From here, the table is yours. Win two rounds of three to take the seat. Good luck.',el:()=>null,next:true,last:true}]; i=0; show(); return; }
+          if(state.turn==='player'&&state.turnNum!==coachTurn&&!document.getElementById('overlay').classList.contains('show')){ coachTurn=state.turnNum; S=planTurn(coachTurn); i=0; show(); }
+          return; }
+        if(s.skipIf&&s.skipIf()){ i++; show(); return; }
+        if(s.wait&&s.wait()){ i++; show(); } else place(); },250); };
     window.__tutorial=start; window.__tutTarget=()=>{ const s=S[i]; const el=s&&s.el&&s.el(); return el?el.getBoundingClientRect():null; };
     /* your first match, once the first seat is dealt */
     addEventListener('reckoning:boss',e=>{ if((done&&!force)||!(e.detail&&e.detail.index===0)) return; done=true;
