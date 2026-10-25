@@ -1662,9 +1662,11 @@ function handClick(c){
   }
   if(c.cost.type==='blood'){
     // Blood is paid in bodies only — Marrow buys Marrow-cost cards and nothing else.
+    // Blood already in the pool pays first; only the rest has to be sacrificed.
     const need=c.cost.n;
-    state.pendingCard=c;state.awaitingSac=need;state.sacrifices=[];state.readyCard=null;
-    say(`Sacrifice ${need} of your own — <b>click them on the table</b>. Then click an empty lane.`);
+    if((state.blood||0)>=need){state.pendingCard=null;state.awaitingSac=0;state.sacrifices=[];state.readyCard=c;say(`Your blood pays for it. <b>Click an empty lane</b> to place the ${c.name}.`);renderAll();return;}
+    state.pendingCard=c;state.awaitingSac=need-(state.blood||0);state.sacrifices=[];state.readyCard=null;
+    say(`Sacrifice ${state.awaitingSac} of your own — <b>click them on the table</b>. Their blood goes into your pool.`);
     renderAll();
   } else {
     // free or coin: instantly picked up
@@ -1713,7 +1715,7 @@ function useRelic(c){
 function selectCard(c){ handClick(c); } // kept for any legacy callers
 function sanctionTax(){return (state.enemyBoard||[]).some(c=>c&&hasSig(c,'sanction'))?1:0;}
 function coinCost(c){return c.cost.n+(c.cost.type==='coin'?sanctionTax():0);}
-function canAfford(c){if(c.cost.type==='free')return true;if(c.cost.type==='coin')return state.coin>=coinCost(c);if(c.cost.type==='marrow')return (state.marrowP||0)>=c.cost.n;if(c.cost.type==='blood')return state.playerBoard.filter(Boolean).length>=c.cost.n;return true;}
+function canAfford(c){if(c.cost.type==='free')return true;if(c.cost.type==='coin')return state.coin>=coinCost(c);if(c.cost.type==='marrow')return (state.marrowP||0)>=c.cost.n;if(c.cost.type==='blood')return state.playerBoard.filter(Boolean).length+(state.blood||0)>=c.cost.n;return true;}
 function shortfall(c){
   if(c.cost.type==='coin'){const cc=coinCost(c);const need=cc-state.coin;const tax=sanctionTax()?` <i>(+${sanctionTax()} Sanction)</i>`:'';return `<b>The ${c.name} costs ${cc} coin${tax} — you have ${state.coin}.</b> Slay foes or sacrifice your own to earn ${need} more.`;}
   if(c.cost.type==='marrow'){const have=state.marrowP||0;return `<b>The ${c.name} demands ${c.cost.n} Marrow — you have ${have}.</b> No sacrifice will hasten it. Let more things die.`;}
@@ -1726,10 +1728,14 @@ function onSlotClick(lane,isEnemy){
   if(state.awaitingSac>0&&!isEnemy){
     const v=state.playerBoard[lane];
     if(v&&state.enemyBoard[lane]&&hasSig(state.enemyBoard[lane],'grip')){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
-    if(v&&!state.sacrifices.includes(v.uid)){
-      state.sacrifices.push(v.uid);state.awaitingSac--;
-      if(state.awaitingSac===0)finalizeBloodPaid();
-      else{say(`Sacrifice ${state.awaitingSac} more...`);renderAll();}
+    if(v){
+      // The sacrifice falls at once and its blood goes into the pool (bottom left), where it keeps until spent.
+      deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;state.graveyard.push(v.key);onAnyDeath();
+      state.blood=Math.min(4,(state.blood||0)+1);
+      const c=state.pendingCard, need=c?c.cost.n:0;
+      if(c&&state.blood>=need){state.awaitingSac=0;state.sacrifices=[];state.pendingCard=null;state.readyCard=c;say(`The price is paid. <b>Click an empty lane</b> to place the ${c.name}.`);}
+      else{state.awaitingSac=Math.max(0,need-state.blood);say(`Sacrifice ${state.awaitingSac} more...`);}
+      renderAll();
     }
     return;
   }
@@ -1751,7 +1757,7 @@ function dropCard(c,lane){
   if(state.playerBoard[lane])return;      // lane taken
   if(!c)return;
   if(c.relic){useRelic(c);return;}        // a relic dropped on a lane still just fires
-  const bloodPaid = (c.cost.type==='blood' && state.readyCard===c); // sacrifices already resolved
+  const bloodPaid = (c.cost.type==='blood' && state.readyCard===c && (state.blood||0)>=c.cost.n); // the pool holds enough
   const marrowPaid = (c.cost.type==='marrow' && state.readyCard===c); // Marrow already deducted in handClick
   // blood cards must have paid their price first
   if(c.cost.type==='blood' && !bloodPaid){
@@ -1760,6 +1766,7 @@ function dropCard(c,lane){
   // affordability only matters for free/coin (blood/marrow already paid)
   if(!bloodPaid && !marrowPaid && !canAfford(c)){say(shortfall(c));return;}
   if(c.cost.type==='coin')state.coin-=coinCost(c);
+  if(c.cost.type==='blood')state.blood-=c.cost.n;   // spent from the pool only when the card is actually placed
   placeCard(c,lane);removeHand(c);
   state.readyCard=null;state.dragCard=null;say('');renderAll();
 }
@@ -1835,7 +1842,8 @@ function drawStep(){
   // The free body each turn is usually a peasant, sometimes a cutpurse. (The Cutpurse used to
   // come only from a rabble pile on a draw-choice screen that was never called; that dead
   // screen has been removed and the Cutpurse folded into the normal draw.)
-  if(state.hand.length<10)state.hand.push(makeCard(Math.random()<0.25?'cutpurse':'peasant'));
+  // never more than 2 Peasants in hand: past that, the free body this turn is a Cutpurse or nothing
+  if(state.hand.length<10){const pz=state.hand.filter(c=>c.key==='peasant').length;const k=Math.random()<0.25?'cutpurse':'peasant';if(k==='cutpurse'||pz<2)state.hand.push(makeCard(k));}
   if(state.hand.length>=10)return;
   if(state.deck.length){state.hand.push(state.deck.pop());}
 }
@@ -6561,7 +6569,7 @@ addEventListener('resize',()=>{
       {t:'A <b>Peasant</b> costs nothing. <b>Click the Peasant</b> in your hand.', el:()=>handCard('peasant'), wait:()=>state.readyCard&&state.readyCard.key==='peasant'},
       {t:'Now <b>click the glowing lane</b> to put him on the table.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key==='peasant')},
       {t:()=>'Stronger cards cost <b>blood</b> (the drop on the card). <b>Click the '+CARDS[blood].name+'</b>.', el:()=>handCard(blood), wait:()=>state.awaitingSac>0||(state.readyCard&&state.readyCard.key===blood)},
-      {t:'Blood is paid by sacrificing one of your own. <b>Click your Peasant on the table</b> to offer him.', el:()=>boardSlot('peasant'), wait:()=>state.awaitingSac===0&&state.readyCard&&state.readyCard.key===blood},
+      {t:'Blood is paid by sacrificing one of your own. <b>Click your Peasant on the table</b> to offer him. His blood goes into your pool at the bottom left, and keeps there until you spend it.', el:()=>boardSlot('peasant'), wait:()=>state.awaitingSac===0&&state.readyCard&&state.readyCard.key===blood},
       {t:()=>'The price is paid. <b>Click a lane</b> to place the '+CARDS[blood].name+'.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key===blood)},
       {t:'Each sacrifice and each fallen card leaves <b>marrow</b>, and each kill earns <b>coin</b>. Some cards cost those instead of blood.', el:()=>$('#resources'), next:true},
       {t:'An attack that meets no defender strikes the Holy directly and earns <b>souls</b>. The <b>hourglass</b> keeps the tally: the first to 35 souls takes the round.', el:()=>$('#reckoning'), next:true},
