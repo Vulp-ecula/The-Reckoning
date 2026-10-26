@@ -844,13 +844,13 @@ const SIG={
   dread:{i:'🕯️',n:'Dread',d:'On death, deal 1 damage to the enemy directly.'},
   charm:{i:'🌹',n:'Allure',d:'On play, the facing enemy will not attack next turn.'},
   bulwark:{i:'🏰',n:'Bulwark',d:'Takes 1 less damage from every strike (min 1). Reaper still slays it.'},
-  radiant:{i:'✨',n:'Radiance',d:'Heals the Holy defender in each neighbouring lane by 1 at turn\'s end.'},
+  radiant:{i:'✨',n:'Radiance',d:'Heals the Sin card in each neighbouring lane by 1 at turn\'s end.'},
   tithe:{i:'⛓️',n:'Tithe',d:'At turn\'s end, if you hold 3+ coin, this takes 1 of your coin and gains +1 power.'},
   largesse:{i:'💸',n:'Largesse',d:'At turn\'s end, if you hold 2+ coin, this spends 2 of it and gains +1 power. Keeps your purse under the Tithe.'},
   sanction:{i:'📜',n:'Sanction',d:'While this lives, your coin cards cost 1 more.'},
   devour:{i:'🍖',n:'Devour',d:'When any creature in an adjacent lane dies, this heals 1 and gains +1 power.'},
   gorge:{i:'🦷',n:'Gorge',d:'Immune to Wither and Rot.'},
-  zeal:{i:'🔥',n:'Zeal',d:'Each time you attack, this gains +1 power (up to +2 per turn). Holy fury feeds on your aggression.'},
+  zeal:{i:'🔥',n:'Zeal',d:'Each time you attack, this gains +1 power (up to +2 per turn). Its fury feeds on your aggression.'},
   enthrall:{i:'💋',n:'Enthral',d:'While this lives, the creature it faces is besotted and will not attack.'},
   rapture:{i:'🌹',n:'Rapture',d:'Whoever strikes this down is seduced by the dying — that creature will not attack next turn.'},
   mirror:{i:'🪞',n:'Mirror',d:'Its power matches the creature it faces, and that creature takes on its health in turn while they face each other. The mirror cuts both ways.'},
@@ -872,9 +872,9 @@ const SIG={
   challenge:{i:'🤺',n:'Challenge',d:'Strikes your strongest creature, whatever lane it stands in, until one of them falls.'},
   charge:{i:'🐂',n:'Charge',d:'Its first strike deals double damage.'},
   grudge:{i:'👊',n:'Grudge',d:'When its brother falls, it gains +2 power.'},
-  vengeance:{i:'🖤',n:'Vengeance',d:'Gains +1 power whenever another Holy creature dies.'},
+  vengeance:{i:'🖤',n:'Vengeance',d:'Gains +1 power whenever another Sin card dies.'},
   parasite:{i:'🪱',n:'Parasite',d:'At turn\'s end, the creature facing it loses 1 health, and this gains 1.'},
-  drunk:{i:'🍺',n:'Strong Drink',d:'While this lives, your whole row is drunk: their strikes often stagger into a neighbouring lane instead of going straight ahead.'},
+  drunk:{i:'🍺',n:'Strong Drink',d:'While this lives, your whole row is drunk: their strikes often stagger into another Sin card on the table instead of going straight ahead.'},
   lure:{i:'🧜',n:'Lure',d:'On arrival, if no one faces her, your strongest creature is drawn across the table into her lane.'},
   seduce:{i:'💄',n:'Seduce',d:'On arrival, the creature facing her is seduced: its next attack strikes one of your own creatures beside it instead.'},
   display:{i:'🦚',n:'Display',d:'Your attacks into an empty lane beside it strike it instead. It draws the eye.'},
@@ -1138,7 +1138,7 @@ function artFor(c){ return ART[c.key] || (c.boss && c.faction ? FACTION_ART[c.fa
 // shared across all factions. Phase 1b replaces it with War's matched "wall"
 // sub-faction; Phase 2 builds the other three matched sub-factions.
 const BOSSES=[
-  {key:'boss_knight',face:'🤺',name:'The Lord Marshal',sub:'shield of the Holy Host',host:['knight','knight','knightcap'],
+  {key:'boss_knight',face:'🤺',name:'The Lord Marshal',sub:'shield of the Sinful Host',host:['knight','knight','knightcap'],
    intro:"<b>The Lord Marshal:</b> Rider. The Host has stood at this ford since before your kind were prophesied. Ring your bell — the wall does not break.",
    defeat:"<b>The Lord Marshal:</b> ...the line... fails. Ride on, pale thing. Others of the Host still stand between you and the Light.",
    quip:["The wall holds.","Shields! Close the line!","We do not tire. We do not yield."]},
@@ -1146,7 +1146,7 @@ const BOSSES=[
    intro:"<b>The Reliquarch:</b> Your rot has no purchase here, Horseman. We wash it away faster than you can sow it. Come and be cleansed.",
    defeat:"<b>The Reliquarch:</b> The flame... gutters. You spread faster than we could burn. Pass — the last of the Host awaits.",
    quip:["Be clean.","The flame purifies all.","Your plague dies at our threshold."]},
-  {key:'boss_death',face:'🥀',name:'The Radiant',sub:'last light of the Holy',host:['horror','bighorror','horror'],
+  {key:'boss_death',face:'🥀',name:'The Radiant',sub:'last light of the Sins',host:['horror','bighorror','horror'],
    intro:"<b>The Radiant:</b> So you cut through shield and flame to reach the Light itself. It will not be enough. Nothing the four of you bring has ever been enough.",
    defeat:"<b>The Radiant:</b> <i>(the light dims, and does not rise again)</i> Then the age of the Host is ended. Ride on, Horseman. There is nothing left between you and the world.",
    quip:["The Light does not fall.","You are the ending. We are the wall against it.","Kneel, and be spared.","Four riders. One Light. The Light endures."]},
@@ -1217,7 +1217,7 @@ const WRATH_LADDER=[
 // of every sin into her bed, and fields them all. Each seat leans harder on the fused pool. ----
 const LUST_LADDER=[
   {key:'holy_penitent',face:'🌹',name:'The Penitent',sub:'who begs to be broken',host:['holy_beheld','holy_suitor','holy_veiled'],
-   intro:"<b>The Penitent:</b> You came to end the Holy, rider — but look how prettily we kneel. Strike, and see which of us you cannot bring yourself to strike again.",
+   intro:"<b>The Penitent:</b> You came to end the Sins, rider — but look how prettily we kneel. Strike, and see which of us you cannot bring yourself to strike again.",
    defeat:"<b>The Penitent:</b> ...you looked away... after all... the others will not be so easy to leave.",
    quip:["Won't you stay your hand?","We only want to be seen.","Every blow is a caress."]},
   {key:'holy_martyr',face:'🕯️',name:'The Willing Martyr',sub:'sweeter in the dying',host:['holy_penitent','holy_courtesan','holy_beheld','holy_veiled'],
@@ -1266,7 +1266,7 @@ const BOONS=[
   {q:'A boy runs out to hold your stirrup and begs to ride with you.',
    a:[{label:'Let him up.',flavour:'He will not last the ladder. Few do.',card:'almsman',relic:'relic_medicae'},
       {label:'Send him home.',flavour:'Mercy, of the only kind you carry.',card:'oathkeeper',relic:'relic_toll'}]},
-  {q:'The Holy have left an offering at the crossroads — bread, salt, and a white flag.',
+  {q:'The Sins have left an offering at the crossroads — bread, salt, and a white flag.',
    a:[{label:'Take the bread.',flavour:'A truce you never agreed to costs nothing to break.',card:'revenant',relic:'relic_volley'},
       {label:'Leave it and raise your banner.',flavour:'Let them see exactly what rides at them.',card:'rookseer',relic:'relic_banner'}]},
 ];
@@ -1878,17 +1878,18 @@ async function combat(side){
     if(side==='player'){for(const z of state.enemyBoard){if(z&&hasSig(z,'zeal')){z._zt=z._zt||0;if(z._zt<2){z.pow++;z._zt++;}}}}
     let targets=[];
     if(hasSig(a,'cleave')){if(i-1>=0)targets.push(i-1);if(i+1<LANES)targets.push(i+1);}else targets=[i];
-    // Strong Drink (the Brewer): while it lives your strikes stagger, two times in three, into a lane beside the one ahead.
-    if(side==='player'&&!hasSig(a,'cleave')&&state.enemyBoard.some(e=>e&&e.curHp>0&&hasSig(e,'drunk'))&&Math.random()<0.67){const off=[i-1,i+1].filter(k=>k>=0&&k<LANES);if(off.length){targets=[pick(off)];if(window.__drunkSay)window.__drunkSay(i,a);}}
+    // Strong Drink (the Brewer): while it lives your strikes stagger, two times in three, into another face-up Holy card — never past them into the Adversary.
+    let staggered=false;
+    if(side==='player'&&!hasSig(a,'cleave')&&state.enemyBoard.some(e=>e&&e.curHp>0&&hasSig(e,'drunk'))&&Math.random()<0.67){const off=[0,1,2,3].filter(k=>k!==i&&k<LANES&&foe[k]&&foe[k].curHp>0);if(off.length){targets=[pick(off)];staggered=true;if(window.__drunkSay)window.__drunkSay(i,a);}}
     if(hasSig(a,'challenge')){let d=foe.findIndex(x=>x&&x.uid===a._duel);if(d<0){let bp=-1;for(let k=0;k<LANES;k++){const v=foe[k];if(v){const vp=effPow(v,side==='player');if(vp>bp){bp=vp;d=k;}}}if(d>=0)a._duel=foe[d].uid;}if(d>=0)targets=[d];}
     for(let t of targets){
       let blk=foe[t];if(side==='player'&&!blk){const pc=[t-1,t+1].find(k=>k>=0&&k<LANES&&foe[k]&&hasSig(foe[k],'display')&&foe[k].curHp>0);if(pc!==undefined){t=pc;blk=foe[pc];}}const airborne=hasSig(a,'arrow');const canBlockAir=blk&&hasSig(blk,'leap');
-      const willHitBlocker=!!(blk&&!(airborne&&!canBlockAir));
+      const willHitBlocker=!!(blk&&(staggered||!(airborne&&!canBlockAir)));   /* a staggered blow always lands on the card it lurches into */
       const hitsAdversary=(side==='player'&&!willHitBlocker);
       strikeCast(rowId,i,foeRow,t,side,a,hitsAdversary);   // card holds still; a bolt flies to lane t (or the adversary)
       await wait(BOLT_TRAVEL);                // let the bolt reach the point of impact
       if(willHitBlocker)strike(foeRow,t);     // spark on the struck defender
-      if(blk&&!(airborne&&!canBlockAir)){const lethal=hasSig(a,'reap')?9999:p;state._breach=hasSig(a,'breach');dmg(blk,lethal,foe,foeRow);state._breach=false;if(hasSig(a,'headsman')&&blk.curHp>0&&blk.curHp<=2){blk.curHp=0;}if(hasSig(blk,'rot')&&!hasSig(a,'gorge'))dmg(a,1,board,rowId);if(side==='player'&&hasSig(blk,'rapture')&&blk.curHp<=0)a._besotted=true;}
+      if(willHitBlocker){const lethal=hasSig(a,'reap')?9999:p;state._breach=hasSig(a,'breach');dmg(blk,lethal,foe,foeRow);state._breach=false;if(hasSig(a,'headsman')&&blk.curHp>0&&blk.curHp<=2){blk.curHp=0;}if(hasSig(blk,'rot')&&!hasSig(a,'gorge'))dmg(a,1,board,rowId);if(side==='player'&&hasSig(blk,'rapture')&&blk.curHp<=0)a._besotted=true;}
       else{const face=(hasSig(a,'arrow'))?Math.max(1,p-2):p;if(side==='player'){state.soulsYou+=face;if(hasSig(a,'coin'))state.coin++;adversaryHit();}else{state.soulsFoe+=face;}pulseGlass(side);floatDamage(side==='player'?$('#fill-top'):$('#fill-bot'),'+'+face);}
       if(hasSig(a,'drain'))a.curHp=Math.min(a.hp,a.curHp+p);   // Drain (the Leech)
       // Cull: after the primary strike, deal p to the foe's weakest OTHER living creature (not lane t).
@@ -2076,7 +2077,7 @@ async function enemyPlan(){
   const open=[];for(let i=0;i<LANES;i++)if(!state.enemyBoard[i]&&!state.enemyQueue[i])open.push(i);
   while(placed<budget&&open.length&&reserveLeft()>0){const l=open.splice((Math.random()*open.length)|0,1)[0];const cand=drawForHoly();if(!cand)break;enemyPaySac(cand);state.enemyQueue[l]=cand;markOnce(cand.key);placed++;spendReserve();}
   // The muster is spent: from here the Holy hold only what is already on the table.
-  if(reserveLeft()<=0&&!state._reserveSaid){state._reserveSaid=true;say('<b>The Holy have no one left to send.</b> What stands on the table is all that stands.',3600);}
+  if(reserveLeft()<=0&&!state._reserveSaid){state._reserveSaid=true;say('<b>The Sins have no one left to send.</b> What stands on the table is all that stands.',3600);}
   renderAll();await wait(300);say('');
 }
 function pick(a){return a[(Math.random()*a.length)|0];}
@@ -2211,7 +2212,7 @@ function nextRound(){
 }
 function bossDown(){
   const b=state.boss; hearClue(b.key);const ov=$('#overlay');const ladder=state.ladder||BOSSES;const last=state.bossIndex>=ladder.length-1;const btn=el('button','act');btn.style.marginTop='8px';
-  if(last&&state.ladder===LUST_LADDER){ov.innerHTML=`<h2>Lust lies cold</h2><p>${b.defeat}</p><p style="color:var(--gilt)">Wrath, Greed, Gluttony, and the seductress who wore them all — every sin of the Holy is spent. You wanted the ending more than you wanted any of it. The Reckoning rides on, unlovely and free.</p>`;btn.textContent='Ride on';btn.onclick=()=>location.reload();ov.appendChild(btn);}
+  if(last&&state.ladder===LUST_LADDER){ov.innerHTML=`<h2>Lust lies cold</h2><p>${b.defeat}</p><p style="color:var(--gilt)">Wrath, Greed, Gluttony, and the seductress who wore them all — every Sin is spent. You wanted the ending more than you wanted any of it. The Reckoning rides on, unlovely and free.</p>`;btn.textContent='Ride on';btn.onclick=()=>location.reload();ov.appendChild(btn);}
   else if(last){
     // The Rider's own ladder is finished — this is what opens the next Rider.
     // Finishing a ladder unseals the next Rider in FACTION_ORDER. Death's ladder is Lust's (see
@@ -2615,7 +2616,7 @@ function openArtbook(){
     ['war','⚔️ War','the red rider — every death feeds the blade'],
     ['famine','⚖️ Famine','the black rider — wither, rot, and outlast'],
     ['death','☠️ Death','the pale rider — the fallen rise again'],
-    ['holy','✝ The Holy','the Church that rides against all four'],
+    ['holy','🔥 The Sins','the Sins who sit against all four riders'],
     ['','🂠 Rabble & neutral','the bodies anyone can field'],
     ['relic','✦ Relics','one-use, never creatures'],
   ];
@@ -5720,14 +5721,14 @@ addEventListener('resize',()=>{
       const tube=new THREE.Mesh(new THREE.TorusGeometry(.05,.009,8,18,Math.PI),brass); tube.position.set(-.0,.05,0); tube.rotation.z=Math.PI/2; rel.add(tube);
       const rhit=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); rel.add(rhit);
       hotspot(rhit,{go:'crawlEnd',title:'An ear-trumpet',act:()=>{ if(WP.relic) return; WP.relic=true; wsave(); rel.visible=false; giveRelic();
-        note('The Eavesdropper','A battered brass ear-trumpet, its bell dented, its earpiece worn bright by someone’s ear. It joins your relics: once a fight, put it to the wall and hear what the Holy mean to send — and turn it back.'); }});
+        note('The Eavesdropper','A battered brass ear-trumpet, its bell dented, its earpiece worn bright by someone’s ear. It joins your relics: once a fight, put it to the wall and hear what the Sins mean to send — and turn it back.'); }});
       fireTicks.push(()=>{ rel.visible=!WP.relic; });
       /* the passage view: rubble and stones that rise past you as you crawl in */
       for(let i=0;i<9;i++){ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.03+Math.random()*.05,0),new THREE.MeshStandardMaterial({color:0x3a322a,roughness:1})); const sg=Math.floor(Math.random()*3), f=Math.random(); const A=TP[sg], B=TP[sg+1]; r.position.set(A[0]+(B[0]-A[0])*f+(Math.random()-.5)*.5*(B[1]!==A[1]?1:0), .03, A[1]+(B[1]-A[1])*f+(Math.random()-.5)*.5*(B[0]!==A[0]?1:0)); tun.add(r); }
     }
 
     /* -- the relic card -- */
-    CARDS.relic_ear={name:'The Eavesdropper',art:'\u{1F442}',relic:true,cost:{type:'free'},faction:'',rd:'Put it to the wall: everything the Holy have waiting to take the table turns back, and they send no one next turn.'};
+    CARDS.relic_ear={name:'The Eavesdropper',art:'\u{1F442}',relic:true,cost:{type:'free'},faction:'',rd:'Put it to the wall: everything the Sins have waiting to take the table turns back, and they send no one next turn.'};
     function giveRelic(){ try{ if(state&&state.ladder){ (state.bonusRelics=state.bonusRelics||[]); if(!state.bonusRelics.includes('relic_ear')) state.bonusRelics.push('relic_ear'); (state.relics=state.relics||[]).push(makeCard('relic_ear')); renderAll(); }
       else localStorage.setItem('reckoning_pending_relic','relic_ear'); }catch(e){} }
     addEventListener('reckoning:boss',()=>setTimeout(()=>{ try{ const k=localStorage.getItem('reckoning_pending_relic'); if(!k||!state||!state.ladder) return; localStorage.removeItem('reckoning_pending_relic');
@@ -5736,7 +5737,7 @@ addEventListener('resize',()=>{
       if(c.spent) return; if(state.over||state.turn!=='player'){ say('<b>Not now.</b> Relics answer only on your turn.',2200); return; }
       const n=(state.enemyQueue||[]).filter(Boolean).length; state.enemyQueue=Array(LANES).fill(null); state._earSkip=true;
       c.spent=true; state.relics=(state.relics||[]).filter(r=>r!==c); if(state.readyCard===c) state.readyCard=null;
-      say('<b>You put the trumpet to the wall.</b> '+(n?n+' of the Holy turn back before they reach the table, and':'You hear them hesitate, and')+' no one will be sent next turn.',3600); renderAll(); }; }
+      say('<b>You put the trumpet to the wall.</b> '+(n?n+' of the Sins\u2019 cards turn back before they reach the table, and':'You hear them hesitate, and')+' no one will be sent next turn.',3600); renderAll(); }; }
     if(typeof enemyPlan==='function'){ const ep=window.enemyPlan; window.enemyPlan=async function(...a){ if(state&&state._earSkip){ state._earSkip=false; renderAll(); return; } return ep.apply(this,a); }; }
 
     /* -- crawling in and out: a quick fade covers the trip through the stone -- */
@@ -6056,7 +6057,7 @@ addEventListener('resize',()=>{
     const os=window.onSlotClick; window.onSlotClick=function(lane,isEnemy){
       try{ if(state._spySel&&state.turn==='player'&&!state.over){ const _g=l=>state.enemyBoard[l]&&hasSig(state.enemyBoard[l],'grip'), _si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel); if(_g(_si)||(!isEnemy&&_g(lane))){ say('<b>The Gilded Hand</b> has hold of that one. It will not move.',2600); return; } __cardPromptClose(); const si=state.playerBoard.findIndex(x=>x&&x.uid===state._spySel), spy=state.playerBoard[si]; state._spySel=null;
           if(spy){ if(!isEnemy){ const t=state.playerBoard[lane]; if(t&&t!==spy){ state.playerBoard[lane]=spy; state.playerBoard[si]=t; say('<b>The Spy</b> trades places with the '+t.name+'.',2600); } else say('',10); }
-            else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); if(t._stolen){ const s0=t._stolen; t._stolen=null; if(state.hand.length<10) state.hand.push(s0); else state.deck.push(s0); setTimeout(()=>say('<b>The Magpie</b> drops your '+s0.name+' as it crosses over.',2800),3500); } say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Holy, and the '+t.name+' crosses over to fight for you.',3400); }
+            else { const t=state.enemyBoard[lane]; if(t&&!t.isBoss){ state.enemyBoard[lane]=spy; state.playerBoard[si]=t; t.curHp=Math.max(1,t.curHp); if(t._stolen){ const s0=t._stolen; t._stolen=null; if(state.hand.length<10) state.hand.push(s0); else state.deck.push(s0); setTimeout(()=>say('<b>The Magpie</b> drops your '+s0.name+' as it crosses over.',2800),3500); } say('<b>The Spy</b> takes the '+t.name+'\u2019s seat among the Sins, and the '+t.name+' crosses over to fight for you.',3400); }
               else if(t&&t.isBoss) say('<b>The Spy</b> will not get close enough to that one.',2200); } }
           renderAll(); return; } }catch(e){}
       return os.apply(this,arguments); };
@@ -6356,7 +6357,7 @@ addEventListener('resize',()=>{
               {to:'foe:holy_courtesan',t:'How much for you to stand still?',re:'More than a bowman earns, sweetheart.'}],
       herald:[{to:'foe:*',t:'Announcing {n}: overdressed, overrated, and about to be over.'},
               {to:'ally:squire',t:'Chin up, Squire. Try to look like you’ve been kissed before.',re:'I have! …By my mother.'}],
-      squire:[{to:'ally:knight',t:'Sir, will you teach me to use my sword properly?',re:'Not in front of the Holy, boy.'},
+      squire:[{to:'ally:knight',t:'Sir, will you teach me to use my sword properly?',re:'Not in front of the Sins, boy.'},
               {to:'foe:holy_siren',t:'Is she singing at me? I think she’s singing at me.',re:'I sing at everyone, love. You’re not special.'}],
       shieldbear:[{to:'ally:bowman',t:'Stop hiding behind me. People will talk.',re:'Let them. You’re warm.'},
                   {to:'foe:*',t:'Go on, {n}. Hit me. I’ve had worse from my wife.'}],
@@ -6707,15 +6708,15 @@ addEventListener('resize',()=>{
     let blood='bowman';
     let S=[
       {t:'Welcome to the table. Your <b>hand</b> is at the bottom: these are the cards you can play this turn.', el:()=>$('#hand'), next:true},
-      {t:'Across the table sit the <b>Holy</b>. Every card attacks the lane straight ahead of it.', el:()=>$('#enemy-row'), next:true},
+      {t:'Across the table sit the <b>Sins</b>. Every card attacks the lane straight ahead of it.', el:()=>$('#enemy-row'), next:true},
       {t:'A <b>Peasant</b> costs nothing. <b>Click the Peasant</b> in your hand.', el:()=>handCard('peasant'), wait:()=>state.readyCard&&state.readyCard.key==='peasant'},
       {t:'Now <b>click the glowing lane</b> to put her on the table.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key==='peasant')},
       {t:()=>'Stronger cards cost <b>blood</b> (the drop on the card). <b>Click the '+CARDS[blood].name+'</b>.', el:()=>handCard(blood), wait:()=>state.awaitingSac>0||(state.readyCard&&state.readyCard.key===blood)},
       {t:'Blood is paid by sacrificing one of your own. <b>Click your Peasant on the table</b> to offer her. Her blood goes into your pool at the bottom left, and keeps there until you spend it.', el:()=>boardSlot('peasant'), wait:()=>state.awaitingSac===0&&state.readyCard&&state.readyCard.key===blood},
       {t:()=>'The price is paid. <b>Click a lane</b> to place the '+CARDS[blood].name+'.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key===blood)},
       {t:'Each sacrifice and each fallen card leaves <b>marrow</b>, and each kill earns <b>coin</b>. Some cards cost those instead of blood.', el:()=>$('#resources'), next:true},
-      {t:'An attack that meets no defender strikes the Holy directly and earns <b>souls</b>. The <b>hourglass</b> keeps the tally: the first to 35 souls takes the round.', el:()=>$('#reckoning'), next:true},
-      {t:'When you have played what you want, <b>ring the bell</b> on the table (or press Enter). Your cards attack, then the Holy answer.', el:()=>({getBoundingClientRect:()=>window.__bellRect?window.__bellRect():document.getElementById('horn-btn').getBoundingClientRect()}), wait:()=>state.turn==='combat'},
+      {t:'An attack that meets no defender strikes the Sin across the table directly and earns <b>souls</b>. The <b>hourglass</b> keeps the tally: the first to 35 souls takes the round.', el:()=>$('#reckoning'), next:true},
+      {t:'When you have played what you want, <b>ring the bell</b> on the table (or press Enter). Your cards attack, then the Sins answer.', el:()=>({getBoundingClientRect:()=>window.__bellRect?window.__bellRect():document.getElementById('horn-btn').getBoundingClientRect()}), wait:()=>state.turn==='combat'},
       {t:'Watch the exchange…', el:()=>null, wait:()=>state.turn==='player'},
       {t:'This is your <b>Rider</b>. A powerful card you can play once each round, whenever you choose.', el:()=>$('#rk-rider .rc')||$('#rk-rider'), next:true},
       {t:'Click the <b>deck</b> count at any time to see which cards are still to come.', el:()=>$('#deck-count'), next:true},
@@ -6758,15 +6759,15 @@ addEventListener('resize',()=>{
         st.push({t:()=>(F?'Now the <b>'+c.name+'</b>. ':'Try the <b>'+c.name+'</b>. ')+(F?'':costNote(c)+' ')+'<b>Click it.</b>', el:()=>{ const i=state.hand.indexOf(c); return i>=0?document.querySelectorAll('#hand .hcard')[i]:null; }, wait:()=>state.readyCard===c||state.pendingCard===c, skipIf:()=>!state.hand.includes(c)});
         st.push({t:()=>F&&state.playerBoard.includes(F)?'Now <b>sacrifice the '+F.name+'</b>. It cost you nothing, and its blood pays for the '+c.name+'.':'Choose a card of your own to <b>sacrifice</b>. Its blood goes into your pool.', el:()=>{ if(F&&state.playerBoard.includes(F)) return $('#player-row .slot[data-lane="'+state.playerBoard.indexOf(F)+'"]'); let b=-1,bv=1e9; for(let k=0;k<4;k++){ const v=state.playerBoard[k]; const w=v?val(v)*(isFree(v)?.4:1.3):0; if(v&&!gripped(k)&&w<bv){ bv=w; b=k; } } return b>=0?$('#player-row .slot[data-lane="'+b+'"]'):null; },
           wait:()=>state.readyCard===c, skipIf:()=>state.readyCard===c||!(state.awaitingSac>0)});
-        st.push({t:()=>P.block?'Put it in <b>this lane</b>, in front of the enemy hitting hardest. A card in the way takes the blow instead of you.':'Put it in <b>this lane</b>. Nothing faces it, so its attack goes straight to the Holy for souls.', el:()=>state.playerBoard[P.lane]?$('#player-row .slot[data-lane="'+(state.playerBoard.indexOf(null)>=0?state.playerBoard.indexOf(null):P.lane)+'"]'):laneEl(), wait:()=>state.playerBoard.includes(c)}); }
+        st.push({t:()=>P.block?'Put it in <b>this lane</b>, in front of the enemy hitting hardest. A card in the way takes the blow instead of you.':'Put it in <b>this lane</b>. Nothing faces it, so its attack goes straight to the Sin for souls.', el:()=>state.playerBoard[P.lane]?$('#player-row .slot[data-lane="'+(state.playerBoard.indexOf(null)>=0?state.playerBoard.indexOf(null):P.lane)+'"]'):laneEl(), wait:()=>state.playerBoard.includes(c)}); }
       st.push({t:'Play anything else you like, then <b>ring the bell</b> (or press Enter).', el:()=>({getBoundingClientRect:()=>window.__bellRect?window.__bellRect():document.getElementById('horn-btn').getBoundingClientRect()}), wait:()=>state.turn==='combat'});
       return st; };
     const planTurn=n=>{
       if(n===2) return playSteps({t:'A new turn. You drew a card from your deck, and a free body: you can hold one Peasant and one Cutpurse at a time.',el:()=>$('#hand'),next:true});
       if(n===3) return playSteps({t:'Each card that falls leaves <b>marrow</b>, and each kill earns <b>coin</b>. Cards marked with bones or coins spend them.',el:()=>$('#resources'),next:true});
       if(n===4){ const R=$('#rk-rider .rc'); const intro={t:'Your <b>Rider</b> is your strongest card. It costs marrow, and you may play it once each round, whenever you choose. When you can afford it, click it and choose a lane.',el:()=>R||$('#rk-rider'),next:true}; return playSteps(intro); }
-      if(n===5) return playSteps({t:'Cards waiting at the edge of the Holy row arrive next turn. Leave a defender in their lane if you can.',el:()=>$('#enemy-row'),next:true});
-      return playSteps({t:'Hover over any card to see it up close, with its ability written out. Reading the Holy cards tells you what they will do.',el:()=>$('#enemy-row'),next:true}); };
+      if(n===5) return playSteps({t:'Cards waiting at the edge of the Sins\u2019 row arrive next turn. Leave a defender in their lane if you can.',el:()=>$('#enemy-row'),next:true});
+      return playSteps({t:'Hover over any card to see it up close, with its ability written out. Reading the Sin cards tells you what they will do.',el:()=>$('#enemy-row'),next:true}); };
     const end=()=>{ clearInterval(poll); spot&&spot.remove(); box&&box.remove(); window.__tutOn=false; try{ localStorage.setItem(TK,'1'); }catch(e){} };
     const place=()=>{ const s=S[i]; if(!s) return; const el=s.el&&s.el();
       if(el){ const r=el.getBoundingClientRect(), p=8; spot.className=''; Object.assign(spot.style,{left:(r.left-p)+'px',top:(r.top-p)+'px',width:(r.width+2*p)+'px',height:(r.height+2*p)+'px'});
