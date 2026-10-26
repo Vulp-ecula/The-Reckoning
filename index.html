@@ -1527,7 +1527,7 @@ function renderRow(id,board,isEnemy){
     const c=board[i];
     if(c) slot.appendChild(cardEl(c,isEnemy));
     else if(isEnemy&&state.enemyQueue[i]){const g=el('div','queue-back');g.innerHTML=`<img src="${HOST_BACK}" alt="">`;g.title='Something takes its seat…';slot.appendChild(g);}
-    if(state.awaitingSac>0&&!isEnemy&&board[i])slot.classList.add('sac-target');
+    if((state.awaitingSac>0||(state.readyCard&&state.readyCard.cost.type==='blood'))&&!isEnemy&&board[i])slot.classList.add('sac-target');
     else if(!isEnemy&&!board[i]&&state.readyCard)slot.classList.add('playable');
     slot.onclick=()=>onSlotClick(i,isEnemy);
     // drop target: empty player lanes accept a dragged card
@@ -1664,7 +1664,7 @@ function handClick(c){
     // Blood is paid in bodies only — Marrow buys Marrow-cost cards and nothing else.
     // Blood already in the pool pays first; only the rest has to be sacrificed.
     const need=c.cost.n;
-    if((state.blood||0)>=need){state.pendingCard=null;state.awaitingSac=0;state.sacrifices=[];state.readyCard=c;say(`Your blood pays for it. <b>Click an empty lane</b> to place the ${c.name}.`);renderAll();return;}
+    if((state.blood||0)>=need){state.pendingCard=null;state.awaitingSac=0;state.sacrifices=[];state.readyCard=c;say(`Your blood pays for it. <b>Click an empty lane</b> to place the ${c.name}, or click one of your own cards to sacrifice it and keep your pool.`);renderAll();return;}
     state.pendingCard=c;state.awaitingSac=need-(state.blood||0);state.sacrifices=[];state.readyCard=null;
     say(`Sacrifice ${state.awaitingSac} of your own — <b>click them on the table</b>. Their blood goes into your pool.`);
     renderAll();
@@ -1740,6 +1740,14 @@ function onSlotClick(lane,isEnemy){
       renderAll();
     }
     return;
+  }
+  // a blood card already paid from the pool: you may still sacrifice one of your own, and its blood refills the pool
+  if(!isEnemy&&state.readyCard&&state.readyCard.cost.type==='blood'&&state.playerBoard[lane]){
+    const v=state.playerBoard[lane];
+    if(state.enemyBoard[lane]&&hasSig(state.enemyBoard[lane],'grip')){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
+    deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;state.graveyard.push(v.key);onAnyDeath();
+    state.blood=Math.min(4,(state.blood||0)+1);
+    say(`The ${v.name}'s blood goes into the pool. <b>Click an empty lane</b> to place the ${state.readyCard.name}.`);renderAll();return;
   }
   if(isEnemy)return;
   // clicking an empty lane while a card is ready also places it (fallback to click if drag is fiddly)
@@ -5441,6 +5449,15 @@ addEventListener('resize',()=>{
     window.__rider=R;
     const css2=document.createElement('style'); css2.textContent='body:has(#overlay.show) #rk-rider, body.cabin-away #rk-rider{display:none!important;}'; document.head.appendChild(css2);
   }
+  /* ---- a crowded hand fans its cards over one another instead of scrolling off the screen ---- */
+  { const st=document.createElement('style'); st.textContent=`#hand.fan .hcard{transition:transform .15s ease;} #hand.fan .hcard:hover{z-index:40!important;transform:translateY(-14px) scale(1.06);} #hand.fan{overflow-x:hidden!important;}`; document.head.appendChild(st);
+    const fan=()=>{ const h=document.getElementById('hand'); if(!h) return; const cs=[...h.querySelectorAll('.hcard')]; if(!cs.length){ h.classList.remove('fan'); return; }
+      const P=getComputedStyle(h), avail=h.clientWidth-parseFloat(P.paddingLeft)-parseFloat(P.paddingRight), w=cs[0].offsetWidth, gap=parseFloat(P.columnGap)||16, n=cs.length;
+      const over=n>1&&n*w+(n-1)*gap>avail;
+      h.classList.toggle('fan',over);
+      cs.forEach((c,i)=>{ c.style.removeProperty('margin-left'); c.style.zIndex=''; if(over&&i>0){ const m=Math.max(-w*.72,(avail-n*w)/(n-1)-gap); c.style.setProperty('margin-left',m+'px','important'); } if(over&&!c.classList.contains('selected')) c.style.zIndex=String(i+1); }); };
+    if(typeof renderAll==='function'){ const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a); try{ fan(); }catch(e){} return r; }; }
+    addEventListener('resize',()=>{ try{ fan(); }catch(e){} }); window.__fanHand=fan; }
   /* ---- the bloody hoard is clickable: walk over and look down at it ---- */
   { const pile=window.__greedPile;
     if(pile){ NODES.hoard={pos:new THREE.Vector3(2.45,1.55,-.75), yaw:-.25, pitch:-.78, label:'The hoard'};
@@ -6381,7 +6398,7 @@ addEventListener('resize',()=>{
                 {to:'foe:holy_hand',t:'At last, a passenger who can pay.',re:'Who said anything about paying?'}],
       peasant:[{to:'foe:holy_courtesan',t:'How much for a… conversation?',re:'For you? A year’s turnips.'},
                {to:'foe:holy_siren',t:'Is that singing for me? Nobody sings for me.',re:'Come into the water and find out.'},
-               {to:'ally:*',t:'{n}, if I die, tell my goat I loved her more than my wife.'}],
+               {to:'ally:*',t:'{n}, if I die, tell my goat I loved her more than my husband.'}],
       holy_siren:[{to:'foe:*',t:'Strong arms, {n}. Shame you’ll drown in them.'},
                   {to:'foe:knight',t:'All that armour, Sir Knight. Doesn’t it get hot in there?',re:'…It does now.'}],
       holy_courtesan:[{to:'foe:*',t:'{n}, darling. I charge double for the ones who stare.'},
@@ -6692,9 +6709,9 @@ addEventListener('resize',()=>{
       {t:'Welcome to the table. Your <b>hand</b> is at the bottom: these are the cards you can play this turn.', el:()=>$('#hand'), next:true},
       {t:'Across the table sit the <b>Holy</b>. Every card attacks the lane straight ahead of it.', el:()=>$('#enemy-row'), next:true},
       {t:'A <b>Peasant</b> costs nothing. <b>Click the Peasant</b> in your hand.', el:()=>handCard('peasant'), wait:()=>state.readyCard&&state.readyCard.key==='peasant'},
-      {t:'Now <b>click the glowing lane</b> to put him on the table.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key==='peasant')},
+      {t:'Now <b>click the glowing lane</b> to put her on the table.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key==='peasant')},
       {t:()=>'Stronger cards cost <b>blood</b> (the drop on the card). <b>Click the '+CARDS[blood].name+'</b>.', el:()=>handCard(blood), wait:()=>state.awaitingSac>0||(state.readyCard&&state.readyCard.key===blood)},
-      {t:'Blood is paid by sacrificing one of your own. <b>Click your Peasant on the table</b> to offer him. His blood goes into your pool at the bottom left, and keeps there until you spend it.', el:()=>boardSlot('peasant'), wait:()=>state.awaitingSac===0&&state.readyCard&&state.readyCard.key===blood},
+      {t:'Blood is paid by sacrificing one of your own. <b>Click your Peasant on the table</b> to offer her. Her blood goes into your pool at the bottom left, and keeps there until you spend it.', el:()=>boardSlot('peasant'), wait:()=>state.awaitingSac===0&&state.readyCard&&state.readyCard.key===blood},
       {t:()=>'The price is paid. <b>Click a lane</b> to place the '+CARDS[blood].name+'.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key===blood)},
       {t:'Each sacrifice and each fallen card leaves <b>marrow</b>, and each kill earns <b>coin</b>. Some cards cost those instead of blood.', el:()=>$('#resources'), next:true},
       {t:'An attack that meets no defender strikes the Holy directly and earns <b>souls</b>. The <b>hourglass</b> keeps the tally: the first to 35 souls takes the round.', el:()=>$('#reckoning'), next:true},
@@ -6816,6 +6833,7 @@ addEventListener('resize',()=>{
     const B=()=>BASE+2*((state&&state._beaten)||0);   /* +2 points for every boss beaten this run */
     let DECKS={}; try{ DECKS=JSON.parse(localStorage.getItem(DK))||{}; }catch(e){}
     const dsave=()=>{ try{ localStorage.setItem(DK,JSON.stringify(DECKS)); }catch(e){} };
+    for(const f in DECKS){ const seen=new Set(); if(Array.isArray(DECKS[f])) DECKS[f]=DECKS[f].filter(k=>!String(k).startsWith('amal_')||(!seen.has(k)&&seen.add(k))); }   /* older saves: only one copy of a forged card */
     const tierOf=k=>{ const c=CARDS[k]; if(!c) return 1; if(c.tier) return c.tier; if(c.amalgam&&c.parts) return Math.max(...c.parts.map(tierOf));
       const t=c.cost&&c.cost.type, n=(c.cost&&c.cost.n)||0;
       if((t==='marrow'&&n>=2&&c.pow>=3)||(t==='blood'&&n>=2)||(t==='coin'&&n>=3)||(t==='marrow'&&n>=3)) return 3;
@@ -6833,8 +6851,9 @@ addEventListener('resize',()=>{
     const MUST={conquest:['herald','plunderer']};   /* Conquest must carry the Gilt Herald (the brandy hint) and the Plunderer (the roundel hint) */
     const ML=f=>(MUST[f]||[]).filter(k=>CARDS[k]); const isMust=(f,k)=>ML(f).includes(k);
     const hasMust=(f,list)=>ML(f).every(k=>list.includes(k));
-    const fits=(list,k)=>list.filter(x=>x===k).length<CAP[tierOf(k)]&&list.length<MAXC&&cost(list)+PTS[tierOf(k)]<=B();
-    const valid=(f,list)=>{ const P=pool(f); return hasMust(f,list)&&list.length>=MINC&&list.length<=MAXC&&cost(list)<=B()&&list.every(k=>P.includes(k))&&P.every(k=>list.filter(x=>x===k).length<=CAP[tierOf(k)]); };
+    const capOf=k=>String(k).startsWith('amal_')?1:CAP[tierOf(k)];   /* one copy of any forged card */
+    const fits=(list,k)=>list.filter(x=>x===k).length<capOf(k)&&list.length<MAXC&&cost(list)+PTS[tierOf(k)]<=B();
+    const valid=(f,list)=>{ const P=pool(f); return hasMust(f,list)&&list.length>=MINC&&list.length<=MAXC&&cost(list)<=B()&&list.every(k=>P.includes(k))&&P.every(k=>list.filter(x=>x===k).length<=capOf(k)); };
     const starter=f=>{   /* a sensible suggestion: two Champions, a handful of Specialists, then the best cheap cards, spending the whole budget */
       const P=pool(f), out=ML(f).slice();
       const score=k=>{ const c=CARDS[k]; return c.pow*1.6+c.hp+(c.sig?1.5:0)+(c.sig2?1.5:0); };
