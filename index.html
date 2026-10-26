@@ -3490,7 +3490,7 @@ const BOSS_HOLDER={holy_assessor:'greed', holy_tithemaster:'greed', holy_greed:'
 window.addEventListener('reckoning:boss',e=>setCandleholder(BOSS_HOLDER[e.detail&&e.detail.key]||'plain'));
 if(window.__bossKey) setTimeout(()=>setCandleholder(BOSS_HOLDER[window.__bossKey]||'plain'),0);
 /* the iron hand-bell (placeholder) at your near-right corner of the table: you ring it to end your turn */
-const bell=new THREE.Group(); bell.position.set(.80,.955,.70); scene.add(bell);   /* clear of the 'get up' button */
+const bell=new THREE.Group(); bell.position.set(.85,.955,.45); scene.add(bell);   /* on the table, right of the player row: clear of the hand and the 'get up' button */
 { const M_bz=new THREE.MeshStandardMaterial({color:0x5a4424,metalness:.75,roughness:.38});
   const prof=[[.0,.0],[.072,.0],[.074,.008],[.062,.03],[.046,.07],[.040,.10],[.034,.118],[.020,.128],[.0,.13]].map(([r,y])=>new THREE.Vector2(r,y));
   const body=new THREE.Mesh(new THREE.LatheGeometry(prof,28),M_bz); body.castShadow=true; bell.add(body);
@@ -6627,20 +6627,38 @@ addEventListener('resize',()=>{
     /* ---- coaching for turns 2 to 6: one suggested play each turn, with one new idea ---- */
     const val=c=>(c.pow||0)*1.5+(c.hp||0)+(c.sig?1:0);
     const gripped=l=>state.enemyBoard[l]&&hasSig(state.enemyBoard[l],'grip');
-    const suggest=()=>{ const real=state.hand.filter(c=>!c.relic&&canAfford(c)), pool=real.filter(c=>c.key!=='peasant'&&c.key!=='cutpurse');
-      const card=(pool.length?pool:real).sort((a,b)=>val(b)-val(a))[0]; if(!card) return null;
-      const free=[0,1,2,3].filter(l=>!state.playerBoard[l]);
-      const threat=free.filter(l=>state.enemyBoard[l]).sort((a,b)=>effPow(state.enemyBoard[b],true)-effPow(state.enemyBoard[a],true));
-      const open=free.filter(l=>!state.enemyBoard[l]&&!state.enemyQueue[l]);
-      const lane=threat.length?threat[0]:open.length?open[0]:free[0]; if(lane==null) return null;
-      return {card,lane,block:threat.length>0}; };
+    /* what a sensible player would do: weigh each playable card against what it costs you on the board */
+    const isFree=c=>!c.cost||c.cost.type==='free';
+    const sacNeed=c=>c.cost&&c.cost.type==='blood'?Math.max(0,c.cost.n-(state.blood||0)):0;
+    const sacLoss=c=>{ const need=sacNeed(c); if(!need) return 0;
+      const fod=state.playerBoard.map((v,k)=>v&&!gripped(k)?val(v)*(isFree(v)?.4:1.3):null).filter(x=>x!=null).sort((a,b)=>a-b);
+      return fod.length<need?1e9:fod.slice(0,need).reduce((a,b)=>a+b,0); };
+    const suggest=()=>{ const free=[0,1,2,3].filter(l=>!state.playerBoard[l]);
+      const real=state.hand.filter(c=>!c.relic&&canAfford(c)&&(free.length||sacNeed(c)>0));
+      const score=c=>val(c)-sacLoss(c)-(isFree(c)?1.5:0);   /* free bodies are best kept for later, unless nothing better is sensible */
+      const ranked=real.map(c=>({c,s:score(c)})).sort((a,b)=>b.s-a.s);
+      let best=ranked.find(x=>x.s>0), fodder=null;
+      const fb=real.find(c=>isFree(c)&&free.length);
+      /* a blood card wants a body: if a free one is in hand, lay that down first and spend it, rather than a card that is worth keeping */
+      if(fb&&best&&sacNeed(best.c)===1&&best.c!==fb&&state.playerBoard.every((v,k)=>!v||gripped(k)||!(val(v)*(isFree(v)?.4:1.3)<val(fb)*.4+.01))) fodder=fb;
+      else if(fb&&!best) best={c:fb};
+      if(!best) return null; const card=best.c;
+      const lanes=free.length?free:[0,1,2,3];
+      const threat=lanes.filter(l=>state.enemyBoard[l]).sort((a,b)=>effPow(state.enemyBoard[b],true)-effPow(state.enemyBoard[a],true));
+      const open=lanes.filter(l=>!state.enemyBoard[l]&&!state.enemyQueue[l]);
+      const lane=threat.length?threat[0]:open.length?open[0]:lanes[0]; if(lane==null) return null;
+      return {card,lane,block:threat.length>0,fodder}; };
+    window.__coachSuggest=suggest;   /* test hook */
     const costNote=c=>{ const t=c.cost&&c.cost.type; return t==='blood'?'It costs blood. Your pool may already hold enough; if not, you will sacrifice.':t==='marrow'?'It costs marrow, the bone you earn whenever a card dies.':t==='coin'?'It costs coin, which you earn from kills.':'It costs nothing at all.'; };
     const playSteps=(intro)=>{ const P=suggest(); const st=[];
       if(intro) st.push(intro);
       if(!P){ st.push({t:'Nothing in your hand can be played right now. That happens.',el:()=>null,next:true}); }
-      else { const c=P.card, laneEl=()=>$('#player-row .slot[data-lane="'+P.lane+'"]');
-        st.push({t:()=>'Try the <b>'+c.name+'</b>. '+costNote(c)+' <b>Click it.</b>', el:()=>{ const i=state.hand.indexOf(c); return i>=0?document.querySelectorAll('#hand .hcard')[i]:null; }, wait:()=>state.readyCard===c||state.pendingCard===c, skipIf:()=>!state.hand.includes(c)});
-        st.push({t:'Choose a card of your own to <b>sacrifice</b>. Its blood goes into your pool.', el:()=>{ let b=-1,bv=1e9; for(let k=0;k<4;k++){ const v=state.playerBoard[k]; if(v&&!gripped(k)&&val(v)<bv){ bv=val(v); b=k; } } return b>=0?$('#player-row .slot[data-lane="'+b+'"]'):null; },
+      else { const c=P.card, F=P.fodder, laneEl=()=>$('#player-row .slot[data-lane="'+P.lane+'"]');
+        if(F){ const fl=()=>{ const fr=[0,1,2,3].filter(l=>!state.playerBoard[l]); return fr.find(l=>l!==P.lane)??fr[0]; };
+          st.push({t:'First lay down the <b>'+F.name+'</b>. It costs nothing, and it will pay for something better. <b>Click it.</b>', el:()=>{ const i=state.hand.indexOf(F); return i>=0?document.querySelectorAll('#hand .hcard')[i]:null; }, wait:()=>state.readyCard===F||state.pendingCard===F||state.playerBoard.includes(F), skipIf:()=>!state.hand.includes(F)&&!state.playerBoard.includes(F)});
+          st.push({t:'Put it <b>here</b>.', el:()=>$('#player-row .slot[data-lane="'+fl()+'"]'), wait:()=>state.playerBoard.includes(F), skipIf:()=>state.playerBoard.includes(F)}); }
+        st.push({t:()=>(F?'Now the <b>'+c.name+'</b>. ':'Try the <b>'+c.name+'</b>. ')+(F?'':costNote(c)+' ')+'<b>Click it.</b>', el:()=>{ const i=state.hand.indexOf(c); return i>=0?document.querySelectorAll('#hand .hcard')[i]:null; }, wait:()=>state.readyCard===c||state.pendingCard===c, skipIf:()=>!state.hand.includes(c)});
+        st.push({t:()=>F&&state.playerBoard.includes(F)?'Now <b>sacrifice the '+F.name+'</b>. It cost you nothing, and its blood pays for the '+c.name+'.':'Choose a card of your own to <b>sacrifice</b>. Its blood goes into your pool.', el:()=>{ if(F&&state.playerBoard.includes(F)) return $('#player-row .slot[data-lane="'+state.playerBoard.indexOf(F)+'"]'); let b=-1,bv=1e9; for(let k=0;k<4;k++){ const v=state.playerBoard[k]; const w=v?val(v)*(isFree(v)?.4:1.3):0; if(v&&!gripped(k)&&w<bv){ bv=w; b=k; } } return b>=0?$('#player-row .slot[data-lane="'+b+'"]'):null; },
           wait:()=>state.readyCard===c, skipIf:()=>state.readyCard===c||!(state.awaitingSac>0)});
         st.push({t:()=>P.block?'Put it in <b>this lane</b>, in front of the enemy hitting hardest. A card in the way takes the blow instead of you.':'Put it in <b>this lane</b>. Nothing faces it, so its attack goes straight to the Holy for souls.', el:()=>state.playerBoard[P.lane]?$('#player-row .slot[data-lane="'+(state.playerBoard.indexOf(null)>=0?state.playerBoard.indexOf(null):P.lane)+'"]'):laneEl(), wait:()=>state.playerBoard.includes(c)}); }
       st.push({t:'Play anything else you like, then <b>ring the bell</b> (or press Enter).', el:()=>({getBoundingClientRect:()=>window.__bellRect?window.__bellRect():document.getElementById('horn-btn').getBoundingClientRect()}), wait:()=>state.turn==='combat'});
