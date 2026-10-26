@@ -3490,7 +3490,7 @@ const BOSS_HOLDER={holy_assessor:'greed', holy_tithemaster:'greed', holy_greed:'
 window.addEventListener('reckoning:boss',e=>setCandleholder(BOSS_HOLDER[e.detail&&e.detail.key]||'plain'));
 if(window.__bossKey) setTimeout(()=>setCandleholder(BOSS_HOLDER[window.__bossKey]||'plain'),0);
 /* the iron hand-bell (placeholder) at your near-right corner of the table: you ring it to end your turn */
-const bell=new THREE.Group(); bell.position.set(.93,.955,.56); scene.add(bell);
+const bell=new THREE.Group(); bell.position.set(.80,.955,.70); scene.add(bell);   /* clear of the 'get up' button */
 { const M_bz=new THREE.MeshStandardMaterial({color:0x5a4424,metalness:.75,roughness:.38});
   const prof=[[.0,.0],[.072,.0],[.074,.008],[.062,.03],[.046,.07],[.040,.10],[.034,.118],[.020,.128],[.0,.13]].map(([r,y])=>new THREE.Vector2(r,y));
   const body=new THREE.Mesh(new THREE.LatheGeometry(prof,28),M_bz); body.castShadow=true; bell.add(body);
@@ -5396,6 +5396,12 @@ addEventListener('resize',()=>{
       #rk-rider .rc .em{font-size:96px;text-align:center;line-height:266px;}
       #rk-rider .b{position:absolute;font:bold 19px Georgia,serif;color:#f3e6c4;background:rgba(10,6,3,.78);border-radius:6px;padding:1px 6px;}
       #rk-rider .bc{left:4px;top:4px;} #rk-rider .bp{left:4px;bottom:4px;} #rk-rider .bh{right:4px;bottom:4px;}
+      #rk-rider .fgb{margin-top:4px;font-family:'Pirata One',Georgia,serif;font-size:22px;letter-spacing:.06em;padding:8px 22px;border-radius:8px;cursor:pointer;color:#fff3c8;
+        border:2px solid #ffb347;background:radial-gradient(ellipse at 50% 60%,#ff8a1e 0%,#c23a08 55%,#5a1404 100%);text-shadow:0 0 6px #ffcf70,0 1px 2px #3a0a00;
+        box-shadow:0 0 14px 4px rgba(255,120,20,.9),0 0 36px 12px rgba(255,70,0,.55),inset 0 0 12px rgba(255,220,120,.7);animation:fgbcoal 1.6s ease-in-out infinite;}
+      #rk-rider .fgb:hover{filter:brightness(1.2);transform:scale(1.05);}
+      @keyframes fgbcoal{0%,100%{box-shadow:0 0 14px 4px rgba(255,120,20,.9),0 0 36px 12px rgba(255,70,0,.55),inset 0 0 12px rgba(255,220,120,.7);filter:brightness(1)}
+        50%{box-shadow:0 0 22px 8px rgba(255,160,40,1),0 0 60px 20px rgba(255,90,0,.75),inset 0 0 18px rgba(255,240,160,.9);filter:brightness(1.25)}}
       #rk-rider .note{font-size:13px;color:var(--parch-dim,#c9b48a);opacity:.8;max-width:120px;text-align:center;}`;
     document.head.appendChild(css);
     const rl=document.getElementById('reck-label'), bs=document.getElementById('boss'); if(rl&&bs) bs.appendChild(rl);
@@ -5419,7 +5425,8 @@ addEventListener('resize',()=>{
       box.innerHTML=`<div class="tag">${f.glyph} ${f.name.toUpperCase()} RIDES</div>
         <div class="rc${R.used?' gone':''}${ready?' ready':''}${locked?' locked':''}">${img?`<img src="${img}" alt="${c.name}">`:`<div class="em">${c.art}</div>`}
           <span class="b bc">${costLabel(c.cost)}</span><span class="b bp">${c.pow}</span><span class="b bh">♥${c.hp}</span></div>
-        <div class="note">${R.used?'has ridden this round':'play when you choose'}</div>`;
+        <div class="note">${R.used?'has ridden this round':'play when you choose'}</div>`+(window.__forgeReady&&window.__forgeReady()?'<button class="fgb">⚒ The Forge</button>':'');
+      { const fb=box.querySelector('.fgb'); if(fb) fb.onclick=()=>{ try{ hideTip(); }catch(_){} window.__openForge&&window.__openForge(); }; }
       const rc=box.querySelector('.rc');
       { const h=Math.round(Math.max(200,Math.min(innerHeight*.365,440))); rc.style.height=h+'px'; rc.style.width=Math.round(h*.71)+'px'; }   /* big: about a third of the screen's height */   /* same size as a card in hand */
       rc.onclick=()=>{ if(R.used) return; handClick(c); };
@@ -5972,8 +5979,14 @@ addEventListener('resize',()=>{
     /* the oak door: the key opens the way to the Forge */
     for(const m of doorHot){ const u=m.userData; m.userData={...u, body:()=>{
       if(BR.unlocked){ setTimeout(()=>window.__openForge&&window.__openForge(),60); return null; }
-      if(PACK.has('forgekey')){ BR.unlocked=true; bsave(); setTimeout(()=>window.__openForge&&window.__openForge(),2600); return 'The iron key fits. The lock grinds over, and heat breathes through the gap: the Forge lies beyond.'; }
+      if(PACK.has('forgekey')){ dlg.innerHTML='<h4>The oak door</h4><div style="margin:0 0 12px;line-height:1.5">Use the iron key to unlock the Forge?</div><button class="rk-act" id="fk-y">Use the key</button> <button class="rk-slot" id="fk-n" style="display:inline-block;width:auto;margin:6px 0 0 0">Not now</button>';
+        dlg.querySelector('#fk-n').onclick=()=>dlg.classList.remove('on');
+        dlg.querySelector('#fk-y').onclick=()=>{ dlg.classList.remove('on'); BR.unlocked=true; bsave(); PACK.remove('forgekey'); try{ renderAll(); }catch(_){}
+          note('The Forge','The iron key fits. The lock grinds over and the key stays in it, snapped at the bow. Heat breathes through the gap: the Forge lies beyond.'); setTimeout(()=>window.__openForge&&window.__openForge(),2600); };
+        dlg.classList.add('on'); return null; }
       return 'Heavy oak, iron-strapped, and locked. Through the little barred window: only dark.'; }}; }
+    window.__door=()=>doorHot[0]&&doorHot[0].userData.body();   /* test hook */
+    window.__forgeReady=()=>{ try{ return !!BR.unlocked&&!!state&&!!state.ladder&&!state.over&&!(state.forgeUsed||{})[window.__bossKey||'']; }catch(_){ return false; } };
     /* from the second round of the Assessor's match you always start each hand with a Gilt Herald, so the hint can come */
     const ensureHerald=()=>{ try{ if(!hintOn()||BR.done||!state||!state.ladder||!state.hand) return;
       if(state.hand.some(c=>c.key==='herald')) return;
@@ -6423,7 +6436,7 @@ addEventListener('resize',()=>{
       #rk-forge button{font-family:inherit;font-size:16px;padding:8px 16px;margin-right:8px;border-radius:6px;cursor:pointer;border:1px solid #c98a3a;background:#3a230f;color:#ffd9a0}
       #rk-forge button:disabled{opacity:.4;cursor:default} #rk-forge .fg>button{align-self:flex-start} #rk-forge .btns{display:flex;gap:10px} #rk-forge button{font-size:18px;padding:10px 22px}`; document.head.appendChild(st);
     const root=document.createElement('div'); root.id='rk-forge'; root.innerHTML='<div class="fg"></div>'; document.body.appendChild(root);
-    const box=root.querySelector('.fg'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; try{ hidePreview(); }catch(_){} }; root.onclick=e=>{ if(e.target===root) close(); };
+    const box=root.querySelector('.fg'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; try{ hidePreview(); }catch(_){} try{ renderAll(); }catch(_){} }; root.onclick=e=>{ if(e.target===root) close(); };
     const sigTxt=k=>{ const c=CARDS[k]; return [c.sig,c.sig2].filter(Boolean).map(s=>SIG[s]?SIG[s].i+' '+SIG[s].n:'').join(' + ')||'no ability'; };
     let openedAt=0; const fresh=()=>performance.now()-openedAt<450;   /* the click that opened the Forge must not also pick a card */
     window.__openForge=function(){ openedAt=performance.now();
@@ -6441,7 +6454,9 @@ addEventListener('resize',()=>{
           d.onclick=()=>{ if(fresh()) return; const n=pick.filter(x=>x===k).length; if(pick.length<2&&n<counts[k]) pick.push(k); else if(n) pick.splice(pick.indexOf(k),1); draw(); };
           __magnify(d,k); g.appendChild(d); });
         const res=box.querySelector('.res'), go=box.querySelector('#fg-go');
-        if(pick.length===2){ const key=define(pick[0],pick[1]), c=CARDS[key]; res.innerHTML='<b>'+c.name+'</b>: '+c.pow+'⚔ / '+c.hp+'♥, '+sigTxt(key)+'. Costs '+costLabel(c.cost)+'. It replaces both cards in your deck for good, in every run to come.'; go.disabled=false;
+        const done2=pick.length===2&&FORGED.some(z=>(z.a===pick[0]&&z.b===pick[1])||(z.a===pick[1]&&z.b===pick[0]));
+        if(done2){ res.innerHTML='<b>'+CARDS[pick[0]].name+'</b> and <b>'+CARDS[pick[1]].name+'</b> have already been forged together. The fire will not take the same pair twice.'; go.disabled=true; }
+        else if(pick.length===2){ const key=define(pick[0],pick[1]), c=CARDS[key]; res.innerHTML='<b>'+c.name+'</b>: '+c.pow+'⚔ / '+c.hp+'♥, '+sigTxt(key)+'. Costs '+costLabel(c.cost)+'. It replaces both cards in your deck for good, in every run to come.'; go.disabled=false;
           go.onclick=()=>{ if(fresh()) return; FORGED.push({a:pick[0],b:pick[1],key}); fsave(); if(window.__deckFuse) window.__deckFuse(state.faction,pick[0],pick[1],key); state.forgeUsed[bk]=true;
             for(const k of pick){ let i=state.deck.findIndex(x=>x.key===k); if(i>=0){ state.deck.splice(i,1); continue; } i=state.hand.findIndex(x=>x.key===k); if(i>=0) state.hand.splice(i,1); }
             const nc=makeCard(key); if(state.hand.length<10) state.hand.push(nc); else state.deck.push(nc);
@@ -6545,6 +6560,33 @@ addEventListener('resize',()=>{
     addEventListener('reckoning:boss',e=>{ const k=e.detail&&e.detail.key; if(!MEET[k]) return; if(demo?demo===k:!met[k]) speak(k); });
     if(demo&&window.__bossKey===demo) speak(demo);
   }
+  /* ---- the bell is the only way to end your turn: no button. It glows on your turn, brighter once you have played,
+         shows "Ring the bell" on hover, and Enter rings it too ---- */
+  { const st=document.createElement('style'); st.textContent=`#horn-btn{display:none!important}
+      #rk-belltip{position:fixed;z-index:30;pointer-events:none;display:none;padding:5px 12px;border-radius:14px;background:rgba(10,6,3,.85);border:1px solid rgba(255,200,130,.4);color:#ffe0aa;font:16px "IM Fell English",Georgia,serif;letter-spacing:.04em}`;
+    document.head.appendChild(st);
+    const tip=document.createElement('div'); tip.id='rk-belltip'; tip.textContent='Ring the bell (Enter)'; document.body.appendChild(tip);
+    const horn=()=>document.getElementById('horn-btn');
+    const canRing=()=>{ const b=horn(); return node==='table'&&state&&state.turn==='player'&&!state.over&&b&&!b.disabled; };
+    let played=false, lastTurn=-1;
+    const op=window.onPlay; window.onPlay=function(c,side){ const r=op.apply(this,arguments); if(side==='player') played=true; return r; };
+    const mats=[]; bell.traverse(o=>{ if(o.isMesh&&o.material&&o.material.metalness>.5&&!mats.includes(o.material)) mats.push(o.material); });   /* the bronze, not the wooden handle */
+    mats.forEach(m=>{ m.emissive=new THREE.Color(0xffa040); m.emissiveIntensity=0; });
+    const bl=new THREE.PointLight(0xffb060,0,1.1,1.6); bl.position.set(0,.16,.06); bell.add(bl);
+    fireTicks.push((dt,t)=>{ if(state&&state.turnNum!==lastTurn){ lastTurn=state.turnNum; played=false; }
+      const on=canRing(); const k=on?(played?.55+.35*Math.sin(t*3.2):.18+.1*Math.sin(t*1.6)):0;
+      mats.forEach(m=>{ m.emissiveIntensity+= (Math.max(0,k)-m.emissiveIntensity)*.15; }); bl.intensity+=(Math.max(0,k)*2.2-bl.intensity)*.15;
+      const over=hover&&hover.userData&&hover.userData.title==='The bell'&&node==='table';
+      tip.style.display=over?'block':'none';
+      if(over){ tip.style.left=((mx+.5)*innerWidth+16)+'px'; tip.style.top=((my+.5)*innerHeight-34)+'px'; } });
+    addEventListener('keydown',e=>{ if(e.key!=='Enter'||e.repeat||(e.target.closest&&e.target.closest('input,textarea,button'))) return;
+      if(document.getElementById('overlay').classList.contains('show')||window.__speaking||['rk-forge','rk-deck','rk-pile'].some(i=>{ const x=document.getElementById(i); return x&&x.classList.contains('on'); })) return;
+      if(canRing()){ e.preventDefault(); horn().click(); } });
+    /* where the bell sits on screen, for the tutorial's spotlight */
+    window.__bell=bell;
+    window.__bellRect=()=>{ const v=new THREE.Vector3(); bell.getWorldPosition(v); v.y+=.11; v.project(camera); const x=(v.x+1)/2*innerWidth, y=(1-v.y)/2*innerHeight, w=96, h=116;
+      return {left:x-w/2,top:y-h/2,width:w,height:h,right:x+w/2,bottom:y+h/2,x:x-w/2,y:y-h/2}; };
+  }
   /* ---- the first-match tutorial: a spotlight on what to click, a few plain words, and it waits until you have done it.
          Runs once, on your very first match. Replay with ?tutorial=1 ---- */
   { const TK='reckoning_tutorial_done'; let done=false; try{ done=localStorage.getItem(TK)==='1'; }catch(e){}
@@ -6575,7 +6617,7 @@ addEventListener('resize',()=>{
       {t:()=>'The price is paid. <b>Click a lane</b> to place the '+CARDS[blood].name+'.', el:()=>{ const l=freeLane(); return l>=0?$('#player-row .slot[data-lane="'+l+'"]'):null; }, wait:()=>state.playerBoard.some(c=>c&&c.key===blood)},
       {t:'Each sacrifice and each fallen card leaves <b>marrow</b>, and each kill earns <b>coin</b>. Some cards cost those instead of blood.', el:()=>$('#resources'), next:true},
       {t:'An attack that meets no defender strikes the Holy directly and earns <b>souls</b>. The <b>hourglass</b> keeps the tally: the first to 35 souls takes the round.', el:()=>$('#reckoning'), next:true},
-      {t:'When you have played what you want, <b>ring the bell</b>. Your cards attack, then the Holy answer.', el:()=>$('#horn-btn'), wait:()=>state.turn==='combat'},
+      {t:'When you have played what you want, <b>ring the bell</b> on the table (or press Enter). Your cards attack, then the Holy answer.', el:()=>({getBoundingClientRect:()=>window.__bellRect?window.__bellRect():document.getElementById('horn-btn').getBoundingClientRect()}), wait:()=>state.turn==='combat'},
       {t:'Watch the exchange…', el:()=>null, wait:()=>state.turn==='player'},
       {t:'This is your <b>Rider</b>. A powerful card you can play once each round, whenever you choose.', el:()=>$('#rk-rider .rc')||$('#rk-rider'), next:true},
       {t:'Click the <b>deck</b> count at any time to see which cards are still to come.', el:()=>$('#deck-count'), next:true},
@@ -6601,7 +6643,7 @@ addEventListener('resize',()=>{
         st.push({t:'Choose a card of your own to <b>sacrifice</b>. Its blood goes into your pool.', el:()=>{ let b=-1,bv=1e9; for(let k=0;k<4;k++){ const v=state.playerBoard[k]; if(v&&!gripped(k)&&val(v)<bv){ bv=val(v); b=k; } } return b>=0?$('#player-row .slot[data-lane="'+b+'"]'):null; },
           wait:()=>state.readyCard===c, skipIf:()=>state.readyCard===c||!(state.awaitingSac>0)});
         st.push({t:()=>P.block?'Put it in <b>this lane</b>, in front of the enemy hitting hardest. A card in the way takes the blow instead of you.':'Put it in <b>this lane</b>. Nothing faces it, so its attack goes straight to the Holy for souls.', el:()=>state.playerBoard[P.lane]?$('#player-row .slot[data-lane="'+(state.playerBoard.indexOf(null)>=0?state.playerBoard.indexOf(null):P.lane)+'"]'):laneEl(), wait:()=>state.playerBoard.includes(c)}); }
-      st.push({t:'Play anything else you like, then <b>ring the bell</b>.', el:()=>$('#horn-btn'), wait:()=>state.turn==='combat'});
+      st.push({t:'Play anything else you like, then <b>ring the bell</b> (or press Enter).', el:()=>({getBoundingClientRect:()=>window.__bellRect?window.__bellRect():document.getElementById('horn-btn').getBoundingClientRect()}), wait:()=>state.turn==='combat'});
       return st; };
     const planTurn=n=>{
       if(n===2) return playSteps({t:'A new turn. You drew a card from your deck, and a free body: you can hold one Peasant and one Cutpurse at a time.',el:()=>$('#hand'),next:true});
