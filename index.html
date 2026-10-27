@@ -962,7 +962,7 @@ const CARDS={
   bonecoll:{name:'Bone Collector',art:'🦴',pow:2,hp:3,cost:{type:'coin',n:2},faction:'death',sig:'ossuary'},
   ferryman:{name:'The Ferryman',art:'⛵',pow:3,hp:4,cost:{type:'marrow',n:2},faction:'death',sig:'toll'},
   warpig:{name:'The War Pig',art:'🐗',atk:'fist',pow:5,hp:7,cost:{type:'blood',n:2},faction:'war',sig:'rally'},
-  boss_conquest:{name:'Conquest',art:'👑',pow:4,hp:7,cost:{type:'marrow',n:3},faction:'conquest',sig:'coin',boss:true},
+  boss_conquest:{name:'Conquest',art:'👑',pow:4,hp:7,cost:{type:'marrow',n:2},faction:'conquest',sig:'coin',boss:true},
   boss_famine:{name:'Famine',art:'⚖️',atk:'poison',pow:4,hp:8,cost:{type:'marrow',n:3},faction:'famine',sig:'wither',boss:true},
   death_boss:{name:'Death',art:'☠️',pow:4,hp:6,cost:{type:'marrow',n:3},faction:'death',sig:'raise',boss:true},
   // ---- THE HOLY — generic defensive spine (the Wall). Shared pool any Holy faction can field; also the BOSSES fallback ladder. ----
@@ -1497,7 +1497,7 @@ function dealFreshHand(fused){
   const deck=(fused?FACTION_ORDER.flatMap(f=>factionDeck(f)):factionDeck(state.faction)).map(makeCard); shuffle(deck);
   state.hand=[deck.pop(),deck.pop(),deck.pop(),makeCard('peasant')].filter(Boolean); // later hands: only 1 peasant
   state.deck=deck;state.blood=0;state.coin=2;
-  state.graveyard=[];state.pendingResurrect=false; // each fight is its own deck cycle — the dead don't carry over
+  state.graveyard=[];state._riseQ=[];state.pendingResurrect=false; // each fight is its own deck cycle — the dead don't carry over
   applyBoons();
 }
 // Boons earned on the road persist for the rest of the run: their creature is shuffled
@@ -1730,7 +1730,7 @@ function onSlotClick(lane,isEnemy){
     if(v&&state.enemyBoard[lane]&&hasSig(state.enemyBoard[lane],'grip')){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
     if(v){
       // The sacrifice falls at once and its blood goes into the pool (bottom left), where it keeps until spent.
-      deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;state.graveyard.push(v.key);onAnyDeath();
+      deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;(v.risen||(state.graveyard.push(v.key),riseRoll(v)));onAnyDeath();
       state.blood=Math.min(4,(state.blood||0)+1);
       const c=state.pendingCard, need=c?c.cost.n:0;
       if(c&&state.blood>=need){state.awaitingSac=0;state.sacrifices=[];state.pendingCard=null;
@@ -1745,7 +1745,7 @@ function onSlotClick(lane,isEnemy){
   if(!isEnemy&&state.readyCard&&state.readyCard.cost.type==='blood'&&state.playerBoard[lane]){
     const v=state.playerBoard[lane];
     if(state.enemyBoard[lane]&&hasSig(state.enemyBoard[lane],'grip')){say('<b>The Gilded Hand</b> has hold of that one. It cannot be given up.',2400);return;}
-    deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;state.graveyard.push(v.key);onAnyDeath();
+    deathTriggers(v,'player',lane);animateDeath('player-row',lane);state.playerBoard[lane]=null;state.coin++;(v.risen||(state.graveyard.push(v.key),riseRoll(v)));onAnyDeath();
     state.blood=Math.min(4,(state.blood||0)+1);
     say(`The ${v.name}'s blood goes into the pool. <b>Click an empty lane</b> to place the ${state.readyCard.name}.`);renderAll();return;
   }
@@ -1757,7 +1757,7 @@ function onSlotClick(lane,isEnemy){
 function finalizeBloodPaid(){
   const c=state.pendingCard;
   // sacrifices here are PAYMENT, not income — they must not grant marrow (that would refund the cost)
-  state.sacrifices.forEach(uid=>{const idx=state.playerBoard.findIndex(x=>x&&x.uid===uid);if(idx>=0){const fallen=state.playerBoard[idx];deathTriggers(fallen,'player',idx);animateDeath('player-row',idx);state.playerBoard[idx]=null;state.coin++;state.graveyard.push(fallen.key);onAnyDeath();}});
+  state.sacrifices.forEach(uid=>{const idx=state.playerBoard.findIndex(x=>x&&x.uid===uid);if(idx>=0){const fallen=state.playerBoard[idx];deathTriggers(fallen,'player',idx);animateDeath('player-row',idx);state.playerBoard[idx]=null;state.coin++;(fallen.risen||(state.graveyard.push(fallen.key),riseRoll(fallen)));onAnyDeath();}});
   state.awaitingSac=0;state.sacrifices=[];state.pendingCard=null;
   setTimeout(()=>{ state.readyCard=c; say(`The price is paid — <b>click an empty lane</b> to place the ${c.name}.`); renderAll(); },250);
 }
@@ -1848,7 +1848,11 @@ async function resolveTurn(){
   }catch(err){console.error('turn error:',err);say('<b>A hush falls over the table.</b> (recovered — your move)',3000);}
   finally{if(!state.over){state.turn='player';drawStep();state.conscript=CONSCRIPT_PER;state.turnNum=(state.turnNum||1)+1;updateControls();renderAll();clearTimeout(hangGuard);}}
 }
+// Death's fallen do not always stay down: one in three of your own dead returns to your hand at your next draw, risen (−1 power) and only once.
+function makeRisen(key){const r=makeCard(key);r.pow=Math.max(0,r.pow-1);r.risen=true;r.name='Risen '+r.name.replace(/^The /,'');return r;}
+function riseRoll(c){if(state.faction!=='death'||!c||!CARDS[c.key]||['peasant','cutpurse'].includes(c.key)||CARDS[c.key].boss)return;if(Math.random()<1/3){const i=state.graveyard.lastIndexOf(c.key);if(i>=0)state.graveyard.splice(i,1);(state._riseQ=state._riseQ||[]).push(c.key);}}
 function drawStep(){
+  while(state._riseQ&&state._riseQ.length&&state.hand.length<10){const r=makeRisen(state._riseQ.shift());state.hand.push(r);say(`<b>The ${r.name.replace(/^Risen /,'')} will not stay down.</b> It rises again.`,2800);}
   // The free body each turn is usually a peasant, sometimes a cutpurse. (The Cutpurse used to
   // come only from a rabble pile on a draw-choice screen that was never called; that dead
   // screen has been removed and the Cutpurse folded into the normal draw.)
@@ -1856,6 +1860,10 @@ function drawStep(){
   if(state.hand.length<10){const has=k=>state.hand.some(c=>c.key===k);let k=Math.random()<0.25?'cutpurse':'peasant';if(has(k))k=(k==='peasant'?'cutpurse':'peasant');if(!has(k))state.hand.push(makeCard(k));}
   if(state.hand.length>=10)return;
   if(state.deck.length){state.hand.push(state.deck.pop());}
+  // The dead rise (Death only): with the deck spent, one of your own fallen this fight returns to hand, weakened. The risen do not rise twice.
+  else if(state.faction==='death'){const pool=state.graveyard.map((k,i)=>i).filter(i=>!['peasant','cutpurse'].includes(state.graveyard[i])&&CARDS[state.graveyard[i]]);
+    if(pool.length){const i=pool[Math.floor(Math.random()*pool.length)];const key=state.graveyard.splice(i,1)[0];const r=makeRisen(key);state.hand.push(r);
+      if(!state._roseSaid){state._roseSaid=true;say('<b>Your deck is spent.</b> The dead rise to take its place — weaker, and only once.',3600);}}}
 }
 async function combat(side){
   const board=side==='player'?state.playerBoard:state.enemyBoard;
@@ -1936,7 +1944,7 @@ function cleanup(){
     const stilled=state.playerBoard.some(c=>c&&hasSig(c,'still'));
     board.forEach((c,i)=>{if(c&&c.curHp<=0){
       countDeath(side,c);                        // tally toward deathsThisTurn (Still-capped, Carrion-doubled)
-      deathTriggers(c,side,i);animateDeath(rowId,i);board[i]=null;if(side==='enemy'){state.coin++;state.marrowE++;}else{state.marrowP++;state.graveyard.push(c.key);}onAnyDeath(side,i);}});
+      deathTriggers(c,side,i);animateDeath(rowId,i);board[i]=null;if(side==='enemy'){state.coin++;state.marrowE++;}else{state.marrowP++;(c.risen||(state.graveyard.push(c.key),riseRoll(c)));}onAnyDeath(side,i);}});
     void stilled;});
   renderResources();
 }
@@ -2203,7 +2211,7 @@ function nextRound(){
   state.readyCard=null;state.dragCard=null;
   state.enemyReserve=ENEMY_RESERVE;state._reserveSaid=false;
   state._onceUsed={};                       // each round the elites get one appearance again
-  state.graveyard=[];state.pendingResurrect=false;
+  state.graveyard=[];state._riseQ=[];state.pendingResurrect=false;
   dealFreshHand(state.boss&&state.boss.key==='holy_lustboss'); // rebuilds the deck, re-issues the relics for the new round
   forgetDealt();
   seatBoss();                 // the wall stands again, face up
@@ -5434,7 +5442,8 @@ addEventListener('resize',()=>{
       box.innerHTML=`<div class="tag">${f.glyph} ${f.name.toUpperCase()} RIDES</div>
         <div class="rc${R.used?' gone':''}${ready?' ready':''}${locked?' locked':''}">${img?`<img src="${img}" alt="${c.name}">`:`<div class="em">${c.art}</div>`}
           <span class="b bc">${costLabel(c.cost)}</span><span class="b bp">${c.pow}</span><span class="b bh">♥${c.hp}</span></div>
-        <div class="note">${R.used?'has ridden this round':'play when you choose'}</div>`+(window.__forgeReady&&window.__forgeReady()?'<button class="fgb">⚒ The Forge</button>':'');
+        <div class="note">${R.used?'has ridden this round':'play when you choose'}</div>`+(window.__forgeReady&&window.__forgeReady()?'<button class="fgb">⚒ The Forge</button>':'')+(window.__shrineReady&&window.__shrineReady()?'<button class="shb">🕯 The Shrine</button>':'');
+      { const sb=box.querySelector('.shb'); if(sb) sb.onclick=()=>{ try{ hideTip(); }catch(_){} window.__openShrine&&window.__openShrine(); }; }
       { const fb=box.querySelector('.fgb'); if(fb) fb.onclick=()=>{ try{ hideTip(); }catch(_){} window.__openForge&&window.__openForge(); }; }
       const rc=box.querySelector('.rc');
       { const h=Math.round(Math.max(200,Math.min(innerHeight*.365,440))); rc.style.height=h+'px'; rc.style.width=Math.round(h*.71)+'px'; }   /* big: about a third of the screen's height */   /* same size as a card in hand */
@@ -5450,6 +5459,15 @@ addEventListener('resize',()=>{
     window.__rider=R;
     const css2=document.createElement('style'); css2.textContent='body:has(#overlay.show) #rk-rider, body.cabin-away #rk-rider{display:none!important;}'; document.head.appendChild(css2);
   }
+  /* ---- War's tables are tougher: every Sin card that takes the field against War gets extra health (tune WAR_HP) ---- */
+  { const WAR_HP=2; window.__warHp=WAR_HP;
+    if(typeof makeCard==='function'){ const mk=window.makeCard; window.makeCard=function(key){ const c=mk.apply(this,arguments);
+      try{ if((window.__warHp||0)>0&&state&&state.faction==='war'&&c&&c.faction==='holy'){ c.hp+=window.__warHp; c.curHp+=window.__warHp; } }catch(_){} return c; }; } }
+  /* ---- risen cards (Death's dead, drawn back once the deck is spent) look the part ---- */
+  { const st=document.createElement('style'); st.textContent=`.rk-risen{filter:grayscale(.75) brightness(.8) hue-rotate(160deg) saturate(1.6);box-shadow:0 0 14px rgba(120,200,255,.45)!important;} .rk-risen::before{content:'☠ risen';position:absolute;top:-2px;left:50%;transform:translateX(-50%);z-index:5;font:bold 12px Georgia,serif;letter-spacing:.08em;color:#cfe8ff;background:rgba(10,20,30,.85);padding:1px 8px;border-radius:0 0 6px 6px;filter:none}`; document.head.appendChild(st);
+    const mark=()=>{ try{ document.querySelectorAll('#hand .hcard').forEach((e,i)=>e.classList.toggle('rk-risen',!!(state.hand[i]&&state.hand[i].risen)));
+      document.querySelectorAll('#player-row .slot').forEach(sl=>{ const l=+sl.dataset.lane, c=state.playerBoard[l], e=sl.querySelector('.card'); if(e) e.classList.toggle('rk-risen',!!(c&&c.risen)); }); }catch(_){} };
+    if(typeof renderAll==='function'){ const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a); mark(); return r; }; } }
   /* ---- a crowded hand fans its cards over one another instead of scrolling off the screen ---- */
   { const st=document.createElement('style'); st.textContent=`#hand.fan .hcard{transition:transform .15s ease;} #hand.fan .hcard:hover{z-index:40!important;transform:translateY(-14px) scale(1.06);} #hand.fan{overflow-x:hidden!important;}`; document.head.appendChild(st);
     const fan=()=>{ const h=document.getElementById('hand'); if(!h) return; const cs=[...h.querySelectorAll('.hcard')]; if(!cs.length){ h.classList.remove('fan'); return; }
@@ -5997,12 +6015,15 @@ addEventListener('resize',()=>{
     /* the oak door: the key opens the way to the Forge */
     for(const m of doorHot){ const u=m.userData; m.userData={...u, body:()=>{
       if(BR.unlocked){ setTimeout(()=>window.__openForge&&window.__openForge(),60); return null; }
-      if(PACK.has('forgekey')){ dlg.innerHTML='<h4>The oak door</h4><div style="margin:0 0 12px;line-height:1.5">Use the iron key to unlock the Forge?</div><button class="rk-act" id="fk-y">Use the key</button> <button class="rk-slot" id="fk-n" style="display:inline-block;width:auto;margin:6px 0 0 0">Not now</button>';
-        dlg.querySelector('#fk-n').onclick=()=>dlg.classList.remove('on');
-        dlg.querySelector('#fk-y').onclick=()=>{ dlg.classList.remove('on'); BR.unlocked=true; bsave(); PACK.remove('forgekey'); try{ renderAll(); }catch(_){}
-          note('The Forge','The iron key fits. The lock grinds over and the key stays in it, snapped at the bow. Heat breathes through the gap: the Forge lies beyond.'); setTimeout(()=>window.__openForge&&window.__openForge(),2600); };
-        dlg.classList.add('on'); return null; }
-      return 'Heavy oak, iron-strapped, and locked. Through the little barred window: only dark.'; }}; }
+      return 'Heavy oak, iron-strapped, and barred. Something warm breathes under it. Win a seat at the table and it may open for you.'; }}; }
+    /* the Forge opens itself after your first boss win: your Rider tells you, in the creepy way */
+    { const LINES=['Do you feel that heat at your back?','Behind the oak door, the Forge is lit. Lay two of your cards on its anvil and they will be beaten into one.','Once for every foe at this table. What you make there, you keep, whichever of us rides.'];
+      const busy=()=>!state||state.turn!=='player'||document.getElementById('overlay').classList.contains('show')||['rk-deck','rk-forge','rk-pile'].some(i=>{ const e=document.getElementById(i); return e&&e.classList.contains('on'); })||document.getElementById('rk-tut-box')||window.__speaking;
+      const tell=()=>{ const go=()=>{ if(busy()){ setTimeout(go,700); return; } const el=document.querySelector('#rk-rider .rc'); if(!el){ setTimeout(go,700); return; }
+          __cardSpeak(el,0,(FACTIONS[state.faction]||{}).name||'Your Rider',LINES).then(()=>{ try{ renderAll(); const b=document.querySelector('#rk-rider .fgb'); if(b) b.animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:700,iterations:3}); }catch(_){} }); };
+        setTimeout(go,2400); };
+      addEventListener('reckoning:boss',e=>{ if(BR.unlocked||!(e.detail&&e.detail.index>0)) return; BR.unlocked=true; bsave(); try{ renderAll(); }catch(_){} tell(); });
+      if(new URLSearchParams(location.search).get('demo')==='forge'){ const w=()=>{ if(state&&state.faction&&document.querySelector('#rk-rider .rc')){ BR.unlocked=true; try{ renderAll(); }catch(_){} tell(); } else setTimeout(w,800); }; setTimeout(w,1500); } }
     window.__door=()=>doorHot[0]&&doorHot[0].userData.body();   /* test hook */
     window.__forgeReady=()=>{ try{ return !!BR.unlocked&&!!state&&!!state.ladder&&!state.over&&!(state.forgeUsed||{})[window.__bossKey||'']; }catch(_){ return false; } };
     /* from the second round of the Assessor's match you always start each hand with a Gilt Herald, so the hint can come */
@@ -6431,8 +6452,65 @@ addEventListener('resize',()=>{
       holy_inquisitor:[{to:'foe:spy',t:'Confess.',re:'To what?',},{to:'foe:*',t:'Everybody talks, {n}. The question is how long you scream first.'}]
     };
     for(const k in Q2) (Q[k]=Q[k]||[]).push(...Q2[k]);
+    /* creepier lines: some of them know you are there */
+    const Q3={
+      peasant:[{t:'I dreamt of this table before I was ever drawn. You were sitting exactly where you are now.'},
+               {to:'ally:*',t:'{n}, do you remember being painted? I remember the brush. It was cold.'}],
+      squire:[{t:'There’s someone standing behind you. No — don’t look. It’s worse if you look.'}],
+      bowman:[{t:'I can see your face from here. Not the Rider’s. Yours.'}],
+      herald:[{t:'Hear ye: one more seat has been laid at this table. Nobody knows for whom.'}],
+      shieldbear:[{t:'My shield has your fingerprints on it. I don’t remember you holding it.'}],
+      knight:[{t:'I have sat at this table a hundred times. The wood remembers every one of us.'}],
+      spy:[{t:'I counted the people in this tavern. There was one more than I could see.'},
+           {to:'foe:*',t:'You blink when the candle gutters, {n}. Your eyes don’t.'}],
+      plunderer:[{t:'I took a ring off a dead man once. He still asks for it. Every night, very politely.'}],
+      cantor:[{t:'The hymn has a verse no one is meant to sing. I can hear someone humming it now.'}],
+      redrider:[{t:'The blade drinks. Sometimes, when it is quiet, it thanks me.'}],
+      berserk:[{t:'Something else wears my face when I scream. I let it. It’s better at this.'}],
+      warhound:[{t:'*stops wagging, and stares past you at the door*'}],
+      standard:[{t:'This banner is stitched from the cloaks of every army that lost. It’s getting heavy.'}],
+      executioner:[{t:'Every head I took, I heard its last word. I keep them in a box. They still argue.'}],
+      blkrider:[{t:'Everything is weighed in the end. I have already weighed you. Don’t ask.'}],
+      scavenger:[{t:'I found a card in the gutter once with your face on it. I kept it. Want to see?'}],
+      ratking:[{t:'We are many tails and one hunger. We heard you breathing before you came in.'}],
+      starve:[{t:'You haven’t eaten since you sat down. Neither have I. Neither has anyone here, ever.'}],
+      hoarder:[{t:'I keep everything. Teeth. Names. You’ll be in a jar soon. A nice one.'}],
+      palerdr:[{t:'I know when you will stop playing. Not the day. The minute.'},
+               {to:'ally:*',t:'Don’t be frightened, {n}. You have done this before. You just don’t remember dying.'}],
+      gravedigger:[{t:'I dig the holes before the cards are dealt. There is always one more than we need.'},
+                   {to:'foe:*',t:'I measured you while you slept, {n}. You’re shorter than you think.'}],
+      banshee:[{t:'I only cry for the dying. Why am I crying now?'}],
+      plaguedoc:[{t:'The mask stays on. You do not want to see what I breathe in here.'}],
+      bonecoll:[{t:'I know every bone at this table by name. One of yours is lying to me.'}],
+      ferryman:[{t:'Your coin is already in my pocket. I don’t remember you paying.'}],
+      shade:[{t:'*whispers your real name, the one before the Rider*'}],
+      lantern:[{t:'When I go out, look at the corner by the door. Just once.'}],
+      gravekn:[{t:'I was buried with my sword. I don’t know who dug me up. I don’t think it was a person.'}],
+      holy_martyr:[{t:'They will build a church where I fall. They always do. There is a church under this table.'}],
+      holy_penitent:[{to:'foe:*',t:'Kneel with me, {n}. The floor is warm. Something under it is breathing.'}],
+      holy_beheld:[{t:'I see what you see. I see you seeing it. I see the one behind you.'}],
+      holy_veiled:[{t:'Lift my veil. Go on. There is a face under it. It may even be one of mine.'}],
+      holy_moth:[{t:'I have been to the other side of the flame. It is cold there, and full of moths.'}],
+      holy_bride:[{t:'The groom is coming. He has been coming for three hundred years.'}],
+      holy_widow:[{t:'My husbands are all still here. Under the floorboards, listening to the cards.'}],
+      holy_tapeworm:[{t:'It is so dark and warm in here. I can hear your heart from the inside.'}],
+      holy_glutton:[{t:'I ate a priest once. He’s still praying. I can feel it.'}],
+      holy_leech:[{t:'You taste of fear and old copper. Delicious. Again.'}],
+      holy_magpie:[{t:'*caws, then speaks in your voice:* “Please. Not again.”'}],
+      holy_wolf:[{t:'I have followed your smell through four winters. You never once looked back.'}],
+      holy_toad:[{t:'I was a prince. You were there. Don’t you remember what you did?'}],
+      holy_ossuary:[{t:'Every skull in my walls watched this game. They know how it ends. They are smiling.'}],
+      holy_inquisitor:[{t:'I already have your confession. You wrote it in your sleep.'}],
+      holy_zealot:[{t:'The fire does not hurt. That is the part they lie to you about. It does not hurt at all.'}],
+      holy_siren:[{t:'The ones who drown don’t struggle. They smile. They sound a lot like you.'}],
+      holy_duel:[{t:'I have killed you before. You always flinch on the third parry.'}]
+    };
+    for(const k in Q3) (Q[k]=Q[k]||[]).push(...Q3[k]);
     /* forged amalgamations: the two halves bicker. {a} and {b} are the halves; each line is spoken once ever, across all amalgamations */
     const AQ=[{to:'self',t:'Who’s steering?',re:'Not you, clearly.'},
+      {to:'self',t:'The anvil is still warm. I can feel it in the seam down the middle of me.',re:'Stop talking about the seam.'},
+      {to:'self',t:'At night I dream with two heads. One of them is screaming.',re:'That’s me. Sorry.'},
+      {to:'self',t:'Whoever forged us is still watching.',re:'They never leave the table.'},
       {to:'self',t:'{b}, your elbow is in my ribs.',re:'Those are MY ribs now, {a}.'},
       {to:'self',t:'I had plans, you know. A life.',re:'You had a Tuesday. Calm down.'},
       {to:'self',t:'Left foot. LEFT foot.',re:'That is the left foot. It’s just mine.'},
@@ -6501,6 +6579,79 @@ addEventListener('resize',()=>{
   window.__magnify=(el,k)=>{ el.onmouseenter=e=>{ try{ previewAnchor=el; showPreview(makeCard(k),false,false); positionPreview(e); }catch(_){} };
     el.onmousemove=e=>{ try{ positionPreview(e); }catch(_){} }; el.onmouseleave=()=>{ try{ hidePreview(); }catch(_){} }; };
   { const z=document.createElement('style'); z.textContent='#card-preview{z-index:200!important}'; document.head.appendChild(z); }
+  /* ---- the Shrine: once per seat at the table, bless one of your cards: +1 power or +2 health, for ever. A card takes at most two blessings ---- */
+  { const SK='reckoning_blessed', SV='reckoning_shrine_seen'; let BL={}; try{ BL=JSON.parse(localStorage.getItem(SK))||{}; }catch(e){}
+    const ssave=()=>{ try{ localStorage.setItem(SK,JSON.stringify(BL)); }catch(e){} };
+    let seen=false; try{ seen=localStorage.getItem(SV)==='1'; }catch(e){}
+    const MAXB=2, nB=k=>BL[k]?(BL[k].p||0)+(BL[k].h||0)/2:0;
+    /* blessings live on the card's definition, so every copy, every run and every fusion made from it carries them; tiers still read the unblessed card */
+    for(const k in BL){ const c=CARDS[k]; if(!c) continue; c._bP=BL[k].p||0; c._bH=BL[k].h||0; c.pow+=c._bP; c.hp+=c._bH; }
+    window.__blessed=BL;
+    /* the shrine itself: a squat stone altar under the crossbow, an idol with no face, three candles */
+    const g=new THREE.Group(); g.position.set(2.0,0,FRONT-.38); scene.add(g);
+    const stone=new THREE.MeshStandardMaterial({color:0x4a423a,roughness:.95}), dark=new THREE.MeshStandardMaterial({color:0x17110d,roughness:.7,metalness:.2}), wax=new THREE.MeshStandardMaterial({color:0xe8dcc0,roughness:.8});
+    const base=new THREE.Mesh(new THREE.BoxGeometry(.78,.82,.46),stone); base.position.y=.41; base.castShadow=base.receiveShadow=true; g.add(base);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(.9,.07,.54),stone); top.position.y=.855; top.receiveShadow=true; g.add(top);
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.06,.1,.32,10),dark); body.position.set(0,1.05,.02); g.add(body);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.07,14,10),dark); head.position.set(0,1.27,.02); g.add(head);
+    const bowl=new THREE.Mesh(new THREE.CylinderGeometry(.09,.05,.05,16),new THREE.MeshStandardMaterial({color:0x6b2a14,roughness:.4,metalness:.5})); bowl.position.set(0,.915,-.14); g.add(bowl);
+    const flames=[];
+    for(const [x,h] of [[-.3,.16],[-.2,.11],[.27,.19]]){ const cdl=new THREE.Mesh(new THREE.CylinderGeometry(.022,.025,h,10),wax); cdl.position.set(x,.89+h/2,0); g.add(cdl);
+      const fl=new THREE.Mesh(flame.geometry,flame.material); fl.scale.setScalar(.6); fl.position.set(x,.89+h+.068*.6,0); g.add(fl); holderFlames.push(fl); flames.push(fl); }
+    const sl=new THREE.PointLight(0xff9a50,0,2.4,1.6); sl.position.set(0,1.25,-.35); g.add(sl);
+    fireTicks.push((dt,t)=>{ const ready=window.__shrineReady&&window.__shrineReady(); sl.intensity=(ready?5.5:2.6)*(.85+.15*Math.sin(t*9.1)+.06*Math.sin(t*23));
+      flames.forEach(f=>f.scale.setScalar(ready?.75:.6)); });
+    NODES.shrine={pos:new THREE.Vector3(2.0,1.45,FRONT-1.75), yaw:Math.PI, pitch:-.32, label:'The shrine'};
+    /* the panel */
+    const st=document.createElement('style'); st.textContent=`#rk-shrine{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(6,4,3,.8);}
+      #rk-shrine.on{display:flex} #rk-shrine .sh{width:94vw;height:92vh;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;padding:24px 30px;border-radius:12px;background:radial-gradient(ellipse at 50% 0%,rgba(120,60,30,.35),transparent 60%),linear-gradient(#15100c,#0c0806);border:1px solid rgba(230,190,130,.4);box-shadow:0 0 40px rgba(255,170,90,.18),0 10px 40px #000;color:#f0e2c2;font-family:"IM Fell English",Georgia,serif}
+      #rk-shrine h3{margin:0 0 4px;font-size:34px;color:#f1d39a;letter-spacing:.04em} #rk-shrine .sub{font-style:italic;opacity:.85;margin-bottom:16px;font-size:18px;max-width:1100px}
+      #rk-shrine .grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;align-content:start;padding:4px}
+      #rk-shrine .fc{position:relative;padding:8px;border-radius:8px;border:1px solid rgba(240,200,140,.25);background:rgba(30,22,15,.85);cursor:pointer;text-align:center;font-size:15px}
+      #rk-shrine .fc img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;display:block;margin-bottom:5px} #rk-shrine .fc .em{font-size:42px;line-height:1.6}
+      #rk-shrine .fc.sel{border-color:#f1d39a;box-shadow:0 0 14px rgba(255,210,140,.8)} #rk-shrine .fc.full{opacity:.4;cursor:default}
+      #rk-shrine .fc .bl{position:absolute;top:4px;right:6px;z-index:2;font-size:13px;color:#f1d39a;background:rgba(0,0,0,.7);padding:1px 6px;border-radius:8px}
+      #rk-shrine .res{font-size:17px;margin:16px 0 10px;padding:12px 14px;border-radius:8px;background:rgba(40,28,18,.9);border:1px dashed rgba(240,200,140,.45);min-height:22px;line-height:1.5}
+      #rk-shrine button{font-family:inherit;font-size:18px;padding:10px 22px;margin-right:8px;border-radius:6px;cursor:pointer;border:1px solid #b99560;background:#2e2214;color:#f6e3bb}
+      #rk-shrine button:disabled{opacity:.4;cursor:default} #rk-shrine .btns{display:flex;gap:10px;flex-wrap:wrap}
+      #rk-rider .shb{margin-top:4px;font-family:'Pirata One',Georgia,serif;font-size:20px;letter-spacing:.06em;padding:7px 20px;border-radius:8px;cursor:pointer;color:#fff6dc;border:2px solid #f1d39a;
+        background:radial-gradient(ellipse at 50% 60%,#9a6a3a 0%,#4a2e18 60%,#1e120a 100%);box-shadow:0 0 12px 3px rgba(255,210,140,.6),0 0 30px 8px rgba(255,170,90,.3);animation:shbglow 2.2s ease-in-out infinite;}
+      #rk-rider .shb:hover{filter:brightness(1.2);transform:scale(1.05);}
+      @keyframes shbglow{0%,100%{box-shadow:0 0 12px 3px rgba(255,210,140,.6),0 0 30px 8px rgba(255,170,90,.3)}50%{box-shadow:0 0 18px 6px rgba(255,225,160,.85),0 0 46px 14px rgba(255,180,100,.45)}}`; document.head.appendChild(st);
+    const root=document.createElement('div'); root.id='rk-shrine'; root.innerHTML='<div class="sh"></div>'; document.body.appendChild(root);
+    const box=root.querySelector('.sh'); const close=()=>{ root.classList.remove('on'); window.__forgeOpen=false; try{ hidePreview(); }catch(_){} try{ renderAll(); }catch(_){} };
+    root.onclick=e=>{ if(e.target===root) close(); };
+    let openedAt=0; const fresh=()=>performance.now()-openedAt<450;
+    const ok=k=>{ const c=CARDS[k]; return c&&!c.boss&&!c.relic&&!c.amalgam&&c.faction!=='holy'&&!k.startsWith('boss_')&&k!=='peasant'&&k!=='cutpurse'; };
+    window.__shrineReady=()=>{ try{ return seen&&!!state&&!!state.ladder&&!state.over&&!(state.blessUsed||{})[window.__bossKey||'']; }catch(_){ return false; } };
+    const msg=(t)=>{ box.innerHTML='<h3>The shrine</h3><div class="sub">'+t+'</div><div class="btns"><button>Leave</button></div>'; box.querySelector('button').onclick=close; root.classList.add('on'); window.__forgeOpen=true; };
+    window.__openShrine=function(){ openedAt=performance.now(); if(!seen){ seen=true; try{ localStorage.setItem(SV,'1'); }catch(e){} }
+      const run=state&&state.ladder&&state.faction&&!state.over, bk=window.__bossKey||'';
+      if(!run) return msg('The candles gutter. There is no one at the table for them to watch over.');
+      state.blessUsed=state.blessUsed||{};
+      if(state.blessUsed[bk]) return msg('The candles have burned down to stubs. They will be fresh when you sit at the next table.');
+      const keys=[...new Set(window.factionDeck(state.faction))].filter(ok).sort((a,b)=>CARDS[a].name.localeCompare(CARDS[b].name)); let pick=null, how=null;
+      const draw=()=>{
+        box.innerHTML='<h3>The shrine</h3><div class="sub">Lay one of your cards before the faceless idol, and ask. It will answer once at every table, and what it gives is never taken back. A card may be blessed twice.</div><div class="grid"></div><div class="res"></div><div class="btns"><button id="sh-p" disabled>Ask for strength (+1 power)</button><button id="sh-h" disabled>Ask for endurance (+2 health)</button><button id="sh-x">Leave</button></div>';
+        const gr=box.querySelector('.grid');
+        keys.forEach(k=>{ const c=CARDS[k], n=nB(k), d=document.createElement('div'); d.className='fc'+(pick===k?' sel':'')+(n>=MAXB?' full':'');
+          d.innerHTML=(n?'<span class="bl">'+'🕯'.repeat(n)+'</span>':'')+(ART[k]?'<img src="'+ART[k]+'">':'<div class="em">'+c.art+'</div>')+'<b>'+c.name+'</b><div>'+c.pow+'⚔ '+c.hp+'♥</div>';
+          d.onclick=()=>{ if(fresh()||n>=MAXB) return; pick=pick===k?null:k; draw(); }; try{ __magnify(d,k); }catch(_){} gr.appendChild(d); });
+        const res=box.querySelector('.res'), bp=box.querySelector('#sh-p'), bh=box.querySelector('#sh-h');
+        if(pick){ const c=CARDS[pick]; res.innerHTML='<b>'+c.name+'</b> kneels before the idol. Strength would make it <b>'+(c.pow+1)+'⚔ '+c.hp+'♥</b>; endurance, <b>'+c.pow+'⚔ '+(c.hp+2)+'♥</b>. Every copy you ever carry will keep it.'; bp.disabled=bh.disabled=false; }
+        else res.textContent='Choose a card. Candles mark the ones already blessed.';
+        const give=(dp,dh)=>{ if(fresh()||!pick) return; const k=pick, c=CARDS[k];
+          BL[k]=BL[k]||{p:0,h:0}; BL[k].p+=dp; BL[k].h+=dh; ssave(); c._bP=(c._bP||0)+dp; c._bH=(c._bH||0)+dh; c.pow+=dp; c.hp+=dh;
+          const bump=x=>{ if(x&&x.key===k){ x.pow+=dp; x.hp+=dh; x.curHp=(x.curHp||0)+dh; } };
+          (state.hand||[]).forEach(bump); (state.playerBoard||[]).forEach(bump); (state.deck||[]).forEach(bump);
+          state.blessUsed[bk]=true;
+          box.innerHTML='<h3>The shrine</h3><div class="sub">The candle flames lean towards <b>'+c.name+'</b> and hold there, though there is no draught. When they straighten, it is '+(dp?'stronger':'harder to kill')+': <b>'+c.pow+'⚔ '+c.hp+'♥</b>, for ever.</div><div class="btns"><button>Leave</button></div>';
+          box.querySelector('button').onclick=close; };
+        bp.onclick=()=>give(1,0); bh.onclick=()=>give(0,2); box.querySelector('#sh-x').onclick=close; };
+      draw(); root.classList.add('on'); window.__forgeOpen=true; };
+    for(const m of [base,top,body,head,bowl]) hotspot(m,{go:'shrine',title:'A shrine',body:()=>{ setTimeout(()=>window.__openShrine(),60); return null; }});
+    window.__shrine=g;
+  }
   /* ---- the Forge: once per seat at the table, fuse two of your cards into one amalgamation for the rest of the run ---- */
   { const BAN=['warpig','berserk','redrider'];
     const ok=k=>{ const c=CARDS[k]; return c&&!c.boss&&!c.relic&&!c.amalgam&&c.faction!=='holy'&&!BAN.includes(k)&&!k.startsWith('boss_')&&k!=='death_boss'; };
@@ -6837,8 +6988,9 @@ addEventListener('resize',()=>{
     for(const f in DECKS){ const seen=new Set(); if(Array.isArray(DECKS[f])) DECKS[f]=DECKS[f].filter(k=>!String(k).startsWith('amal_')||(!seen.has(k)&&seen.add(k))); }   /* older saves: only one copy of a forged card */
     const tierOf=k=>{ const c=CARDS[k]; if(!c) return 1; if(c.tier) return c.tier; if(c.amalgam&&c.parts) return Math.max(...c.parts.map(tierOf));
       const t=c.cost&&c.cost.type, n=(c.cost&&c.cost.n)||0;
-      if((t==='marrow'&&n>=2&&c.pow>=3)||(t==='blood'&&n>=2)||(t==='coin'&&n>=3)||(t==='marrow'&&n>=3)) return 3;
-      if((t==='marrow'&&n===2)||(t==='coin'&&n===2)||(t==='blood'&&c.pow+c.hp>=5)||((t==='free'||!t)&&c.pow+c.hp>=5)) return 2; return 1; };
+      const P=c.pow-(c._bP||0), Hh=c.hp-(c._bH||0);   /* blessings from the shrine don't raise a card's price */
+      if((t==='marrow'&&n>=2&&P>=3)||(t==='blood'&&n>=2)||(t==='coin'&&n>=3)||(t==='marrow'&&n>=3)) return 3;
+      if((t==='marrow'&&n===2)||(t==='coin'&&n===2)||(t==='blood'&&P+Hh>=5)||((t==='free'||!t)&&P+Hh>=5)) return 2; return 1; };
     window.__tierOf=tierOf;
     const NEUTRAL=[];   /* the Cutpurse comes free with your draws now, so it isn't picked */   /* anyone may take these. The boon cards (Sellsword, Hedge-Witch, Almsman, Oathkeeper, Rook-Seer, Revenant) are only ever found, never picked */
     const bossKey=f=>(FACTIONS[f]&&FACTIONS[f].boss)||null;
