@@ -845,7 +845,7 @@ const SIG={
   charm:{i:'🌹',n:'Allure',d:'On play, the facing enemy will not attack next turn.'},
   bulwark:{i:'🏰',n:'Bulwark',d:'Takes 1 less damage from every strike (min 1). Reaper still slays it.'},
   radiant:{i:'✨',n:'Radiance',d:'Heals the Sin card in each neighbouring lane by 1 at turn\'s end.'},
-  tithe:{i:'⛓️',n:'Tithe',d:'At turn\'s end, if you hold 3+ coin, this takes 1 of your coin and gains +1 power.'},
+  tithe:{i:'⛓️',n:'Tithe',d:'At turn\'s end, if you hold 3+ coin, this takes 1 of your coin and gains +1 power (up to +4).'},
   largesse:{i:'💸',n:'Largesse',d:'At turn\'s end, if you hold 2+ coin, this spends 2 of it and gains +1 power. Keeps your purse under the Tithe.'},
   sanction:{i:'📜',n:'Sanction',d:'While this lives, your coin cards cost 1 more.'},
   devour:{i:'🍖',n:'Devour',d:'When any creature in an adjacent lane dies, this heals 1 and gains +1 power.'},
@@ -2011,7 +2011,7 @@ function holySins(){
   // Tithe (Greed): each Tithe card taxes 1 of your coin if you hold 3+, and grows.
   let taxed=0;
   for(const c of state.enemyBoard){
-    if(c&&hasSig(c,'tithe')&&state.coin>=3){state.coin--;c.pow++;taxed++;}
+    if(c&&hasSig(c,'tithe')&&state.coin>=3&&(c._tg||0)<4){state.coin--;c.pow++;c._tg=(c._tg||0)+1;taxed++;}
   }
   // The Vow (the Bride): left waiting, she grows.
   for(let i=0;i<LANES;i++){const w=state.enemyBoard[i];if(w&&hasSig(w,'vow')&&!state.playerBoard[i]&&w.pow<6)w.pow++;}
@@ -5554,9 +5554,10 @@ addEventListener('resize',()=>{
     if(typeof enemyPlan==='function'){ const ep=enemyPlan; window.enemyPlan=async function(...a){
       try{ const c=state._foeRider; if(c&&!state._foeRiderUsed&&!state.over){
           const t=state.turnNum||1, lead=(state.soulsYou||0)-(state.soulsFoe||0);
-          const want=t>=4||(t>=2&&(lead>=4||Math.random()<.35))||(state.soulsYou||0)>=SCALE_WIN*.6;
+          const early=state.boss&&state.boss.key==='holy_assessor';   /* the Assessor comes to the table sooner: the first seat stays easy on turn 1, but pushes back after */
+          const want=(early&&t>=2)||t>=4||(t>=2&&(lead>=4||Math.random()<.35))||(state.soulsYou||0)>=SCALE_WIN*.6;
           const free=[]; for(let i=0;i<LANES;i++) if(!state.enemyBoard[i]&&!state.enemyQueue[i]) free.push(i);
-          if(want&&!free.length&&(t>=5||(state.soulsYou||0)>=SCALE_WIN*.6)){   /* no room: he devours the weakest of his own and takes its seat */
+          if(want&&!free.length&&(t>=(early?3:5)||(state.soulsYou||0)>=SCALE_WIN*.6)){   /* no room: he devours the weakest of his own and takes its seat */
             let wi=-1,wv=1e9; for(let i=0;i<LANES;i++){ const x=state.enemyBoard[i]; if(x&&x.pow+x.curHp<wv){ wv=x.pow+x.curHp; wi=i; } }
             if(wi>=0){ state.enemyBoard[wi]=null; free.push(wi); } }
           if(want&&free.length){ free.sort((x,y)=>((state.playerBoard[y]||{pow:-1}).pow)-((state.playerBoard[x]||{pow:-1}).pow));
