@@ -5540,6 +5540,16 @@ addEventListener('resize',()=>{
     }
     if(typeof seatBoss==='function'){ const sb=seatBoss; window.seatBoss=function(...a){ const r=sb.apply(this,a); holdBoss();
       try{ renderFoe(); }catch(e){} return r; }; }
+    /* Greed opens softer: only his two weakest stand at first; the other two wait at the edge of the row and arrive after your first turn */
+    if(typeof seatBoss==='function'){ const sb2=window.seatBoss; window.seatBoss=function(...a){ const r=sb2.apply(this,a);
+      try{ if(state.boss&&state.boss.key==='holy_greed'){ const on=[0,1,2,3].filter(i=>state.enemyBoard[i]&&!state.enemyBoard[i].isBoss)
+          .sort((x,y)=>{ const X=state.enemyBoard[x],Y=state.enemyBoard[y]; return (Y.pow*2+Y.curHp)-(X.pow*2+X.curHp); });
+        state._greedHold=[]; for(const i of on.slice(0,Math.max(0,on.length-2))){ state._greedHold.push([i,state.enemyBoard[i]]); state.enemyBoard[i]=null; } renderAll(); } }catch(e){}
+      return r; }; }
+    /* …and they only step up to the edge of the row once his first turn is over, so they fight from the second turn on */
+    if(typeof enemyPlan==='function'){ const ep2=window.enemyPlan; window.enemyPlan=async function(...a){ const r=await ep2.apply(this,a);
+      try{ const H=state._greedHold; if(H&&H.length&&!state.over){ state._greedHold=null; for(const [i,c] of H){ let l=i; if(state.enemyBoard[l]||state.enemyQueue[l]) l=[0,1,2,3].find(k=>!state.enemyBoard[k]&&!state.enemyQueue[k]); if(l!=null&&l>=0) state.enemyQueue[l]=c; } renderAll(); } }catch(e){}
+      return r; }; }
     /* the enemy's turn: once the round is under way, he picks a lane — sooner if you are winning */
     if(typeof enemyPlan==='function'){ const ep=enemyPlan; window.enemyPlan=async function(...a){
       try{ const c=state._foeRider; if(c&&!state._foeRiderUsed&&!state.over){
