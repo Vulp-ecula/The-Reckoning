@@ -5459,6 +5459,24 @@ addEventListener('resize',()=>{
     window.__rider=R;
     const css2=document.createElement('style'); css2.textContent='body:has(#overlay.show) #rk-rider, body.cabin-away #rk-rider{display:none!important;}'; document.head.appendChild(css2);
   }
+  /* ---- spend spare coin or marrow on an extra draw: 3 of either, at most twice a turn ---- */
+  { const COST=3, MAXT=2;
+    const st=document.createElement('style'); st.textContent=`#resources .res.rk-canbuy{pointer-events:auto;cursor:pointer;border-radius:7px;box-shadow:0 0 12px rgba(255,205,110,.55);background:rgba(255,190,90,.12)}
+      #resources .res.rk-canbuy:hover{background:rgba(255,190,90,.25)} #resources .res.rk-canbuy small{color:#ffd77a}`; document.head.appendChild(st);
+    const cRes=document.getElementById('coin-count').parentElement, mRes=document.getElementById('marrow-count').parentElement;
+    const cLbl=cRes.querySelector('small'), mLbl=mRes.querySelector('small');
+    const left=()=>{ if(state._buyTurn!==state.turnNum){ state._buyTurn=state.turnNum; state._buys=0; } return MAXT-(state._buys||0); };
+    const canDraw=()=>state.deck&&state.deck.length>0&&state.hand.length<10;
+    window.__buyDraw=t=>{ try{ if(!state||state.over||state.turn!=='player'||!canDraw()||left()<=0) return false;
+        if(t==='coin'){ if((state.coin||0)<COST) return false; state.coin-=COST; } else { if((state.marrowP||0)<COST) return false; state.marrowP-=COST; }
+        state._buys=(state._buys||0)+1; state.hand.push(state.deck.pop());
+        say(t==='coin'?'<b>Coin changes hands.</b> A card slides across the table to you.':'<b>You read the bones.</b> They tell you what comes next, and it comes.',2200); renderAll(); return true; }catch(e){ return false; } };
+    cRes.onclick=()=>{ if(cRes.classList.contains('rk-canbuy')) window.__buyDraw('coin'); }; mRes.onclick=()=>{ if(mRes.classList.contains('rk-canbuy')) window.__buyDraw('marrow'); };
+    cRes.title='3 coin: draw a card (twice a turn at most)'; mRes.title='3 marrow: draw a card (twice a turn at most)';
+    const upd=()=>{ try{ const ok=!!state&&!!state.ladder&&!state.over&&state.turn==='player'&&canDraw()&&left()>0;
+        const c=ok&&(state.coin||0)>=COST, m=ok&&(state.marrowP||0)>=COST;
+        cRes.classList.toggle('rk-canbuy',c); mRes.classList.toggle('rk-canbuy',m); cLbl.textContent=c?'coin · draw':'coin'; mLbl.textContent=m?'marrow · draw':'marrow'; }catch(_){} };
+    if(typeof renderAll==='function'){ const ra=window.renderAll; window.renderAll=function(...a){ const r=ra.apply(this,a); upd(); return r; }; } }
   /* ---- War's tables are tougher: every Sin card that takes the field against War gets extra health (tune WAR_HP) ---- */
   { const WAR_HP=2; window.__warHp=WAR_HP;
     if(typeof makeCard==='function'){ const mk=window.makeCard; window.makeCard=function(key){ const c=mk.apply(this,arguments);
